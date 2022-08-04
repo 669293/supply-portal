@@ -1,0 +1,59 @@
+{# templates/applications/request.html.twig #}
+<!doctype html>
+<html lang="en" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700,900|Russo+One|Scada:400,400i,700&amp;subset=cyrillic,cyrillic-ext,latin-ext" rel="stylesheet">
+    <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/bootstrap-icons.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/style.css') }}" rel="stylesheet">
+    <script type="text/javascript" src="{{ asset('js/jquery.min.js') }}"></script>
+    <title>Запрос к поставщику</title>
+  </head>
+  <body>
+    <table class="table w-auto ms-3" id="requestTable">
+      <thead>
+          <tr>
+              <th>№</th>
+              <th>Наименование</th>
+              <th>Ед.изм.</th>
+              <th>Количество</th>
+              <th>Вид техники</th>
+              <th>Комментарий</th>
+              <th>Номер заявки</th>
+          </tr>
+      </thead>
+      <tbody>
+        {% for row in materials %}
+          <tr>
+              <td>{{ loop.index }}</td>
+              <td>{{ row.material.getTitle }}{% if row.material.getUrgency %} <span class="text-danger fw-bold">Срочно</span>{% endif %}</td>
+              <td>{{ row.material.getUnit.getTitle }}</td>
+              <td>{{ row.amount }}</td>
+              <td>{% if row.material.getTypeOfEquipment != '' %}{{ row.material.getTypeOfEquipment.getTitle }}{% endif %}</td>
+              <td>{% if row.material.getComment != '' %}{{ row.material.getComment }}{% endif %}</td>
+              <td>{{ row.application }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {# <button type="button" class="btn btn-sm btn-outline-secondary mt-1 ms-3" id="copyBtn"><i class="bi bi-clipboard"></i> Копировать</button> #}
+    <input id="copyBtn" class="btn btn-sm btn-outline-secondary mt-1 ms-3" type="button" value="Копировать" />
+    <script type="text/javascript">
+      $(document).ready(function() {
+        $('#copyBtn').click(function() {
+          {# navigator.clipboard.writeText($('#requestTable').prop('outerHTML')); #}
+          var urlField = document.querySelector('table');
+          var range = document.createRange();
+          range.selectNode(urlField);
+          window.getSelection().addRange(range);
+          document.execCommand('copy');
+
+          $('#copyBtn').val('Скопировано');
+          $('#copyBtn').removeClass('btn-outline-secondary').addClass('btn-success');
+        });
+      });
+    </script>
+  </body>
+</html>

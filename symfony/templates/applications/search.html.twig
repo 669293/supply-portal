@@ -1,0 +1,53 @@
+{# templates/applications/index.html.twig #}
+{% extends 'default.html.twig' %}
+
+{# Заголовки #}
+{% block title %}{{ title }}{% endblock %}
+{% block caption %}{{ title }}{% endblock %}
+
+{# Контент #}
+{% block content %}
+  <form method="GET" action="/applications/search">
+    <div class="input-group input-group-sm mt-2">
+      <input type="text" class="form-control" placeholder="Поиск по содержимому заявок" aria-label="Поиск по содержимому заявок" name="q" value="{{ q }}" />
+      <button class="btn btn-outline-secondary button-search" type="button" onClick="$(this).closest('form').submit();"><i class="bi bi-search"></i></button>
+    </div>
+  </form>
+
+  {% if q|length > 2 %}
+    {% if results|length > 0 %}
+      {% for result in results %}
+        <div class="card mt-2">
+          <div class="card-body">
+            <blockquote class="blockquote mb-0 text-small">
+              <p class="mb-0">{{ result.application.getTitle|highlight(q)|raw }} <a href="/applications/view?number={{ result.application.getId }}">#{{ result.application.getId }}</a>{% if result.applicationUrgency %} <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="" data-bs-original-title="В заявке есть срочные позиции" aria-label="В заявке есть срочные позиции"></i>{% endif %} <span class="text-muted text-xsmall">от {{ result.application.getDateCreate|date('d.m.Y') }}</span></p>
+              <p class="mt-1 mb-1 text-small text-muted">Отправитель: {{ result.application.getAuthor.getUsername }}</p>
+              {% if result.comment != '' %}
+                <p class="mt-1 mb-1 text-small text-muted">Комментарий: {{ result.comment|highlight(q)|raw }}</p>
+              {% endif %}
+              {% if result.number != '' %}
+                <p class="mt-1 mb-1 text-small text-muted">Дополнительный номер заявки: {{ result.number|highlight(q)|raw }}</p>
+              {% endif %}
+              {% if result.materials|length > 0 %}<div class="clearfix mb-4"></div>{% endif %}
+              {% for material in result.materials %}
+                <footer class="blockquote-footer" style="margin-top: -0.5rem!important;"><span class="text-body">{{ material.getTitle|highlight(q)|raw }}</span>{% if material.getResponsible != '' %} <i class="bi bi-arrow-right"></i> Ответственный: {{ material.getResponsible.getUsername }}{% endif %}</footer>
+              {% endfor %}
+            </blockquote>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="text-muted mt-3">Ничего не найдено</p>
+    {% endif %}
+  {% else %}
+    <p class="text-muted mt-3">Запрос должен быть длиннее двух символов</p>
+  {% endif %}
+{% endblock %}
+
+{# Скрипты #}
+{% block scripts %}
+{% endblock %}
+
+{# Стили #}
+{% block css %}
+{% endblock %}

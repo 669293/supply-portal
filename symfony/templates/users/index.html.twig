@@ -1,0 +1,69 @@
+{# templates/users/index.html.twig #}
+{% extends 'default.html.twig' %}
+
+{# Заголовки #}
+{% block title %}{% if title is defined %}{{ title }}{% endif %}{% endblock %}
+{% block caption %}{% if title is defined %}{{ title }}{% endif %}{% endblock %}
+
+{# Контент #}
+{% block content %}
+    {% if users is defined %}
+        {% if users|length == 0 %}
+            <p><span class="text-muted">Нет пользователей</span></p>
+            <div class="clearfix"></div>
+        {% else %}
+            <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-1 pb-3">
+            <table class="table table-sm table-bordered table-striped mb-0">
+                <thead class="text-xsmall">
+                <tr>
+                    <th class="py-2 align-middle" scope="col">Логин</th>
+                    <th class="py-2 align-middle d-table-cell d-sm-none" scope="col">ФИО</th>
+                    <th class="py-2 align-middle d-none d-sm-table-cell" scope="col">ФИО</th>
+                    <th class="py-2 align-middle d-none d-sm-table-cell text-nowrap" scope="col">Электронная почта</th>
+                    <th class="py-2 align-middle" scope="col">Подразделение</th>
+                    <th class="py-2 align-middle d-none d-sm-table-cell" scope="col">Описание</th>
+                    <th class="py-2 align-middle" scope="col">Права доступа</th>
+                    <th class="py-2 align-middle d-none d-sm-table-cell text-nowrap" scope="col">Последний вход</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td class="py-2 align-middle text-xsmall"><a href="/users/edit/?login={{ user.login }}">{{ user.login }}</a></td>
+                        <td class="py-2 align-middle text-xsmall d-table-cell d-sm-none text-nowrap">
+                        {% if user.active %} {{ user.username }} {% else %} <s>{{ user.username }}</s> {% endif %}
+                        <a href="{{ user.login_link }}"><i class="bi bi-key text-danger"></i></a>
+                        <p class="mb-0"><a href="mailto:{{ user.email }}">{{ user.email }}</a></p>
+                        <p class="mb-0 text-muted">{{ user.comment }}</p>
+                        <p class="mb-0 text-muted">{{ user.lastlogin }}</p>
+                        </td>
+                        <td class="py-2 align-middle text-xsmall d-none d-sm-table-cell text-nowrap">{% if user.active %} {{ user.username }} {% else %} <s>{{ user.username }}</s> {% endif %}<a href="{{ user.login_link }}"><i class="bi bi-key text-danger"></i></a></td>
+                        <td class="py-2 align-middle text-xsmall d-none d-sm-table-cell"><a href="mailto:{{ user.email }}">{{ user.email }}</a></td>
+                        <td class="py-2 align-middle text-xsmall d-none d-sm-table-cell">{% if user.office != null %}{{ user.office.getTitle }}{% else %}<span class="text-muted">Нет</span>{% endif %}</td>
+                        <td class="align-middle text-xsmall text-muted d-none d-sm-table-cell">{{ user.comment }}</td>
+                        {% if user.roles|length == 0 %}
+                            <td class="align-middle text-xsmall text-muted d-none d-sm-table-cell">Нет</td>
+                        {% else %}
+                            <td class="py-2 pb-1 align-middle" style="line-height: 10px;">
+                            {% for role in user.roles %}
+                                <span class="badge rounded-pill fw-normal mb-1 {{ role.class }}">{{ role.title }}</span>
+                            {% endfor %}
+                            </td>
+                        {% endif %}
+                        <td class="py-2 align-middle text-xsmall text-muted d-none d-sm-table-cell text-nowrap">{{ user.lastlogin }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+        {% endif %}
+    {% endif %}
+    <button type="button" class="btn btn-outline-secondary btn-sm mb-5" onclick="location.href='/users/add';"><i class="bi bi-plus-lg"></i> Добавить пользователя</button>
+{% endblock %}
+
+{# Скрипты #}
+{% block scripts %}
+    {% if scripts is defined %}
+{{ scripts|raw }}
+    {% endif %}
+{% endblock %}

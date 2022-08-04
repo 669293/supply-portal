@@ -1,0 +1,94 @@
+{# templates/users/index.html.twig #}
+{% extends 'default.html.twig' %}
+
+{# Заголовки #}
+{% block title %}{% if title is defined %}{{ title }}{% endif %}{% endblock %}
+{% block caption %}{% if title is defined %}{{ title }}{% endif %}{% endblock %}
+
+{# Контент #}
+{% block content %}
+<form class="mb-3" method="POST" action="/users/edit" id="user-edit-form">
+    <fieldset>
+        <input type="hidden" name="userId" value="{{ user.getId }}" />
+        <input type="hidden" name="token" value="{{ csrf_token('edit-user') }}"/>
+        <div class="mb-3 form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="flexSwitchCheckChecked" value="userActive"{% if user.getActive %} checked="checked" {% endif %} />
+            <label class="form-check-label" for="flexSwitchCheckChecked">Активность</label>
+        </div>
+        <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="userName" name="userName" placeholder="ФИО" value="{{ user.getUserName }}" />
+            <label for="userName">ФИО</label>
+            <div class="invalid-feedback d-none"></div>
+        </div>
+        <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="userLogin" name="userLogin" placeholder="Логин" value="{{ user.getLogin }}" />
+            <label for="userLogin">Логин</label>
+            <div class="invalid-feedback d-none"></div>
+        </div>
+        <div class="form-floating mb-3">
+            <input type="password" class="form-control" id="userPassword" name="userPassword" placeholder="Пароль" autocomplete="off" />
+            <label for="userPassword">Задать новый пароль</label>
+            <div class="invalid-feedback d-none"></div>
+        </div>
+        <div class="form-floating mb-3">
+            <input type="email" class="form-control" id="userEmail" name="userEmail" placeholder="Электронная почта" value="{{ user.getEmail }}" />
+            <label for="userEmail">Электронная почта</label>
+            <div class="invalid-feedback d-none"></div>
+        </div>
+        <div class="form-floating mb-3">
+            <select class="form-control" id="userOffice" name="userOffice" placeholder="Структурное подразделение">
+                <option value="-1">Нет</option>
+                {% for office in offices %}
+                    <option value="{{ office.getId }}"{% if user.getOffice != null and user.getOffice.getId == office.getId %} selected{% endif %}>{{ office.getTitle }}</option>
+                {% endfor %}
+            </select>
+            <label for="userOffice">Структурное подразделение</label>
+        </div>
+        <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="userComment" name="userComment" placeholder="Комментарий" value="{{ user.getComment }}" />
+            <label for="userComment">Комментарий</label>
+        </div>
+        <div class="card mb-3">
+            <div class="card-header">
+                Права доступа
+            </div>
+            <div class="card-body">
+                <div class="mb-3 form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="userRole1" name="userRole[]" value="ROLE_ADMIN"{% if 'ROLE_ADMIN' in user.getRoles %} checked="checked" {% endif %} />
+                    <label class="form-check-label us-none" for="userRole1">Администратор</label>
+                </div>
+                <div class="mb-3 form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="userRole2" name="userRole[]" value="ROLE_SUPERVISOR"{% if 'ROLE_SUPERVISOR' in user.getRoles %} checked="checked" {% endif %} />
+                    <label class="form-check-label us-none" for="userRole2">Назначение исполнителей</label>
+                </div>
+                <div class="mb-3 form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="userRole3" name="userRole[]" value="ROLE_CREATOR"{% if 'ROLE_CREATOR' in user.getRoles %} checked="checked" {% endif %} />
+                    <label class="form-check-label us-none" for="userRole3">Создание заявок</label>
+                </div>
+                <div class="mb-3 form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="userRole4" name="userRole[]" value="ROLE_EXECUTOR"{% if 'ROLE_EXECUTOR' in user.getRoles %} checked="checked" {% endif %} />
+                    <label class="form-check-label us-none" for="userRole4">Исполнение заявок</label>
+                </div>
+                <div class="mb-3 form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="userRole5" name="userRole[]" value="ROLE_LOGISTICS"{% if 'ROLE_LOGISTICS' in user.getRoles %} checked="checked" {% endif %} />
+                    <label class="form-check-label us-none" for="userRole5">Добавление логистической информации</label>
+                </div>
+                <div class="mb-0 form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="userRole6" name="userRole[]" value="ROLE_BUH"{% if 'ROLE_BUH' in user.getRoles %} checked="checked" {% endif %} />
+                    <label class="form-check-label us-none" for="userRole6">Бухгалтерия</label>
+                </div>
+            </div>
+        </div>
+    </fieldset>
+    <div class="clearfix"></div>
+
+    <button type="button" class="btn btn-outline-primary mb-3 me-2" id="sendBtn">Сохранить</button>
+    <button type="button" onclick="location.href='/users';" class="btn btn-outline-secondary mb-3 me-2">Отмена</button>
+    <div class="spinner-border text-primary d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
+</form>
+{% endblock %}
+
+{# Скрипты #}
+{% block scripts %}
+    <script type="text/javascript" src="{{ asset('js/users/users.js') }}"></script>
+{% endblock %}

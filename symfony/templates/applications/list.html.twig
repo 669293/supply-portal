@@ -1,0 +1,540 @@
+{# templates/applications/list.html.twig #}
+{% extends 'default.html.twig' %}
+
+{# Заголовки #}
+{% block title %}{{ title }}{% endblock %}
+{% block caption %}{{ title }}{% endblock %}
+
+{# Получаем роли пользователя #}
+{% set roles = app.user.getroles(TRUE) %}
+
+{# Панель навигации вверху #}
+{% block nav %}
+        <nav class="navbar navbar-expand-md navbar-light">
+          <div class="container-fluid px-0 mb-1">
+            <button class="navbar-toggler collapsed w-100 mt-1" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Показать меню"><i class="bi bi-list"></i></button>
+            <div class="navbar-collapse collapse" id="navbarCollapse">
+              <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                <li class="nav-item me-0 me-md-2">
+                  <div class="btn-group mt-2 w-100 w-md-auto" role="group">
+                    <div class="btn-group" role="group">
+                      <button id="applicationsBtnGroup" type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Заявки</button>
+                      <ul class="dropdown-menu dropdown-menu-start" aria-labelledby="applicationsBtnGroup" style="position: absolute!important;">
+                      {% if 'ROLE_CREATOR' in roles %}
+                        <li><a class="dropdown-item" href="/applications/add">Добавить заявку</a></li>
+                      {% endif %}
+                        <li><a class="dropdown-item" href="/applications">Активные заявки</a></li>
+                        <li><a class="dropdown-item" href="/applications/done">Выполненные заявки</a></li>
+                      </ul>
+                    </div>
+                    {% if filter is defined and filter.isFiltered %}
+                      <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#filterModal"><i class="bi bi-funnel"></i></button>
+                      <button type="button" class="btn btn-sm btn-danger" onclick="location.href='/applications/delete-filter';"><i class="bi bi-x-lg"></i></button>
+                    {% else %}
+                      <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#filterModal"><i class="bi bi-funnel"></i></button>
+                    {% endif %}
+                  </div>
+                </li>
+                {% if 'ROLE_SUPERVISOR' in roles and 'ROLE_EXECUTOR' in roles %}
+                  {# И ответственный и исполнитель #}
+                  {% set label = '' %}
+                  {% if printcount is defined and printcount > 0 %}{% set label = '<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">' ~ printcount ~ '<span class="visually-hidden">неподписанных счетов</span></span>' %}{% endif %}
+                  <li class="nav-item me-0 me-md-2">
+                    <div class="btn-group w-100 w-md-auto" role="group">
+                      <button type="button" onclick="location.href='/applications/bills/upload';" class="btn btn-sm btn-outline-success mt-2 w-100 w-md-auto text-nowrap"><i class="bi bi-file-earmark-arrow-up"></i> Загрузить счет</button>
+                      <button type="button" onclick="location.href='/applications/bills/print';" class="btn btn-sm btn-outline-success mt-2 w-100 w-md-auto text-nowrap"><i class="bi bi-printer"></i>{{ label|raw }}</button>
+                    </div>
+                  </li>
+                {% else %}
+                  {% if 'ROLE_SUPERVISOR' in roles %}
+                    {# Ответственный, может только печатать счета #}
+                    {% set label = '' %}
+                    {% if printcount is defined and printcount > 0 %}{% set label = '<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">' ~ printcount ~ '<span class="visually-hidden">неподписанных счетов</span></span>' %}{% endif %}
+                    <button type="button" onclick="location.href='#';" class="btn btn-sm btn-outline-secondary mt-2 me-2 w-100 w-md-auto text-nowrap"><i class="bi bi-printer"></i> Распечатать счета{{ label|raw }}</button>
+                  {% endif %}
+                  {% if 'ROLE_EXECUTOR' in roles %}
+                    {# Исполнитель, может только загружать счета #}
+                    <button type="button" onclick="location.href='/applications/bills/upload';" class="btn btn-sm btn-outline-success mt-2 me-2 w-100 w-md-auto text-nowrap"><i class="bi bi-file-earmark-arrow-up"></i> Загрузить счет</button>
+                  {% endif %}
+                {% endif %}
+                {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
+                  {# Пользователь может отмечать счета как полученные #}
+                  <button type="button" onclick="location.href='/applications/bills/in-work';" class="btn btn-sm btn-outline-secondary mt-2 me-2 w-100 w-md-auto text-nowrap"><i class="bi bi-ui-checks"></i> Счета в работе</button>
+                {% endif %}
+                {% if 'ROLE_LOGISTICS' in roles %}
+                  <li class="nav-item me-0 me-md-2">
+                    <button type="button" onclick="location.href='/applications/logistics';" class="btn btn-sm btn-outline-primary mt-2 me-2 w-100 w-md-auto text-nowrap"><i class="bi bi-box-seam"></i> Грузы</button>
+                  </li>
+                {% endif %}
+              </ul>
+              <form class="d-flex d-block d-md-none w-100" method="GET" action="/applications/search">
+                <div class="input-group input-group-sm mt-2">
+                  <input type="text" class="form-control" placeholder="Поиск по содержимому" aria-label="Поиск по содержимому" name="q" />
+                  <button class="btn btn-outline-secondary button-search" type="button" onClick="$(this).closest('form').submit();"><i class="bi bi-search"></i></button>
+                </div>
+              </form>
+              <form class="d-flex d-none d-md-block w-25 ms-2" method="GET" action="/applications/search">
+                <div class="input-group input-group-sm mt-2">
+                  <input type="text" class="form-control" placeholder="Поиск по содержимому" aria-label="Поиск по содержимому" name="q" />
+                  <button class="btn btn-outline-secondary button-search" type="button" onClick="$(this).closest('form').submit();"><i class="bi bi-search"></i></button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+{% endblock %}
+
+{# Хлебные крошки #}
+{% block breadcrumbs %}
+        <nav aria-label="breadcrumb" class="mt-2 d-block">
+          <ol class="breadcrumb text-xsmall mb-3">
+            <li class="breadcrumb-item" aria-current="page"><a href="/"><i class="bi bi-three-dots"></i></a></li>
+            {% if breadcrumbs is defined %}
+                {% for breadcrumb in breadcrumbs %}
+                    {% if loop.last %}
+                        <li class="breadcrumb-item active" aria-current="page">{{ breadcrumb.title }}</li>
+                    {% else %}
+                        <li class="breadcrumb-item" aria-current="page"><a href="{{ breadcrumb.href }}">{{ breadcrumb.title }}</a></li>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+          </ol>
+        </nav>
+{% endblock %}
+
+{# Задаем параметры сортировки #}
+{% set order, sort = 1, 'DESC' %}
+{% set orderClass0, orderSort0 = 'bi-arrow-right text-muted', 'DESC' %}
+{% set orderClass1, orderSort1 = 'bi-arrow-right text-muted', 'DESC' %}
+{% set orderClass2, orderSort2 = 'bi-arrow-right text-muted', 'DESC' %}
+{% set orderClass3, orderSort3 = 'bi-arrow-right text-muted', 'DESC' %}
+{% set orderClass4, orderSort4 = 'bi-arrow-right text-muted', 'DESC' %}
+
+{% if (filter is defined) %}
+  {% set order, sort = filter.orderByIndex, filter.sort %}
+  {% if order == 0 %}
+    {% if sort == 'DESC' %}
+      {% set orderClass0, orderSort0 = 'bi-arrow-down text-primary', 'ASC' %}
+    {% else %}
+      {% set orderClass0, orderSort0 = 'bi-arrow-up text-primary', 'DESC' %}
+    {% endif %}
+  {% endif %}
+
+  {% if order == 1 %}
+    {% if sort == 'DESC' %}
+      {% set orderClass1, orderSort1 = 'bi-arrow-down text-primary', 'ASC' %}
+    {% else %}
+      {% set orderClass1, orderSort1 = 'bi-arrow-up text-primary', 'DESC' %}
+    {% endif %}
+  {% endif %}
+
+  {% if order == 2 %}
+    {% if sort == 'DESC' %}
+      {% set orderClass2, orderSort2 = 'bi-arrow-down text-primary', 'ASC' %}
+    {% else %}
+      {% set orderClass2, orderSort2 = 'bi-arrow-up text-primary', 'DESC' %}
+    {% endif %}
+  {% endif %}
+
+  {% if order == 3 %}
+    {% if sort == 'DESC' %}
+      {% set orderClass3, orderSort3 = 'bi-arrow-down text-primary', 'ASC' %}
+    {% else %}
+      {% set orderClass3, orderSort3 = 'bi-arrow-up text-primary', 'DESC' %}
+    {% endif %}
+  {% endif %}
+
+  {% if order == 4 %}
+    {% if sort == 'DESC' %}
+      {% set orderClass4, orderSort4 = 'bi-arrow-down text-primary', 'ASC' %}
+    {% else %}
+      {% set orderClass4, orderSort4 = 'bi-arrow-up text-primary', 'DESC' %}
+    {% endif %}
+  {% endif %}
+{% endif %}
+
+{% set fileId = 0 %}
+
+{# Контент #}
+{% block content %}
+  {% if applications|length > 0 %}
+    <div class="table-responsive">
+      <table class="table table-hover table-bordered table-striped text-xsmall mb-2">
+        <thead>
+          <tr>
+            <th class="align-middle">№ <i role="button" class="bi {{ orderClass0 }} app-sort" data-order="0" data-sort="{{ orderSort0 }}"></i></th>
+            <th class="align-middle d-none d-sm-table-cell">Дата поступления <i role="button" class="bi {{ orderClass1 }} app-sort" data-order="1" data-sort="{{ orderSort1 }}"></i></th>
+            <th class="align-middle text-nowrap">Название <i role="button" class="bi {{ orderClass2 }} app-sort" data-order="2" data-sort="{{ orderSort2 }}"></i></th>
+            <th class="align-middle d-table-cell d-sm-none">Отправитель<p class="row-separator">Ответственные</p></th>
+            <th class="align-middle d-none d-sm-table-cell">Отправитель <i role="button" class="bi {{ orderClass3 }} app-sort" data-order="3" data-sort="{{ orderSort3 }}"></i></th>
+            <th class="align-middle d-none d-sm-table-cell">Ответственные</th>
+            <th class="align-middle d-none d-sm-table-cell">Статус <i role="button" class="bi {{ orderClass4 }} app-sort" data-order="4" data-sort="{{ orderSort4 }}"></i></th>
+            <th class="align-middle">Вложенные файлы</th>
+            <th class="align-middle">Счета</th>
+            {% set flag = false %}
+            {% for application in applications %}
+              {# {% if ('ROLE_SUPERVISOR' in app.user.roles) or (application.0.author.getId == app.user.id) %} #}
+              {% if ('ROLE_SUPERVISOR' in app.user.roles) %}
+                {% set flag = true %}
+              {% endif %}
+            {% endfor %}
+            {% if flag %}
+            <th class="align-middle"></th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for application in applications %}
+          <tr{% if application.status_id == 1 %} class="table-primary"{% endif %}>
+            <td>
+              {{ application.0.getId }}
+              {% if application.0.getNumber != '' %}
+                <p class="text-muted mb-0 text-xsmall">{{ application.0.getNumber }}</p>
+              {% endif %}
+            </td>
+            <td class="d-none d-sm-table-cell">
+            {{ application.0.getDateCreate|date('d.m.Y') }}
+            {% set dateClass = 'text-muted' %}
+            {% if application.0.getDateClose < date('now') %}{% set dateClass = 'text-danger' %}{% endif %}
+            {% if application.0.getDateClose != null %} <span class="text-muted"><i class="bi bi-arrow-right"></i> <span class="{{ dateClass }}">{{ application.0.getDateClose|date('d.m.Y') }}</span></span>{% endif %}
+            </td>
+            <td class="text-nowrap">
+              <a href="/applications/view?number={{ application.0.getId }}">{{ application.0.getTitle }}</a>
+              {% if application.urgency %}
+                <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="В заявке есть срочные позиции"></i>
+              {% endif %}
+              <p class="text-muted mb-0 text-xsmall">{% if application.0.getIsYear %}<span class="text-warning">Годовая заявка</span>{% endif %} Позиций: {{ application.materials_count }}{% if application.materials_deleted > 0 %}-{{ application.materials_deleted }}{% endif %}{% if application.materials_impossible > 0 %} <span class="text-danger">(Невозможно поставить: {{ application.materials_impossible }})</span>{% endif %}</p>
+              <p class="text-muted d-block d-sm-none mb-0 mt-1">{{ application.0.getDateCreate|date('d.m.Y') }}</p>
+              <p class="text-muted d-block d-sm-none mb-0 mt-1"><span class="{{ application.status_class }}">{{ application.status_title }}</span></p>
+            </td>
+            <td class="text-nowrap d-table-cell d-sm-none">{{ application.0.getAuthor.getShortUsername }}<p class="row-separator"><span class="text-black-50">Не назначены</span></p></td>
+            <td class="text-nowrap d-none d-sm-table-cell">{{ application.0.getAuthor.getShortUsername }}</td>
+            <td class="text-nowrap d-none d-sm-table-cell">
+            {% if application.responsibles is empty %}
+              <span class="text-black-50">Не назначены</span>
+            {% else %}
+              {% for responsible in application.responsibles %}
+                <p class="mb-0">{{ responsible.username }}</p>
+              {% endfor %}
+            {% endif %}
+            </td>
+            <td class="d-none d-sm-table-cell text-nowrap"><span class="{{ application.status_class }}">{{ application.status_title }}</span></td>
+            <td class="text-nowrap">
+            {% if application.files is empty %}
+              <span class="text-black-50">Нет файлов</span>
+            {% else %}
+              <button type="button" class="btn btn-sm btn-outline-secondary mb-1 text-truncate show-hidden-buttons"><i class="bi bi-chevron-down"></i> Показать файлы</button><div class="clearfix"></div>
+              {% for file in application.files %}
+                <button type="button" data-id="thumb-attachments-init-{{ fileId }}" class="btn btn-sm {{ file.class }}{% if not loop.first %} mt-1{% endif %} text-truncate d-none filePreview text-start" style="width: 180px;"><i class="bi {{ file.icon }}"></i> {{ file.title }}</button><div class="clearfix"></div>
+                {% set fileId = fileId + 1 %}
+              {% endfor %}
+            {% endif %}
+            </td>
+            <td class="text-nowrap">
+            {% if application.bills is empty %}
+              <span class="text-black-50">Нет счетов</span>
+              {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
+                {# Проверяем, может ли пользователь загружать счета в данную заявку #}
+                {% set canUploadBill = false %}
+                {% for responsible in application.responsibles %}
+                  {% if responsible.id == app.user.id %}{% set canUploadBill = true %}{% endif %}
+                {% endfor %}
+                {% if canUploadBill == true %}
+                  <a href="/applications/bills/upload?application={{ application.0.getId }}"><i class="bi bi-upload"></i></a>
+                {% endif %}
+              {% endif %}
+            {% else %}
+              <button type="button" class="btn btn-sm btn-outline-secondary mb-1 text-truncate show-hidden-buttons"><i class="bi bi-chevron-down"></i> Показать счета</button><div class="clearfix"></div>
+              {% for bill in application.bills %}
+                <div class="dropdown d-none{% if not loop.first %} mt-1{% endif %}">
+                  <button class="btn btn-sm {{ bill.class }} text-truncate text-start dropdown-toggle" type="button" id="dropdownBill{{ fileId }}" data-bs-toggle="dropdown" aria-expanded="false" style="width: 180px;"><i class="bi {{ bill.icon }}"></i> {{ bill.title }}</button>
+                  <ul class="dropdown-menu" aria-labelledby="dropdownBill{{ fileId }}">
+                    <li><h6 class="dropdown-header fw-normal {{ bill.style }}">{{ bill.status }}</h6></li>
+                    <li><h6 class="dropdown-header fw-normal">{{ bill.sum|number_format(2, '.', ' ') }} {{ bill.currency }}</h6></li>
+                    {% if ('ROLE_SUPERVISOR' in app.user.roles) %}
+                      <li><a class="dropdown-item text-small" href="/applications/bills/download?id={{ bill.id }}">Распечатать на подпись</a></li>
+                    {% endif %}
+                    <li><a class="dropdown-item text-small filePreview" data-id="thumb-attachments-init-{{ fileId }}" href="#?">Просмотр</a></li>
+                    <li><a class="dropdown-item text-small" href="/applications/bills/in-work/view?id={{ bill.id }}">Информация о счете</a></li>
+                    <li><a class="dropdown-item text-small" href="/upload/bills/{{ bill.path }}">Скачать</a></li>
+                  </ul>
+                </div>
+                {% set fileId = fileId + 1 %}
+              {% endfor %}
+            {% endif %}
+            </td>
+            {% if flag %}
+            <td class="align-top text-center">
+              {% if ('ROLE_SUPERVISOR' in app.user.roles) or (application.0.author.getId == app.user.id) %}
+              <a href="/applications/edit?number={{ application.0.getId }}"><i class="bi bi-pencil-square"></i></a>
+              {% endif %}
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <nav>
+      <ul class="d-flex pagination pagination-sm me-auto float-start">
+        {# Постраничная навигация #}
+        {% if applications.0 is defined %}
+          {% set page, pages = filter.page, applications.0.pages_count %}
+        {% else %}
+          {% set page, pages = 1, 1 %}
+        {% endif %}
+
+        {% if page > 1 %}
+          <li class="page-item"><a class="page-link" href="#?" data-page="{{ (page - 1) }}">Пред.</a></li>
+        {% else %}
+          <li class="page-item disabled"><a class="page-link" href="#?" tabindex="-1" data-page="">Пред.</a></li>
+        {% endif %}
+        
+        {% if pages <= 10 %}
+          {# Если до 10 страниц #}
+          {% for i in range(1, pages) %}
+            <li class="page-item{% if i == page %} active{% endif %}"><a class="page-link" href="#?" data-page="{{ i }}">{{ i }}</a></li>
+          {% endfor %}
+        {% else %}
+          {# Более 10 страниц #}
+          {% set start_page, end_page = (page - 2), (page + 2) %}
+          {% if start_page < 1 %}{% set start_page = 1 %}{% endif %}
+          {% if end_page > pages %}{% set end_page = pages %}{% endif %}
+          {# Если надо выводим первую стрницу #}
+          {% if start_page != 1 %}<li class="page-item"><a class="page-link" href="#?" data-page="1">1</a></li>{% endif %}
+          {# Если надо выводим заглушку #}
+          {% if start_page > 2 %}<li class="page-item px-2">...</li>{% endif %}
+          {# Выводим страницы #}
+          {% for i in range(start_page, end_page) %}
+            <li class="page-item{% if i == page %} active{% endif %}"><a class="page-link" href="#?" data-page="{{ i }}">{{ i }}</a></li>
+          {% endfor %}
+          {# Если надо выводим заглушку #}
+          {% if end_page < (pages - 1) %}<li class="page-item px-2">...</li>{% endif %}
+          {# Если надо выводим последнюю стрницу #}
+          {% if end_page != pages %}<li class="page-item"><a class="page-link" href="#?" data-page="{{ pages }}">{{ pages }}</a></li>{% endif %}
+        {% endif %}
+
+        {% if page < pages %}
+          <li class="page-item"><a class="page-link" href="#?" data-page="{{ (page + 1) }}">След.</a></li>
+        {% else %}
+          <li class="page-item disabled"><a class="page-link" href="#?" tabindex="-1" data-page="">След.</a></li>
+        {% endif %}
+      </ul>
+
+      <div class="d-flex float-end mb-3">
+        <div class="input-group input-group-sm mb-3">
+          <label class="input-group-text" for= "paginationResultsCount">Показывать записей</label>
+          <select class="form-select" id="paginationResultsCount">
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="0">Все</option>
+          </select>
+        </div>
+      </div>
+    </nav>
+
+    {# Скрытый fileinput для инициализации предпросмотра #}
+    <div class="d-none">
+      <input id="attachments" type="file" name="" multiple="multiple" />
+    </div>
+  {% else %}
+    <p class="text-muted">Заявок нет</p>
+  {% endif %}
+{% endblock %}
+
+{# Модальные окна #}
+{% block modal %}
+    <div class="modal fade" id="filterModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="/applications/apply-filter" method="POST" id="filterForm">
+                    <input type="hidden" name="filterPage" value="1" />
+                    <input type="hidden" name="filterOrderBy" value="{{ order }}" />
+                    <input type="hidden" name="filterSort" value="{{ sort }}" />
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Фильтр</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="modal-body">
+                        {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
+                          <div class="form-floating mb-3">
+                            <select class="form-select" id="authorSelect" name="filterAuthor">
+                                {% if (filter is defined) and (filter.author != null) %}
+                                    <option value="-1">Выберите</option>
+                                    {% for user in users %}
+                                        <option value="{{ user.getId }}"{% if filter.author.getId == user.getId %} selected="selected"{% endif %}>{{ user.getUsername }}</option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option value="-1" selected="selected" disabled="disabled">Выберите</option>
+                                    {% for user in users %}
+                                        <option value="{{ user.getId }}">{{ user.getUsername }}</option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                            <label for="authorSelect">Отправитель</label>
+                          </div>
+                        {% endif %}
+                        {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_CREATOR' in roles %}
+                          <div class="form-floating mb-3">
+                            <select class="form-select" id="responsibleSelect" name="filterResponsible">
+                                {% if (filter is defined) and (filter.responsible != null) %}
+                                    <option value="-1">Выберите</option>
+                                    {% for user in users %}
+                                        <option value="{{ user.getId }}"{% if filter.responsible.getId == user.getId %} selected="selected"{% endif %}>{{ user.getUsername }}</option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option value="-1" selected="selected" disabled="disabled">Выберите</option>
+                                    {% for user in users %}
+                                        <option value="{{ user.getId }}">{{ user.getUsername }}</option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                            <label for="responsibleSelect">Ответственный</label>
+                          </div>
+                        {% endif %}
+                        {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_CREATOR' in roles %}
+                          <div class="form-floating mb-3">
+                            <select class="form-select" id="officeSelect" name="filterOffice">
+                                {% if (filter is defined) and (filter.office != null) %}
+                                    <option value="-1">Выберите</option>
+                                    {% for office in offices %}
+                                        <option value="{{ office.getId }}"{% if filter.office.getId == office.getId %} selected="selected"{% endif %}>{{ office.getTitle }}</option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option value="-1" selected="selected" disabled="disabled">Выберите</option>
+                                    {% for office in offices %}
+                                        <option value="{{ office.getId }}">{{ office.getTitle }}</option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                            <label for="responsibleSelect">Подразделение</label>
+                          </div>
+                        {% endif %}
+                        <div class="form-floating mb-3">
+                          <select class="form-select" id="statusSelect" name="filterStatus">
+                              {% if (filter is defined) and (filter.status != null) %}
+                                  <option value="-1">Выберите</option>
+                                  {% for status in statuses %}
+                                      <option value="{{ status.getId }}"{% if filter.status.getId == status.getId %} selected="selected"{% endif %}>{{ status.getTitle }}</option>
+                                  {% endfor %}
+                              {% else %}
+                                  <option value="-1" selected="selected" disabled="disabled">Выберите</option>
+                                  {% for status in statuses %}
+                                      <option value="{{ status.getId }}">{{ status.getTitle }}</option>
+                                  {% endfor %}
+                              {% endif %}
+                          </select>
+                          <label for="statusSelect">Статус</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                          {% set title = '' %}
+                          {% if (filter is defined) and (filter.title != null) %}{% set title = filter.title %}{% endif %}
+                          <input type="text" class="form-control" id="titleInputValue" placeholder=" " value="{{ title }}" name="filterTitle" />
+                          <label for="titleInputValue">Название содержит</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                          {% set dateFrom = '' %}
+                          {% if (filter is defined) and (filter.dateFrom != null) %}{% set dateFrom = filter.dateFrom|date('Y-m-d') %}{% endif %}
+                          <input type="date" class="form-control" id="dateFromInputValue" placeholder=" " value="{{ dateFrom }}" name="filterDateFrom" />
+                          <label for="dateFromInputValue">Дата поступления заявки с</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                          {% set dateTo = '' %}
+                          {% if (filter is defined) and (filter.dateTo != null) %}{% set dateTo = filter.dateTo|date('Y-m-d') %}{% endif %}
+                          <input type="date" class="form-control" id="dateToInputValue" placeholder=" " value="{{ dateTo }}" name="filterDateTo" />
+                          <label for="dateToInputValue">Дата поступления заявки по</label>
+                        </div>
+                        <div class="form-floating">
+                          <select class="form-select" id="yearSelect" name="filterYear">
+                              {% if (filter is defined) %}
+                                  <option value="-1"{% if filter.year == -1 %} selected="selected"{% endif %}>Выберите</option>
+                                  <option value="1"{% if filter.year == 1 %} selected="selected"{% endif %}>Да</option>
+                                  <option value="0"{% if filter.year == 0 %} selected="selected"{% endif %}>Нет</option>
+                              {% else %}
+                                  <option value="-1">Выберите</option>
+                                  <option value="1">Да</option>
+                                  <option value="0">Нет</option>
+                              {% endif %}
+                          </select>
+                          <label for="statusSelect">Годовая заявка</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                      <button type="button" class="btn btn-primary" id="filterBtn">Применить</button>
+                      <div class="spinner-border text-primary d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{# Скрипты #}
+{% block scripts %}
+    <script src="{{ asset('js/fileinput.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/fileinput.ru.js') }}" type="text/javascript"></script>
+    <script type="text/javascript">
+        var params = {
+            initialPreview: [
+{% for application in applications %}
+    {% if not application.files is empty %}
+        {% for file in application.files %}
+          {% if file.type == 'image' %}
+            '<img src="{{ url('index') }}upload/applications/{{ file.path }}" class="file-preview-image" alt="" />',
+          {% else %}
+            '{{ url('index') }}upload/applications/{{ file.path }}',
+          {% endif %}
+        {% endfor %}
+    {% endif %}
+    {% if not application.bills is empty %}
+        {% for bill in application.bills %}
+          {% if bill.type == 'image' %}
+            '<img src="{{ url('index') }}upload/bills/{{ bill.path }}" class="file-preview-image" alt="" />',
+          {% else %}
+            '{{ url('index') }}upload/bills/{{ bill.path }}',
+          {% endif %}
+        {% endfor %}
+    {% endif %}
+{% endfor %}
+            ],
+            initialPreviewAsData: true,
+            hideThumbnailContent: true,
+            initialPreviewConfig: [
+{% for application in applications %}
+    {% if not application.files is empty %}
+        {% for file in application.files %}
+          {% if file.type == 'image' %}
+            {type: '{{ file.type }}', caption: '{{ file.name }}', downloadUrl: '{{ url('index') }}upload/applications/{{ file.path }}', previewAsData: false},
+          {% else %}
+            {type: '{{ file.type }}', caption: '{{ file.name }}', downloadUrl: '{{ url('index') }}upload/applications/{{ file.path }}'},
+          {% endif %}
+        {% endfor %}
+    {% endif %}
+    {% if not application.bills is empty %}
+        {% for bill in application.bills %}
+          {% if bill.type == 'image' %}
+            {type: '{{ bill.type }}', caption: '{{ bill.name }}', downloadUrl: '{{ url('index') }}upload/bills/{{ bill.path }}', previewAsData: false},
+          {% else %}
+            {type: '{{ bill.type }}', caption: '{{ bill.name }}', downloadUrl: '{{ url('index') }}upload/bills/{{ bill.path }}'},
+          {% endif %}
+        {% endfor %}
+    {% endif %}
+{% endfor %}
+            ],
+            language: 'ru'
+        };
+    </script>
+    <script src="{{ asset('js/applications/list.js') }}" type="text/javascript"></script>
+
+    {% if scripts is defined %}
+{{ scripts|raw }}
+    {% endif %}
+{% endblock %}
+
+{# Стили #}
+{% block css %}
+    <link href="{{ asset('css/fileinput.css') }}" rel="stylesheet">
+{% endblock %}

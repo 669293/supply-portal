@@ -1,0 +1,114 @@
+body {
+    min-width: 320px;
+}
+
+.header-logo {
+    font-family: 'Russo One', Tahoma, Sans-Serif;
+    font-size: 24px;
+    line-height: 24px;
+    text-transform: uppercase;    
+}
+
+.header-text {
+    color: #CCCCCC !important;
+    font-size: 14px;
+    line-height: 24px;
+    padding-left: 5px;
+}
+
+.text-small {
+    font-size: 0.9em;
+}
+
+.text-xsmall {
+    font-size: 0.8em;
+}
+
+.row-separator {
+    border-top: 1px solid #dee2e6;
+    margin: 5px 0 0 0;
+    padding-top: 5px;
+}
+
+.bill {
+    margin: 6px 0 0 0;
+}
+
+.bill:first-child {
+    margin: 0;
+}
+
+.btn-label {
+    background: rgba(0,0,0,0.05);
+    border-radius: 3px 0 0 3px;
+    display: inline-block;
+    left: 0;
+    padding: 4px 10px;
+    position: absolute;
+    top: 0;
+}
+
+.btn-labeled {
+    padding-left: 40px;
+    position: relative;
+}
+
+.us-none {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.autocomplete-suggestions {
+    background: #fff;
+    border: 1px solid #86b7fe;
+    border-radius: .2rem;
+    /*box-shadow: 0 0 0 .25rem rgba(13,110,253,.25);*/
+    font-size: 0.9em;
+    margin-top: -1px;
+    outline: 0;
+}
+
+.autocomplete-suggestions .autocomplete-suggestion {
+    padding: 3px 7px;
+}
+
+.autocomplete-suggestions .autocomplete-suggestion:hover {
+    background: #f2f2f2;
+}
+
+.delete-row,
+.repeat-row {
+    cursor: pointer;
+}
+
+#scrollDown {
+    background: rgba(0,0,0,0.3);
+    border-radius: 60px;
+    color: white;
+    cursor: pointer;
+    display: none;
+    font-size: 48px;
+    height: 120px;
+    left: 50%;
+    line-height: 60px;
+    margin-left: -60px;
+    padding-top: 60px;
+    position: fixed;
+    text-align: center;
+    top: -70px;
+    width: 120px;
+    z-index: 11;
+}
+
+.btn-kv-prev,
+.btn-kv-next,
+.fileinput-remove {
+    display: none!important;
+}
+
+.d-light-inline { display: inline !important; }
+.d-dark-inline { display: none !important; }
+html.dark .d-light-inline { display: none !important; }
+html.dark .d-dark-inline { display: inline !important; }

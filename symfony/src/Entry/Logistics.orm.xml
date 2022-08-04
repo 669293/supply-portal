@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity name="annotation\Logistics" table="logistics">
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="logistics_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="title" type="string" column="title" length="255" nullable="false">
+      <options>
+        <option name="fixed"/>
+      </options>
+    </field>
+    <field name="date" type="date" column="date" nullable="false">
+      <options>
+        <option name="default">CURRENT_TIMESTAMP</option>
+      </options>
+    </field>
+    <field name="parent" type="integer" column="parent" nullable="true" />
+    <field name="type" type="integer" column="type" nullable="false"/>
+    <field name="way" type="string" column="way" length="255" nullable="true">
+      <options>
+        <option name="fixed"/>
+      </options>
+    </field>
+    <field name="track" type="string" column="track" length="255" nullable="true">
+      <options>
+        <option name="fixed"/>
+      </options>
+    </field>
+    <field name="office" type="integer" column="office" nullable="true">
+      <options>
+        <option name="unsigned"/>
+      </options>
+    </field>
+    <field name="user" type="integer" column="user" nullable="false">
+      <options>
+        <option name="unsigned"/>
+      </options>
+    </field>
+    <field name="done" type="boolean" column="done" nullable="false">
+      <options>
+        <option name="default"/>
+      </options>
+    </field>
+    <many-to-one field="&quot;parent&quot;" target-entity="Logistics" fetch="LAZY">
+      <join-columns>
+        <join-column name="&quot;parent&quot;" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="office" target-entity="Offices" fetch="LAZY">
+      <join-columns>
+        <join-column name="office" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="&quot;user&quot;" target-entity="Users" fetch="LAZY">
+      <join-columns>
+        <join-column name="&quot;user&quot;" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

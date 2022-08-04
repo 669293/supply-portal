@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity name="annotation\BillsStatuses" table="bills_statuses">
+    <indexes>
+      <index name="IDX_DCBFB6C77B00651C" columns="status"/>
+      <index name="IDX_DCBFB6C77A2119E3" columns="bill"/>
+    </indexes>
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="bills_statuses_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="datetime" type="datetime" column="datetime" nullable="false">
+      <options>
+        <option name="default">CURRENT_TIMESTAMP</option>
+      </options>
+    </field>
+    <many-to-one field="status" target-entity="StatusesOfBills" fetch="LAZY">
+      <join-columns>
+        <join-column name="status" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="bill" target-entity="Bills" fetch="LAZY">
+      <join-columns>
+        <join-column name="bill" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

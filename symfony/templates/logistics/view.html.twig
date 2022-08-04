@@ -1,0 +1,462 @@
+{# templates/logistics/view.html.twig #}
+{% extends 'default.html.twig' %}
+
+{# Получаем роли пользователя #}
+{% set roles = app.user.getroles(TRUE) %}
+{% if not material_id is defined %}{% set material_id = 0 %}{% endif %}
+
+{# Заголовки #}
+{% block title %}{{ title }}{% endblock %}
+{% block caption %}{{ title }}{% endblock %}
+
+{# Контент #}
+{% block content %}
+    {# Макрос для вывода древовидной структуры #}
+    {% macro tree(nodes, material_id) %}
+        {% import _self as macros %}
+        {% set roles = app.user.getroles(TRUE) %}
+        {% if nodes|length == 1 %}
+            {% set tree = nodes[0] %}
+            <h5 class="mb-1">
+                {% if tree.parent != null %}
+                    {% if tree.logistics.getType == 0 %}Получение {{ tree.logistics.getOffice.getTitle }}{% else %}{{ tree.parent.getOffice.getTitle }} <i class="bi bi-arrow-right"></i> {{ tree.logistics.getOffice.getTitle }}{% endif %}
+                {% else %}
+                    {% if tree.logistics.getType == 0 %}Получение {{ tree.logistics.getOffice.getTitle }}{% else %}Отгрузка <i class="bi bi-arrow-right"></i> {{ tree.logistics.getOffice.getTitle }}{% endif %}
+                {% endif %}
+            </h5>
+            <p class="mb-0 text-muted">{{ tree.logistics.getUser.getShortUserName }}</p>
+            <p class="{% if 'ROLE_LOGISTICS' in roles %}mb-1{% else %}mb-3{% endif %} text-muted text-nowrap">{{ tree.logistics.getDate|date('d.m.Y') }} {% if tree.logistics.getWay != '' %}{{ tree.logistics.getWay }}{% if tree.logistics.getTrack != '' %} <i class="bi bi-arrow-right"></i> {{ tree.logistics.getTrack }}{% endif %}{% endif %}</p>
+
+            {% if 'ROLE_LOGISTICS' in roles %}
+                {% if tree.logistics.getOffice.getId == app.user.getOffice.getId and tree.avalibleMaterials %}
+                    <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3" href="/applications/logistics/add-info/?parent={{ tree.logistics.getId }}"><i class="bi bi-pencil"></i> Дополнить информацию на основании {% if tree.logistics.getType == 0 %}данного поступления{% else %}данной отгрузки{% endif %}</a>
+                {% endif %}
+                {% if app.user.getId == tree.logistics.getUser.getId and tree.children|length == 0 %}
+                    <button class="btn btn-sm btn-outline-danger text-start mb-3 remove-logistics-btn" data-id="{{ tree.logistics.getId }}"><i class="bi bi-trash"></i> Удалить {% if tree.logistics.getType == 0 %}данное поступление{% else %}данную отгрузку{% endif %}</button>
+                {% endif %}
+            {% endif %}
+            
+            <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-0">
+                <table class="table table-sm table-bordered table-striped table-hover mb-0" style="min-width: 900px;">
+                    <thead>
+                        <tr>
+                            <th class="py-2 align-middle text-center text-small" scope="col" style="width: 50px;">№</th>
+                            <th class="py-2 align-middle text-center text-small text-nowrap" scope="col" style="width: 150px;">{% if tree.logistics.getType == 0 %}Получено{% else %}Отгружено{% endif %}</th>
+                            <th class="py-2 align-middle text-small" scope="col">Наименование</th>
+                            <th class="align-middle text-center text-small">Срочность</th>
+                            <th class="align-middle text-small">Ответственный</th>
+                            <th class="align-middle text-small">Заявка</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for material in tree.materials %}
+                        <tr{% if material_id is defined and material.getMaterial.getId == material_id %} class="table-danger"{% endif %}>
+                            <td class="align-middle text-center text-xsmall">{{ loop.index }}</td>
+                            <td class="align-middle text-center text-xsmall">{{ material.getAmount }}</td>
+                            <td class="align-middle text-xsmall">{{ material.getMaterial.getTitle }}</td>
+                            <td class="text-center align-middle text-xsmall">
+                            {% if material.getMaterial.getUrgency %}
+                                <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="Срочная позиция"></i> <span class="text-danger">Срочно</span>
+                            {% endif %}
+                            </td>
+                            <td class="align-middle text-xsmall">{% if material.getMaterial.getResponsible != null %}{{ material.getMaterial.getResponsible.getShortUserName }}{% else %}Не назначен{% endif %}</td>
+                            <td class="align-middle text-xsmall"><a href="/applications/view?number={{ material.getMaterial.getApplication.getId }}">#{{ material.getMaterial.getApplication.getId }}</a> <i class="bi bi-arrow-right"></i> {{ material.getMaterial.getNum }} поз.</td>
+                        </tr>
+                    {% endfor %}            
+                    </tbody>
+                </table>
+            </div>
+            {% if tree.photos|length > 0 %}
+                <h5 class="mb-3 mt-3">Фотографии и документы</h5>
+                <div>
+                    <div class="file-loading">
+                        <input id="photos{{ tree.logistics.getId }}" type="file" />
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+            {% endif %}
+
+            {% if tree.children|length > 0 %}
+                <h5 class="fs-1 text-muted w-100 text-center my-5"><i class="bi bi-chevron-compact-down"></i></h5>
+                {# Выводим дочерние ветки #}
+                
+                {% if tree.children|length == 1 %}
+                    {{ macros.tree(tree.children, material_id) }}
+                {% else %}
+                    {# Выводим шапку #}
+                    <ul class="nav nav-tabs mb-5" role="tablist">
+                        {% for child in tree.children %}
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link{% if loop.first %} active{% endif %}" data-bs-toggle="tab" data-bs-target="#tab_{{ child.logistics.getId }}" type="button" role="tab">
+                                    {% if child.parent != null %}
+                                        {% if child.logistics.getType == 0 %}Получение {{ child.logistics.getOffice.getTitle }}{% else %}{{ child.parent.getOffice.getTitle }} <i class="bi bi-arrow-right"></i> {{ child.logistics.getOffice.getTitle }}{% endif %}
+                                    {% else %}
+                                        {% if child.logistics.getType == 0 %}Получение {{ child.logistics.getOffice.getTitle }}{% else %}Отгрузка <i class="bi bi-arrow-right"></i> {{ child.logistics.getOffice.getTitle }}{% endif %}
+                                    {% endif %}
+                                    ({{ child.materials|length }})
+                                </button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <div class="tab-content">
+                        {{ macros.tree(tree.children, material_id) }}
+                    </div>
+                {% endif %}
+            {% endif %}
+        {% else %}
+            {% for node in nodes %}
+                <div class="tab-pane fade{% if loop.first %} show active{% endif %}" id="tab_{{ node.logistics.getId }}" role="tabpanel">
+                    {% set tree = node %}
+                    <h5 class="mb-1">
+                        {% if tree.parent != null %}
+                            {% if tree.logistics.getType == 0 %}Получение {{ tree.logistics.getOffice.getTitle }}{% else %}{{ tree.parent.getOffice.getTitle }} <i class="bi bi-arrow-right"></i> {{ tree.logistics.getOffice.getTitle }}{% endif %}
+                        {% else %}
+                            {% if tree.logistics.getType == 0 %}Получение {{ tree.logistics.getOffice.getTitle }}{% else %}Отгрузка <i class="bi bi-arrow-right"></i> {{ tree.logistics.getOffice.getTitle }}{% endif %}
+                        {% endif %}
+                    </h5>
+                    <p class="mb-0 text-muted">{{ tree.logistics.getUser.getShortUserName }}</p>
+                    <p class="{% if 'ROLE_LOGISTICS' in roles %}mb-1{% else %}mb-3{% endif %} text-muted text-nowrap">{{ tree.logistics.getDate|date('d.m.Y') }} {% if tree.logistics.getWay != '' %}{{ tree.logistics.getWay }}{% if tree.logistics.getTrack != '' %} <i class="bi bi-arrow-right"></i> {{ tree.logistics.getTrack }}{% endif %}{% endif %}</p>
+
+                    {% if 'ROLE_LOGISTICS' in roles %}
+                        {% if tree.logistics.getOffice.getId == app.user.getOffice.getId and tree.avalibleMaterials %}
+                            <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3" href="/applications/logistics/add-info/?parent={{ tree.logistics.getId }}"><i class="bi bi-pencil"></i> Дополнить информацию на основании {% if tree.logistics.getType == 0 %}данного поступления{% else %}данной отгрузки{% endif %}</a>
+                        {% endif %}
+                        {% if app.user.getId == tree.logistics.getUser.getId and tree.children|length == 0 %}
+                            <button class="btn btn-sm btn-outline-danger text-start mb-3 remove-logistics-btn" data-id="{{ tree.logistics.getId }}"><i class="bi bi-trash"></i> Удалить {% if tree.logistics.getType == 0 %}данное поступление{% else %}данную отгрузку{% endif %}</button>
+                        {% endif %}
+                    {% endif %}
+                    
+                    <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-0">
+                        <table class="table table-sm table-bordered table-striped table-hover mb-0" style="min-width: 900px;">
+                            <thead>
+                                <tr>
+                                    <th class="py-2 align-middle text-center text-small" scope="col" style="width: 50px;">№</th>
+                                    <th class="py-2 align-middle text-center text-small text-nowrap" scope="col" style="width: 150px;">{% if tree.logistics.getType == 0 %}Получено{% else %}Отгружено{% endif %}</th>
+                                    <th class="py-2 align-middle text-small" scope="col">Наименование</th>
+                                    <th class="align-middle text-center text-small">Срочность</th>
+                                    <th class="align-middle text-small">Ответственный</th>
+                                    <th class="align-middle text-small">Заявка</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for material in tree.materials %}
+                                <tr{% if material_id is defined and material.getMaterial.getId == material_id %} class="table-danger"{% endif %}>
+                                    <td class="align-middle text-center text-xsmall">{{ loop.index }}</td>
+                                    <td class="align-middle text-center text-xsmall">{{ material.getAmount }}</td>
+                                    <td class="align-middle text-xsmall">{{ material.getMaterial.getTitle }}</td>
+                                    <td class="text-center align-middle text-xsmall">
+                                    {% if material.getMaterial.getUrgency %}
+                                        <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="Срочная позиция"></i> <span class="text-danger">Срочно</span>
+                                    {% endif %}
+                                    </td>
+                                    <td class="align-middle text-xsmall">{% if material.getMaterial.getResponsible != null %}{{ material.getMaterial.getResponsible.getShortUserName }}{% else %}Не назначен{% endif %}</td>
+                                    <td class="align-middle text-xsmall"><a href="/applications/view?number={{ material.getMaterial.getApplication.getId }}">#{{ material.getMaterial.getApplication.getId }}</a> <i class="bi bi-arrow-right"></i> {{ material.getMaterial.getNum }} поз.</td>
+                                </tr>
+                            {% endfor %}            
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if tree.photos|length > 0 %}
+                        <h5 class="mb-3 mt-3">Фотографии и документы</h5>
+                        <div>
+                            <div class="file-loading">
+                                <input id="photos{{ tree.logistics.getId }}" type="file" />
+                            </div>
+                            <div class="clearfix"></div>
+                        </div>
+                    {% endif %}
+
+                    {% if tree.children|length > 0 %}
+                        <h5 class="fs-1 text-muted w-100 text-center my-5"><i class="bi bi-chevron-compact-down"></i></h5>
+                        {# Выводим дочерние ветки #}
+                        {% if tree.children|length == 1 %}
+                            {{ macros.tree(tree.children, material_id) }}
+                        {% else %}
+                            {# Выводим шапку #}
+                            <ul class="nav nav-tabs mb-5" role="tablist">
+                                {% for child in tree.children %}
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link{% if loop.first %} active{% endif %}" data-bs-toggle="tab" data-bs-target="#tab_{{ child.logistics.getId }}" type="button" role="tab">
+                                            {% if child.parent != null %}
+                                                {% if child.logistics.getType == 0 %}Получение {{ child.logistics.getOffice.getTitle }}{% else %}{{ child.parent.getOffice.getTitle }} <i class="bi bi-arrow-right"></i> {{ child.logistics.getOffice.getTitle }}{% endif %}
+                                            {% else %}
+                                                {% if child.logistics.getType == 0 %}Получение {{ child.logistics.getOffice.getTitle }}{% else %}Отгрузка <i class="bi bi-arrow-right"></i> {{ child.logistics.getOffice.getTitle }}{% endif %}
+                                            {% endif %}
+                                            ({{ child.materials|length }})
+                                        </button>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                            <div class="tab-content">
+                                {{ macros.tree(tree.children, material_id) }}
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endmacro %}
+
+    {% import _self as macros %}
+    {# Конец макроса #}
+
+    {% if tree|length == 1 %}
+        {% set tree = tree[0] %}
+        <h5 class="mb-1">
+            {% if tree.parent != null %}
+                {% if tree.logistics.getType == 0 %}Получение {{ tree.logistics.getOffice.getTitle }}{% else %}{{ tree.parent.getOffice.getTitle }} <i class="bi bi-arrow-right"></i> {{ tree.logistics.getOffice.getTitle }}{% endif %}
+            {% else %}
+                {% if tree.logistics.getType == 0 %}Получение {{ tree.logistics.getOffice.getTitle }}{% else %}Отгрузка <i class="bi bi-arrow-right"></i> {{ tree.logistics.getOffice.getTitle }}{% endif %}
+            {% endif %}
+        </h5>
+        <p class="mb-0 text-muted">{{ tree.logistics.getUser.getShortUserName }}</p>
+        <p class="{% if 'ROLE_LOGISTICS' in roles %}mb-1{% else %}mb-3{% endif %} text-muted text-nowrap">{{ tree.logistics.getDate|date('d.m.Y') }} {% if tree.logistics.getWay != '' %}{{ tree.logistics.getWay }}{% if tree.logistics.getTrack != '' %} <i class="bi bi-arrow-right"></i> {{ tree.logistics.getTrack }}{% endif %}{% endif %}</p>
+
+        {% if 'ROLE_LOGISTICS' in roles %}
+            {% if tree.logistics.getOffice.getId == app.user.getOffice.getId and tree.avalibleMaterials %}
+                <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3" href="/applications/logistics/add-info/?parent={{ tree.logistics.getId }}"><i class="bi bi-pencil"></i> Дополнить информацию на основании {% if tree.logistics.getType == 0 %}данного поступления{% else %}данной отгрузки{% endif %}</a>
+            {% endif %}
+            {% if app.user.getId == tree.logistics.getUser.getId and tree.children|length == 0 %}
+                <button class="btn btn-sm btn-outline-danger text-start mb-3 remove-logistics-btn" data-id="{{ tree.logistics.getId }}"><i class="bi bi-trash"></i> Удалить {% if tree.logistics.getType == 0 %}данное поступление{% else %}данную отгрузку{% endif %}</button>
+            {% endif %}
+        {% endif %}
+        
+        <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-0">
+            <table class="table table-sm table-bordered table-striped table-hover mb-0" style="min-width: 900px;">
+                <thead>
+                    <tr>
+                        <th class="py-2 align-middle text-center text-small" scope="col" style="width: 50px;">№</th>
+                        <th class="py-2 align-middle text-center text-small text-nowrap" scope="col" style="width: 150px;">{% if tree.logistics.getType == 0 %}Получено{% else %}Отгружено{% endif %}</th>
+                        <th class="py-2 align-middle text-small" scope="col">Наименование</th>
+                        <th class="align-middle text-center text-small">Срочность</th>
+                        <th class="align-middle text-small">Ответственный</th>
+                        <th class="align-middle text-small">Заявка</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for material in tree.materials %}
+                    <tr{% if material_id is defined and material.getMaterial.getId == material_id %} class="table-danger"{% endif %}>
+                        <td class="align-middle text-center text-xsmall">{{ loop.index }}</td>
+                        <td class="align-middle text-center text-xsmall">{{ material.getAmount }}</td>
+                        <td class="align-middle text-xsmall">{{ material.getMaterial.getTitle }}</td>
+                        <td class="text-center align-middle text-xsmall">
+                        {% if material.getMaterial.getUrgency %}
+                            <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="Срочная позиция"></i> <span class="text-danger">Срочно</span>
+                        {% endif %}
+                        </td>
+                        <td class="align-middle text-xsmall">{% if material.getMaterial.getResponsible != null %}{{ material.getMaterial.getResponsible.getShortUserName }}{% else %}Не назначен{% endif %}</td>
+                        <td class="align-middle text-xsmall"><a href="/applications/view?number={{ material.getMaterial.getApplication.getId }}">#{{ material.getMaterial.getApplication.getId }}</a> <i class="bi bi-arrow-right"></i> {{ material.getMaterial.getNum }} поз.</td>
+                    </tr>
+                {% endfor %}            
+                </tbody>
+            </table>
+        </div>
+        {% if tree.photos|length > 0 %}
+            <h5 class="mb-3 mt-3">Фотографии и документы</h5>
+            <div>
+                <div class="file-loading">
+                    <input id="photos{{ tree.logistics.getId }}" type="file" />
+                </div>
+                <div class="clearfix"></div>
+            </div>
+        {% endif %}
+        {% if tree.children|length > 0 %}
+            <h5 class="fs-1 text-muted w-100 text-center my-5"><i class="bi bi-chevron-compact-down"></i></h5>
+            {# Выводим дочерние ветки #}
+            {% if tree.children|length == 1 %}
+                {{ macros.tree(tree.children, material_id) }}
+            {% else %}
+                {# Выводим шапку #}
+                <ul class="nav nav-tabs mb-5" role="tablist">
+                    {% for child in tree.children %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link{% if loop.first %} active{% endif %}" data-bs-toggle="tab" data-bs-target="#tab_{{ child.logistics.getId }}" type="button" role="tab">
+                                {% if child.parent != null %}
+                                    {% if child.logistics.getType == 0 %}Получение {{ child.logistics.getOffice.getTitle }}{% else %}{{ child.parent.getOffice.getTitle }} <i class="bi bi-arrow-right"></i> {{ child.logistics.getOffice.getTitle }}{% endif %}
+                                {% else %}
+                                    {% if child.logistics.getType == 0 %}Получение {{ child.logistics.getOffice.getTitle }}{% else %}Отгрузка <i class="bi bi-arrow-right"></i> {{ child.logistics.getOffice.getTitle }}{% endif %}
+                                {% endif %}
+                                ({{ child.materials|length }})
+                            </button>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <div class="tab-content">
+                    {{ macros.tree(tree.children, material_id) }}
+                </div>
+            {% endif %}
+        {% endif %}
+    {% else %}
+        {# Выводим шапку #}
+        <ul class="nav nav-tabs mb-5" role="tablist">
+            {% for child in tree %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link{% if loop.first %} active{% endif %}" data-bs-toggle="tab" data-bs-target="#tab_{{ child.logistics.getId }}" type="button" role="tab">
+                        {% if child.parent != null %}
+                            {% if child.logistics.getType == 0 %}Получение {{ child.logistics.getOffice.getTitle }}{% else %}{{ child.parent.getOffice.getTitle }} <i class="bi bi-arrow-right"></i> {{ child.logistics.getOffice.getTitle }}{% endif %}
+                        {% else %}
+                            {% if child.logistics.getType == 0 %}Получение {{ child.logistics.getOffice.getTitle }}{% else %}Отгрузка <i class="bi bi-arrow-right"></i> {{ child.logistics.getOffice.getTitle }}{% endif %}
+                        {% endif %}
+                        ({{ child.materials|length }})
+                    </button>
+                </li>
+            {% endfor %}
+        </ul>
+        <div class="tab-content">
+            {{ macros.tree(tree, material_id) }}
+        </div>
+    {% endif %}
+
+    <div class="clearfix mb-5"></div>
+{% endblock %}
+
+{# Модальные окна #}
+{% block modal %}
+{% endblock %}
+
+{# Скрипты #}
+{% block scripts %}
+    <script src="{{ asset('js/fileinput.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/fileinput.ru.js') }}" type="text/javascript"></script>
+    <script type="text/javascript">
+        {% macro photos(nodes) %}
+            {% import _self as macros_ %}
+            {% for node in nodes %}
+                {% set element = node %}
+                var params{{ element.logistics.getId }} = {
+                    initialPreview: [
+                    {% for file in element.photos %}
+                        {% if file.type == 'image' %}
+                            '<img src="{{ url('index') }}upload/photos/{{ file.path }}" class="file-preview-image" alt="" />',
+                        {% else %}
+                            '{{ url('index') }}upload/photos/{{ file.path }}',
+                        {% endif %}
+                    {% endfor %}
+                    ],
+                    initialPreviewAsData: true,
+                    initialPreviewConfig: [
+                    {% for file in element.photos %}
+                        {% if file.type == 'image' %}
+                            {type: '{{ file.type }}', caption: '{{ file.name }}', downloadUrl: '{{ url('index') }}upload/photos/{{ file.path }}', previewAsData: false},
+                        {% else %}
+                            {type: '{{ file.type }}', caption: '{{ file.name }}', downloadUrl: '{{ url('index') }}upload/photos/{{ file.path }}'},
+                        {% endif %}
+                    {% endfor %}
+                    ],
+                    showBrowse: false,
+                    showUpload: false,
+                    showCaption: false,
+                    language: 'ru',
+                    overwriteInitial: false,
+                    fileActionSettings: {
+                        showRemove: false,
+                        showDownload: true,
+                        showZoom: true,
+                        showDrag: false
+                    }
+                };
+
+                $('#photos{{ element.logistics.getId }}').fileinput(params{{ element.logistics.getId }});
+
+                {% if element.children|length > 0 %}
+                    {{ macros_.photos(element.children) }}
+                {% endif %}
+            {% endfor %}
+        {% endmacro %}
+        {% import _self as macros_ %}
+
+        {% for element in tree %}
+            var params{{ element.logistics.getId }} = {
+                initialPreview: [
+                {% for file in element.photos %}
+                    {% if file.type == 'image' %}
+                        '<img src="{{ url('index') }}upload/photos/{{ file.path }}" class="file-preview-image" alt="" />',
+                    {% else %}
+                        '{{ url('index') }}upload/photos/{{ file.path }}',
+                    {% endif %}
+                {% endfor %}
+                ],
+                initialPreviewAsData: true,
+                initialPreviewConfig: [
+                {% for file in element.photos %}
+                    {% if file.type == 'image' %}
+                        {type: '{{ file.type }}', caption: '{{ file.name }}', downloadUrl: '{{ url('index') }}upload/photos/{{ file.path }}', previewAsData: false},
+                    {% else %}
+                        {type: '{{ file.type }}', caption: '{{ file.name }}', downloadUrl: '{{ url('index') }}upload/photos/{{ file.path }}'},
+                    {% endif %}
+                {% endfor %}
+                ],
+                showBrowse: false,
+                showUpload: false,
+                showCaption: false,
+                language: 'ru',
+                overwriteInitial: false,
+                fileActionSettings: {
+                    showRemove: false,
+                    showDownload: true,
+                    showZoom: true,
+                    showDrag: false
+                }
+            };
+
+            $('#photos{{ element.logistics.getId }}').fileinput(params{{ element.logistics.getId }});
+
+            {% if element.children|length > 0 %}
+                {{ macros_.photos(element.children) }}
+            {% endif %}
+        {% endfor %}
+
+        $(document).ready(function() {
+            //Удаление логистики
+            $('.remove-logistics-btn').click(function() {
+                var id = $(this).data('id');
+
+                //Вызываем подтверждение
+                modalConfirm(function(confirm) {
+                if (confirm) {
+                    $.post('/applications/logistics/delete-info', {id: id})
+                    .done(function(data) {
+                        //Все хорошо
+                        location.href = '/applications';
+                    }).fail(function() {
+                    addToast('Произошла ошибка.<br />Попробуйте обновить страницу.', 'bg-danger', 'text-white');
+                    showToasts();
+                    });
+                }
+                }, 
+                'Вы уверены что хотите удалить данную логистическую информацию?',
+                'Удаление логистической информации'
+                );
+            });
+        });
+    </script>
+
+    {% if scripts is defined %}
+{{ scripts|raw }}
+    {% endif %}
+{% endblock %}
+
+{# Стили #}
+{% block css %}
+    <link href="{{ asset('css/fileinput.css') }}" rel="stylesheet">
+    <style>
+        .file-drop-zone {
+            border: none;
+            border-radius: 0;
+            margin: 0;
+            padding: 0;
+        }
+
+        .file-size-info {
+            display: none!important;
+        }
+
+        .kv-file-remove {
+            display: none!important;
+        }
+
+        .file-footer-caption {
+            margin-bottom: 10px!important;
+        }
+    </style>
+{% endblock %}

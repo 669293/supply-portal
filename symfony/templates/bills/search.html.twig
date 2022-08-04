@@ -1,0 +1,55 @@
+{# templates/bills/index.html.twig #}
+{% extends 'default.html.twig' %}
+
+{# Заголовки #}
+{% block title %}{{ title }}{% endblock %}
+{% block caption %}{{ title }}{% endblock %}
+
+{# Контент #}
+{% block content %}
+  <form method="GET" action="/applications/bills/search">
+    <div class="input-group input-group-sm mt-2">
+      <input type="text" class="form-control" placeholder="Поиск по счетам и спецификациям" aria-label="Поиск по счетам и спецификациям" name="q" value="{{ q }}" />
+      <button class="btn btn-outline-secondary button-search" type="button" onClick="$(this).closest('form').submit();"><i class="bi bi-search"></i></button>
+    </div>
+  </form>
+
+  {% if q|length > 2 %}
+    {% if results|length > 0 %}
+      {% for result in results %}
+        <div class="card mt-2">
+          <div class="card-body">
+            <blockquote class="blockquote mb-0 text-small">
+              <p class="mb-0"><a href="/applications/bills/in-work/view?id={{ result.bill.getId }}">{{ result.filename|highlight(q)|raw }}</a></p>
+              <p class="mt-1 mb-1 text-small text-muted">Ответственный: {{ result.bill.getUser.getUsername }}</p>
+              {% if result.num != '' %}
+                <p class="mt-1 mb-1 text-small text-muted">Номер счета: {{ result.num|highlight(q)|raw }}</p>
+              {% endif %}
+              {% if result.inn != '' %}
+                <p class="mt-1 mb-1 text-small text-muted">ИНН: {{ result.inn|highlight(q)|raw }}</p>
+              {% endif %}
+              {% if result.note != '' %}
+                <p class="mt-1 mb-1 text-small text-muted">Комментарий: {{ result.note|highlight(q)|raw }}</p>
+              {% endif %}
+              {% if result.comment != '' %}
+                <p class="mt-1 mb-1 text-small text-muted">Дополнительная информация: {{ result.comment|highlight(q)|raw }}</p>
+              {% endif %}
+            </blockquote>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="text-muted mt-3">Ничего не найдено</p>
+    {% endif %}
+  {% else %}
+    <p class="text-muted mt-3">Запрос должен быть длиннее двух символов</p>
+  {% endif %}
+{% endblock %}
+
+{# Скрипты #}
+{% block scripts %}
+{% endblock %}
+
+{# Стили #}
+{% block css %}
+{% endblock %}

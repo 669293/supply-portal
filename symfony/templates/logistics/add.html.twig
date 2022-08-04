@@ -1,0 +1,147 @@
+{# templates/logistics/add.html.twig #}
+{% extends 'default.html.twig' %}
+
+{# Заголовки #}
+{% block title %}{{ title }}{% endblock %}
+{% block caption %}{{ title }}{% endblock %}
+
+{# Контент #}
+{% block content %}
+<form action="/applications/logistics/add-info" method="POST" id="logForm">
+    <input type="hidden" name="token" value="{{ csrf_token('log-add') }}"/>
+    <input type="hidden" name="parent" value="{{ logistics.getId }}"/>
+    <input type="hidden" name="type" value="{% if logistics.getType == 0 %}1{% else %}0{% endif %}" />
+    <input type="hidden" name="photos" value=""/>
+
+    <fieldset>
+        <h5 class="mb-3">
+            {% if parent != null %}
+                {% if logistics.getType == 0 %}Получение {{ logistics.getOffice.getTitle }}{% else %}{{ parent.getOffice.getTitle }} <i class="bi bi-arrow-right"></i> {{ logistics.getOffice.getTitle }}{% endif %}
+            {% else %}
+                {% if logistics.getType == 0 %}Получение {{ logistics.getOffice.getTitle }}{% else %}Отгрузка <i class="bi bi-arrow-right"></i> {{ logistics.getOffice.getTitle }}{% endif %}
+            {% endif %}
+            <i class="bi bi-arrow-right"></i> {% if logistics.getType == 0 %}Отгрузка{% else %}Получение{% endif %} материалов
+        </h5>
+        <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-0">
+            <table class="table table-sm table-bordered table-striped table-hover mb-0" style="min-width: 900px;">
+                <thead>
+                    <tr>
+                        <th class="py-2 align-middle text-center text-small" scope="col" style="width: 50px;">№</th>
+                        <th class="py-2 align-middle text-center" scope="col" style="width: 50px;"><input class="form-check-input material-select-all" type="checkbox" name="" value="" /></th>
+                        <th class="py-2 align-middle text-small text-nowrap" scope="col" style="width: 150px;">К {% if logistics.getType == 0 %}отгрузке{% else %}получению{% endif %}</th>
+                        <th class="py-2 align-middle text-small" scope="col">Наименование</th>
+                        <th class="align-middle text-center text-small">Срочность</th>
+                        <th class="align-middle text-small">Ответственный</th>
+                        <th class="align-middle text-small">Заявка</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% set avalible = true %}
+                {% for logmaterial in logmaterials %}
+                    {% if logmaterial.amount == 0 %}{% set avalible = false %}{% endif %}
+                    <tr class="">
+                        <td class="align-middle text-center text-xsmall">{{ loop.index }}</td>
+                        <td class="align-middle text-center"><input class="form-check-input material-select{% if logmaterial.amount == 0 %} is-valid{% endif %}" type="checkbox" name="material[]" value="{{ logmaterial.material.getId }}"{% if logmaterial.amount == 0 %} checked disabled{% endif %} /></td>
+                        <td class="align-middle text-center"><input type="number" name="" value="{{ logmaterial.amount }}" class="amount-input form-control form-control-sm" min="0"{% if logmaterial.amount == 0 %} disabled{% endif %} /></td>
+                        <td class="align-middle text-xsmall">{{ logmaterial.material.getTitle }}</td>
+                        <td class="text-center align-middle text-xsmall">
+                        {% if logmaterial.getMaterial.getUrgency %}
+                            <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="Срочная позиция"></i> <span class="text-danger">Срочно</span>
+                        {% endif %}
+                        </td>
+                        <td class="align-middle text-xsmall">{% if logmaterial.material.getResponsible != null %}{{ logmaterial.material.getResponsible.getShortUserName }}{% else %}Не назначен{% endif %}</td>
+                        <td class="align-middle text-xsmall"><a href="/applications/view?number={{ logmaterial.material.getApplication.getId }}">#{{ logmaterial.material.getApplication.getId }}</a> <i class="bi bi-arrow-right"></i> {{ logmaterial.material.getNum }} поз.</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if avalible %}
+            {# Добавление информации об отгрузке/получению #}
+            <div id="meta-info">
+                {% if logistics.getType == 1 %}
+                    {# Получение #}
+                    <input type="hidden" id="userOfficeReciept" name="userOfficeReciept" value="{{ app.user.getOffice.getId }}" />
+                    <div class="form-floating mb-3 mt-4">
+                        <input type="date" class="form-control is-valid" id="dateReciept" placeholder=" " value="{{ 'now'|date('Y-m-d') }}" name="dateReciept" />
+                        <label for="dateReciept">Дата операции</label>
+                    </div>
+                    <div class="form-floating mb-3 mt-4">
+                        <select class="form-control" placeholder="Структурное подразделение, в котором получены материалы" disabled>
+                            <option value="-1">Нет</option>
+                            {% for office in offices %}
+                                <option value="{{ office.getId }}" {% if app.user.getOffice.getId == office.getId %} selected{% endif %}>{{ office.getTitle }}</option>
+                            {% endfor %}
+                        </select>
+                        <label for="userOfficeReciept">Структурное подразделение, в котором получены материалы</label>
+                    </div>
+                {% else %}
+                    {# Отгрузка #}
+                    <div class="form-floating mb-3 mt-4">
+                        <input type="date" class="form-control is-valid" id="dateShip" placeholder=" " value="{{ 'now'|date('Y-m-d') }}" name="dateShip" />
+                        <label for="dateShip">Дата операции</label>
+                    </div>
+                    <div class="form-floating mb-3 mt-4">
+                        <input type="text" class="form-control" id="way" name="way" placeholder="Способ отправки" />
+                        <label for="way">Способ отправки</label>
+                        <div class="invalid-feedback d-none"></div>
+                    </div>
+                    <div class="form-floating mb-3 mt-4">
+                        <input type="text" class="form-control" id="track" name="track" placeholder="Номер для отслеживания" />
+                        <label for="track">Номер для отслеживания</label>
+                        <div class="invalid-feedback d-none"></div>
+                    </div>
+                    <div class="form-floating mb-3 mt-4">
+                        <select class="form-control" id="userOfficeShip" name="userOfficeShip" placeholder="Структурное подразделение, в адрес которого произведена отгрузка">
+                            {% for office in offices %}
+                                <option value="{{ office.getId }}" {% if app.user.getOffice.getId == office.getId %} selected{% endif %}>{{ office.getTitle }}</option>
+                            {% endfor %}
+                        </select>
+                        <label for="userOfficeShip">Структурное подразделение, в адрес которого произведена отгрузка</label>
+                    </div>
+                {% endif %}
+
+                <div id="photosInput">
+                    <h5 class="mb-3 mt-4">Фотографии и документы касательно {% if logistics.getType == 0 %}отгрузки{% else %}получения{% endif %}</h5>
+                    <div class="mb-4">
+                        <div class="file-loading">
+                            <input id="photos" type="file" name="photos[]" multiple="multiple" />
+                        </div>
+                        <div class="clearfix"></div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <p class="text-muted mt-3">Нет доступных действий</p>
+        {% endif %}
+    </fieldset>
+    <div class="clearfix"></div>
+
+    {% if avalible %}
+        <button type="button" class="btn btn-outline-primary mb-5 me-2 mt-4" id="sendBtn" disabled>Сохранить</button>
+        <button type="button" class="btn btn-outline-secondary mb-5 me-2 mt-4" onclick="location.href='/applications/bills/in-work/';">Закрыть</button>
+        <div class="spinner-border text-primary d-none mt-4" role="status"><span class="visually-hidden">Обработка...</span></div>
+    {% endif %}
+</form>
+{% endblock %}
+
+{# Скрипты #}
+{% block scripts %}
+    <script src="{{ asset('js/fileinput.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/fileinput.ru.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/jquery.autocomplete.js') }}" type="text/javascript"></script>
+    <script type="text/javascript">
+        var tab = {% if logistics.getType == 1 %}0{% else %}1{% endif %}
+    </script>
+    <script src="{{ asset('js/logistics/add.js') }}" type="text/javascript"></script>
+
+    {% if scripts is defined %}
+{{ scripts|raw }}
+    {% endif %}
+{% endblock %}
+
+{# Стили #}
+{% block css %}
+    <link href="{{ asset('css/fileinput.css') }}" rel="stylesheet">
+{% endblock %}

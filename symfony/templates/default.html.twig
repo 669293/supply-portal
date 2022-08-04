@@ -1,0 +1,238 @@
+{# templates/default.html.twig #}
+
+{# Получаем роли пользователя #}
+{% set roles = app.user.getroles(TRUE) %}
+
+<!doctype html>
+<html lang="en" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700,900|Russo+One|Scada:400,400i,700&amp;subset=cyrillic,cyrillic-ext,latin-ext" rel="stylesheet">
+    <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/bootstrap-icons.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/bootstrap-nightshade.min.css') }}" rel="stylesheet">
+{% block css %}
+{% endblock %}
+
+    {% if 'ROLE_BUH' in roles %}
+      <link href="{{ asset('css/bootstrap-select.min.css') }}" rel="stylesheet">
+      <link href="{{ asset('css/ajax-bootstrap-select.min.css') }}" rel="stylesheet">
+    {% endif %}
+
+    <link href="{{ asset('css/style.css') }}" rel="stylesheet">
+    <title>{% block title %}Портал снабжения{% endblock %}</title>
+  </head>
+  <body class="d-flex flex-column h-100">
+    <div aria-live="polite" aria-atomic="true" class="bg-dark position-relative" style="z-index: 12;">
+      <div class="toast-container position-absolute p-2 top-0 start-50 translate-middle-x" id="toastPlacement">
+
+      </div>
+    </div>
+
+    <header class="p-3 bg-dark text-white">
+      <div class="container-lg">
+        <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
+          <a href="/" class="d-flex align-items-center me-md-auto text-white text-decoration-none"><span class="header-logo">Витим</span> <span class="header-text"> &mdash; Портал снабжения</span></a>
+
+          <div class="gx-5 ms-sm-3 ms-0 mt-2 mt-sm-0">
+            <div class="btn-group me-1">
+              <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Меню</button>
+              <ul class="dropdown-menu">
+                {% if 'ROLE_CREATOR' in roles %}
+                  <li><a class="dropdown-item text-xsmall" href="/applications/add">Добавить заявку</a></li>
+                {% endif %}
+                <li><a class="dropdown-item text-xsmall" href="/applications">Активные заявки</a></li>
+                <li><a class="dropdown-item text-xsmall" href="/applications/done">Выполненные заявки</a></li>
+                {% if 'ROLE_SUPERVISOR' in roles and 'ROLE_EXECUTOR' in roles %}
+                  <li><hr class="dropdown-divider"></li>
+                  {% if 'ROLE_SUPERVISOR' in roles %}
+                    {% if printcount is defined and printcount > 0 %}<li><a class="dropdown-item text-xsmall" href="/applications/bills/print">Распечатать счета</a></li>{% endif %}
+                  {% endif %}
+                  {% if 'ROLE_EXECUTOR' in roles %}
+                    <li><a class="dropdown-item text-xsmall" href="/applications/bills/upload">Загрузить счет</a></li>
+                  {% endif %}
+                {% endif %}
+                {% if 'ROLE_BUH' in roles %}
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item text-xsmall" href="#?" data-bs-toggle="modal" data-bs-target="#buhModal"><i class="bi bi-info-circle me-1"></i> Просмотр информации о контрагенте</a></li>
+                {% endif %}
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-xsmall" href="/applications/search"><i class="bi bi-search me-1"></i> Поиск по содержимому заявок</a></li>
+                <li><a class="dropdown-item text-xsmall" href="/applications/bills/search"><i class="bi bi-search me-1"></i> Поиск по счетам и спецификациям</a></li>
+              </ul>
+            </div>
+
+            <div class="btn-group">
+              <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">{{ app.user.username }}</button>
+              <ul class="dropdown-menu">
+              {% block user_menu %}
+                <li><a class="dropdown-item text-xsmall" href="#?" id="changePasswordLink">Изменить пароль</a></li>
+                {% if 'ROLE_ADMIN' in roles %}
+                  <li><a class="dropdown-item text-xsmall" href="/users">Управление пользователями</a></li>
+                {% endif %}
+                <li><a class="dropdown-item text-xsmall" href="/logout">Выход</a></li>
+              {% endblock %}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-shrink-0">
+      <div class="container-lg">
+{% block nav %}{% endblock %}
+
+{% block breadcrumbs %}
+        <nav aria-label="breadcrumb" class="mt-3 d-block">
+          <ol class="breadcrumb text-xsmall mb-3">
+            <li class="breadcrumb-item" aria-current="page"><a href="/"><i class="bi bi-three-dots"></i></a></li>
+            {% if breadcrumbs is defined %}
+                {% for breadcrumb in breadcrumbs %}
+                    {% if loop.last %}
+                        <li class="breadcrumb-item active" aria-current="page">{{ breadcrumb.title }}</li>
+                    {% else %}
+                        <li class="breadcrumb-item" aria-current="page"><a href="{{ breadcrumb.href }}">{{ breadcrumb.title }}</a></li>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+          </ol>
+        </nav>
+{% endblock %}
+
+<h4 class="mb-3">{% block caption %}Портал снабжения{% endblock %}</h4>
+
+{% block content %}
+{% endblock %}
+      </div>
+    </main>
+
+    <footer class="footer mt-auto py-3" style="background-color:rgba(0, 0, 0, 0.025);">
+      <div class="container-lg">
+        <span class="text-muted text-xsmall">ЗАО «Артель старателей «Витим» © {% if 'now'|date('Y') == 2021 %} 2021 {% else %} 2021 &ndash; {{ 'now'|date('Y') }} {% endif %}</span>
+        <a id="darkmode-button" class="btn btn-sm btn-outline-secondary float-end"><i class="bi bi-moon d-none d-light-inline" title="Темная тема"></i><i class="bi bi-brightness-high d-none d-dark-inline" title="Светлая тема"></i></a>
+      </div>
+    </footer>
+
+{% block modal %}
+{% endblock %}
+
+{% if 'ROLE_BUH' in roles %}
+    <div class="modal fade" id="buhModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="/applications/contragents" method="POST" id="searchProviderForm">
+                    <div class="modal-header">
+                      <h5 class="modal-title">Просмотр информации о контрагенте</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="modal-body">
+                        <select id="providerSelect" class="selectpicker with-ajax w-100" data-live-search="true"></select>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" id="closeBuhModal" data-bs-dismiss="modal">Закрыть</button>
+                      <button type="button" class="btn btn-primary" disabled id="searchProviderBtn">Поиск</button>
+                      <div class="spinner-border text-primary d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="modalInfo" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Просмотр информации о контрагенте</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+              </div>
+              <div class="modal-body">
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+              </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+    <script type="text/javascript" src="{{ asset('js/popper.min.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('js/jquery.min.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('js/fragments/_default.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('js/darkmode.min.js') }}"></script>
+
+{% if 'ROLE_BUH' in roles %}
+    <script src="{{ asset('js/bootstrap-select.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/ajax-bootstrap-select.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/ajax-bootstrap-select.ru-RU.min.js') }}" type="text/javascript"></script>
+    <script type="text/javascript">
+      $(document).ready(function() {
+        $('#providerSelect').change(function() {
+          if ($(this).val() != '') {
+            $('#searchProviderBtn').prop('disabled', false);
+          }
+        });
+
+        $('#searchProviderBtn').click(function() {
+          if ($('#providerSelect').val() != '') {
+            //Блокируем кнопку
+            $('#searchProviderBtn').prop('disabled', true);
+
+            //Получаем данные
+            $('#searchProviderBtn').closest('div').find('.spinner-border').css('display', 'none').removeClass('d-none').fadeIn('fast', function() { 
+              $.post('/autocomplete/provider', {inn: $('#providerSelect').val()})
+              .done(function(data) {
+                $('#modalInfo').find('.modal-body').html(data);
+                var modalInfo = new bootstrap.Modal(document.getElementById('modalInfo'), {keyboard: false});
+                document.getElementById('modalInfo').addEventListener('shown.bs.modal', function (event) {
+                  $('#searchProviderBtn').closest('div').find('.spinner-border').css('display', 'none').removeClass('d-none');
+                });
+                $('#closeBuhModal').trigger('click');
+                modalInfo.show();
+              });
+            });
+          }
+        });
+
+        $('#providerSelect').selectpicker().ajaxSelectPicker({
+          ajax: {
+            url: '/autocomplete/provider', 
+            type: 'GET',
+            dataType: 'json',
+            data: {
+              q: '{{ '{{{' }}q{{ '}}}' }}'
+            }
+          },
+          locale: {
+              emptyTitle: 'Введите название или ИНН'
+          },
+          preserveSelected: false,
+          preprocessData: function (data) {
+            var i, l = data.length, array = [];
+            if (l) {
+                for (i = 0; i < l; i++) {
+                    array.push($.extend(true, data[i], {
+                        text : data[i].Title,
+                        value: data[i].Inn,
+                        data : {
+                            subtext: data[i].Inn
+                        }
+                    }));
+                }
+            }
+
+            return array;
+          }
+        });
+        $('#providerSelect').trigger('change');
+      });
+    </script>
+{% endif %}
+
+{% block scripts %}
+{% endblock %}
+
+{% include 'fragments/_change-password.html.twig' %}
+  </body>
+</html>

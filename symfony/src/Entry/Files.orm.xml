@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity name="annotation\Files" table="files">
+    <indexes>
+      <index name="IDX_6354059A45BDDC1" columns="application"/>
+      <index name="IDX_6354059356B3608" columns="&quot;user&quot;"/>
+    </indexes>
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="files_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="path" type="string" column="path" length="255" nullable="false">
+      <options>
+        <option name="fixed"/>
+      </options>
+    </field>
+    <field name="user" type="integer" column="user" nullable="false">
+      <options>
+        <option name="unsigned"/>
+      </options>
+    </field>
+    <field name="datetime" type="datetime" column="datetime" nullable="false">
+      <options>
+        <option name="default">CURRENT_TIMESTAMP</option>
+      </options>
+    </field>
+    <many-to-one field="application" target-entity="Applications" fetch="LAZY">
+      <join-columns>
+        <join-column name="application" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="&quot;user&quot;" target-entity="Users" fetch="LAZY">
+      <join-columns>
+        <join-column name="&quot;user&quot;" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

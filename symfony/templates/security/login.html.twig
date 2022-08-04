@@ -1,0 +1,54 @@
+{# templates/security/login.html.twig #}
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="css/bootstrap.min.css" rel="stylesheet">
+        <title>Авторизация</title>
+        <script src="js/bootstrap.min.js"></script>
+        <script src="js/jquery.min.js"></script>
+        <script type="text/javascript">
+            $(document).ready(function() {
+                $('#loginForm').modal('show');
+            });
+        </script>
+    </head>
+    <body class="bg-light">
+        <div class="modal fade in" id="loginForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="staticBackdropLabel">Авторизация</h5>
+                    </div>
+                    <form method="POST">
+                        <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="inputLogin" class="form-label">Логин</label>
+                            <input type="text" class="form-control" id="inputLogin" value="{{ last_username }}" name="login" required autofocus />
+                        </div>
+                        <div class="mb-3">
+                            <label for="inputPassword" class="form-label">Пароль</label>
+                            <input type="password" class="form-control" id="inputPassword" name="password" required />
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="checkRemember" checked="checked" name="_remember_me" />
+                            <label class="form-check-label" for="checkRemember">Запомнить меня</label>
+                        </div>
+{% if error %}
+                        <div class="alert alert-danger alert-dismissible fade show mb-0 mt-3" role="alert">
+                            {{ error.messageKey|trans(error.messageData, 'security', 'ru') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+                        </div>
+{% endif %}
+                        </div>
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}" />
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary">Вход</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

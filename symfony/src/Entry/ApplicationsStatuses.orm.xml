@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity name="annotation\ApplicationsStatuses" table="applications_statuses">
+    <indexes>
+      <index name="IDX_B450C22EA45BDDC1" columns="application"/>
+      <index name="IDX_B450C22E7B00651C" columns="status"/>
+    </indexes>
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="applications_statuses_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="datetime" type="datetime" column="datetime" nullable="false">
+      <options>
+        <option name="default">CURRENT_TIMESTAMP</option>
+      </options>
+    </field>
+    <many-to-one field="application" target-entity="Applications" fetch="LAZY">
+      <join-columns>
+        <join-column name="application" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="status" target-entity="StatusesOfApplications" fetch="LAZY">
+      <join-columns>
+        <join-column name="status" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

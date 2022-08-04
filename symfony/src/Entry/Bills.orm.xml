@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity name="annotation\Bills" table="bills">
+    <indexes>
+      <index name="IDX_22775DD0356B3608" columns="&quot;user&quot;"/>
+    </indexes>
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="bills_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="path" type="string" column="path" length="255" nullable="false">
+      <options>
+        <option name="fixed"/>
+      </options>
+    </field>
+    <field name="sum" type="decimal" column="sum" precision="10" scale="0" nullable="false">
+      <options>
+        <option name="default">0.0</option>
+      </options>
+    </field>
+    <field name="num" type="string" column="num" length="50" nullable="false">
+      <options>
+        <option name="fixed"/>
+      </options>
+    </field>
+    <field name="inn" type="string" column="inn" length="12" nullable="false">
+      <options>
+        <option name="fixed"/>
+      </options>
+    </field>
+    <field name="dateClose" type="date" column="date_close" nullable="false"/>
+    <field name="user" type="integer" column="user" nullable="false">
+      <options>
+        <option name="unsigned"/>
+      </options>
+    </field>
+    <field name="currency" type="string" column="currency" length="4" nullable="false">
+      <options>
+        <option name="fixed"/>
+      </options>
+    </field>
+    <field name="note" type="string" column="note" length="255" nullable="true">
+      <options>
+        <option name="fixed"/>
+      </options>
+    </field>
+    <field name="comment" type="text" column="comment" nullable="true">
+      <options>
+        <option name="fixed"/>
+      </options>
+    </field>
+    <many-to-one field="&quot;user&quot;" target-entity="Users" fetch="LAZY">
+      <join-columns>
+        <join-column name="&quot;user&quot;" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>

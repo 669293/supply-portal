@@ -1,0 +1,106 @@
+{# templates/bills/show-materials.html.twig #}
+<div class="container-fluid w-100 overflow-scroll px-0">
+    <table class="table table-sm mb-0 table-hover table-striped table-bordered" style="min-width: 900px;">
+        <thead>
+            <tr>
+                <th class="py-2 align-middle text-center text-small" scope="col" style="width: 50px;">№</th>
+                <th class="py-2 align-middle text-center" scope="col" style="width: 50px;"><input type="checkbox" name="" value="" class="form-check-input bill-select-all" /></th>
+                <th class="py-2 align-middle text-nowrap text-start text-small" scope="col" style="width: 140px;">Кол-во в счете</th>
+                <th class="py-2 align-middle text-nowrap text-center text-small" scope="col" style="width: 140px;">Кол-во в заявке</th>
+                <th class="py-2 align-middle text-small" scope="col">Наименование</th>
+                <th class="py-2 align-middle text-nowrap text-small" scope="col">Вид техники</th>
+                <th class="py-2 align-middle text-nowrap text-small" scope="col">Ответственный</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for material in materials %}
+            {% set count = material.amount %}
+            {% if count is null %}{% set count = 0 %}{% endif %}
+            {% set toe = '' %}
+            {% if not material.0.getTypeOfEquipment is null %}{% set toe = material.0.getTypeOfEquipment.getTitle %}{% endif %}
+            {% set rest = material.0.getAmount - count %}
+            {% if rest < 0 %}{% set rest = 0 %}{% endif %}
+            {% if material.0.getIsDeleted %}
+                <tr>
+                    <td class="align-middle text-center text-xsmall text-decoration-line-through">{{ material.0.getNum }}</td>
+                    <td class="py-2 align-middle text-center text-decoration-line-through" scope="col"><input type="checkbox" name="" value="" class="form-check-input freeze-ignore deleted-item" disabled /></td>
+                    <td class="py-2 align-middle text-decoration-line-through" scope="col"><input type="number" value="{{ rest }}" class="form-control form-control-sm freeze-ignore" min="1" max="{{ rest }}" disabled /></td>
+                    <td class="align-middle text-center text-xsmall text-decoration-line-through">{{ material.0.getAmount }} {{ material.0.getUnit.getTitle }} / {{ count }} {{ material.0.getUnit.getTitle }}</td>
+                    <td class="align-middle text-xsmall text-decoration-line-through">{{ material.0.getTitle }}</td>
+                    <td class="align-middle text-xsmall text-decoration-line-through">{{ toe }}</td>
+                    <td class="align-middle text-xsmall text-decoration-line-through">{% if material.username == null %}<span class="text-muted">Не назначен</span>{% else %}{{ material.username }}{% endif %}</td>
+                </tr>
+            {% else %}
+                {% if material.0.getAmount - count == 0 %}
+                {# Данная позиция уже полностью закрыта другими счетами #}
+                <tr>
+                    <td class="align-middle text-center text-xsmall">{{ material.0.getNum }}</td>
+                    <td class="py-2 align-middle text-center" scope="col"><input type="checkbox" name="material[]" value="{{ material.0.getId }}" class="form-check-input is-valid freeze-ignore" checked disabled /></td>
+                    <td class="py-2 align-middle" scope="col"><input type="number" name="" value="{{ rest }}" class="amount-input form-control form-control-sm is-valid freeze-ignore" min="1" max="{{ rest }}" disabled /></td>
+                    <td class="align-middle text-center text-xsmall">{{ material.0.getAmount }} {{ material.0.getUnit.getTitle }} / {{ count }} {{ material.0.getUnit.getTitle }}</td>
+                    <td class="align-middle text-xsmall">{{ material.0.getTitle }}{% if material.0.getUrgency %} <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="Срочная позиция"></i> <span class="text-danger">Срочно</span>{% endif %}</td>
+                    <td class="align-middle text-xsmall">{{ toe }}</td>
+                    <td class="align-middle text-xsmall">{% if material.username == null %}<span class="text-muted">Не назначен</span>{% else %}{{ material.username }}{% endif %}</td>
+                </tr>
+                {% else %}
+                    {% if app.user.id != material.id %}
+                        {# У данной позиции другой ответственный, привязка счета к ней не возможна #}
+                        <tr>
+                            <td class="align-middle text-center text-xsmall">{{ material.0.getNum }}</td>
+                            <td class="py-2 align-middle text-center" scope="col"><input type="checkbox" name="material[]" value="{{ material.0.getId }}" class="form-check-input freeze-ignore" disabled /></td>
+                            <td class="py-2 align-middle" scope="col"><input type="number" name="" value="{{ rest }}" class="amount-input form-control form-control-sm freeze-ignore" min="1" max="{{ rest }}" disabled /></td>
+                            <td class="align-middle text-center text-xsmall">{{ material.0.getAmount }} {{ material.0.getUnit.getTitle }} / {{ count }} {{ material.0.getUnit.getTitle }}</td>
+                            <td class="align-middle text-xsmall">{{ material.0.getTitle }}{% if material.0.getUrgency %} <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="Срочная позиция"></i> <span class="text-danger">Срочно</span>{% endif %}</td>
+                            <td class="align-middle text-xsmall">{{ toe }}</td>
+                            <td class="align-middle text-xsmall">{% if material.username == null %}<span class="text-muted">Не назначен</span>{% else %}{{ material.username }}{% endif %}</td>
+                        </tr>
+                    {% else %}
+                        {# Проверяем, получен ли материал за наличные #}
+                        {% if material.0.getCash %}
+                            {# Наличные #}
+                            <tr>
+                                <td class="align-middle text-center text-xsmall">{{ material.0.getNum }}</td>
+                                <td class="py-2 align-middle text-center" scope="col"><input type="checkbox" name="material[]" value="{{ material.0.getId }}" class="form-check-input is-valid freeze-ignore" checked disabled /></td>
+                                <td class="py-2 align-middle" scope="col"><input type="number" name="" value="{{ material.0.getAmount }}" class="amount-input form-control form-control-sm is-valid freeze-ignore" min="1" max="{{ material.0.getAmount }}" disabled /></td>
+                                <td class="align-middle text-center text-xsmall">{{ material.0.getAmount }} {{ material.0.getUnit.getTitle }} / {{ count }} {{ material.0.getUnit.getTitle }}</td>
+                                <td class="align-middle text-xsmall">{{ material.0.getTitle }}{% if material.0.getUrgency %} <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="Срочная позиция"></i> <span class="text-danger">Срочно</span>{% endif %}</td>
+                                <td class="align-middle text-xsmall">{{ toe }}</td>
+                                <td class="align-middle text-xsmall">{% if material.username == null %}<span class="text-muted">Не назначен</span>{% else %}{{ material.username }}{% endif %}</td>
+                            </tr>
+                        {% else %}
+                            {# Проверяем, возможно материал невозможно поставить #}
+                            {% if material.0.getImpossible %}
+                                {# Невозможно #}
+                                <tr>
+                                    <td class="align-middle text-center text-xsmall text-decoration-line-through">{{ material.0.getNum }}</td>
+                                    <td class="py-2 align-middle text-center text-decoration-line-through" scope="col"><input type="checkbox" name="" value="" class="form-check-input freeze-ignore deleted-item" disabled /></td>
+                                    <td class="py-2 align-middle text-decoration-line-through" scope="col"><input type="number" value="0" class="form-control form-control-sm freeze-ignore" min="1" max="0" disabled /></td>
+                                    <td class="align-middle text-center text-xsmall text-decoration-line-through">{{ material.0.getAmount }} {{ material.0.getUnit.getTitle }} / {{ count }} {{ material.0.getUnit.getTitle }}</td>
+                                    <td class="align-middle text-xsmall text-decoration-line-through">{{ material.0.getTitle }}</td>
+                                    <td class="align-middle text-xsmall text-decoration-line-through">{{ toe }}</td>
+                                    <td class="align-middle text-xsmall text-decoration-line-through">{% if material.username == null %}<span class="text-muted">Не назначен</span>{% else %}{{ material.username }}{% endif %}</td>
+                                </tr>
+                            {% else %}
+                                {# Данная позиция доступна для выбора #}
+                                <tr>
+                                    <td class="align-middle text-center text-xsmall">{{ material.0.getNum }}</td>
+                                    <td class="py-2 align-middle text-center" scope="col">
+                                        <input type="checkbox" name="material[]" value="{{ material.0.getId }}" class="form-check-input bill-select" />
+                                    </td>
+                                    <td class="py-2 align-middle" scope="col">
+                                        <input type="number" name="" value="{{ rest }}" class="amount-input form-control form-control-sm" min="1" max="{{ rest }}" />
+                                    </td>
+                                    <td class="align-middle text-center text-xsmall">{{ material.0.getAmount }} {{ material.0.getUnit.getTitle }} / {{ count }} {{ material.0.getUnit.getTitle }}</td>
+                                    <td class="align-middle text-xsmall">{{ material.0.getTitle }}{% if material.0.getUrgency %} <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="Срочная позиция"></i> <span class="text-danger">Срочно</span>{% endif %}</td>
+                                    <td class="align-middle text-xsmall">{{ toe }}</td>
+                                    <td class="align-middle text-xsmall">{% if material.username == null %}<span class="text-muted">Не назначен</span>{% else %}{{ material.username }}{% endif %}</td>
+                                </tr>
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

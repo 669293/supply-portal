@@ -1,0 +1,229 @@
+{# templates/applications/edit.html.twig #}
+{% extends 'default.html.twig' %}
+
+{# Заголовки #}
+{% block title %}{{ title }}{% endblock %}
+{% block caption %}{{ title }}{% endblock %}
+
+{# Контент #}
+{% block content %}
+<form action="/applications/edit" method="POST" id="saveAppForm">
+    <fieldset>
+        <input type="hidden" name="token" value="{{ csrf_token('edit-application') }}"/>
+        <input type="hidden" name="id" value="{{ application.getId }}"/>
+        <input type="hidden" name="files" value=""/>
+        <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="titleApp" placeholder="Название заявки" name="titleApp" value="{{ application.getTitle }}" />
+            <label for="titleApp">Название заявки</label>
+            <div class="invalid-feedback d-none"></div>
+        </div>
+        <div class="form-floating mb-3">
+            <textarea class="form-control" placeholder="Комментарий" id="commentApp" name="commentApp">{{ application.getComment }}</textarea>
+            <label for="commentApp">Комментарий к заявке</label>
+        </div>
+        <div class="form-floating mb-3">
+            <textarea class="form-control" placeholder="Дополнительный номер заявки" id="additionalNumApp" name="additionalNumApp">{{ application.getNumber }}</textarea>
+            <label for="additionalNumApp">Дополнительный номер заявки</label>
+        </div>
+
+        <h5 class="mb-3 mt-4">Содержимое заявки</h5>
+        <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-1 pb-3">
+            <table class="table table-sm table-bordered table-striped mb-0 us-none" style="min-width: 900px;" id="materialsTable">
+                <thead>
+                    <tr>
+                        <th class="py-2 align-middle text-center text-xsmall" scope="col" style="width: 50px;">№</th>
+                        <th class="py-2 align-middle text-xsmall" scope="col">Наименование</th>
+                        <th class="py-2 align-middle text-nowrap text-xsmall" scope="col" style="width: 120px;">Ед.изм.</th>
+                        <th class="py-2 align-middle text-xsmall" scope="col" style="width: 100px;">Кол-во</th>
+                        <th class="py-2 align-middle text-nowrap text-xsmall" scope="col">Вид техники</th>
+                        <th class="py-2 align-middle text-nowrap text-xsmall" scope="col">Уточнение</th>
+                        <th class="text-center align-middle" style="width: 120px;">
+                            <div class="form-switch mb-1" style="line-height: 1.3!important;">
+                                <input class="form-check-input" type="checkbox" id="urgent0">
+                                <label class="form-check-label text-xsmall text-black-50 ms-1 us-none fw-normal" for="urgent0">Срочно</label>
+                            </div>
+                        </th>
+                        <th class="text-center align-middle" style="width: 50px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+{% for material in materials %}
+    {% if material.getIsDeleted %}
+                <tr>
+                    <td class="align-middle text-center text-xsmall text-decoration-line-through">{{ material.getNum }}</td>
+                    <td class="align-middle text-decoration-line-through">
+                        <input class="form-control form-control-sm material-autocomplete deleted" type="text" value="{{ material.getTitle }}" name="titleContentApp[]" disabled />
+                        <input type="hidden" name="idContentApp[]" value="{{ material.getId }}" disabled />
+                    </td>
+                    <td class="align-middle text-center text-decoration-line-through">
+                        <select class="form-select form-select-sm deleted" name="unitContentApp[]" disabled>
+{% for unit in units %}
+    {% if unit.getId == material.getUnit.getId %}
+                            <option value="{{ unit.getId }}" selected="selected">{{ unit.getTitle }}</option>
+    {% else %}
+                            <option value="{{ unit.getId }}">{{ unit.getTitle }}</option>
+    {% endif %}
+{% endfor %}
+                        </select>
+                    </td>
+                    <td class="align-middle text-decoration-line-through"><input class="form-control form-control-sm deleted" type="number" value="{{ material.getAmount }}" name="amountContentApp[]" disabled /></td>
+                    <td class="align-middle text-decoration-line-through" style="position: relative;"><input class="form-control form-control-sm toe-autocomplete deleted" type="text" name="typeOfEquipmentContentApp[]" value="{% if material.getTypeOfEquipment != null %}{{ material.getTypeOfEquipment.getTitle }}{% endif %}" autocomplete="off" disabled /></td>
+                    <td class="align-middle text-decoration-line-through"><input class="form-control form-control-sm deleted" type="text" name="commentContentApp[]" value="{{ material.getComment }}" autocomplete="off" disabled /></td>
+                    <td class="text-center align-middle">
+                        <div class="form-switch mb-1" style="line-height: 1.3!important;">
+                            <input type="hidden" name="disabledRowsContentApp[]" value="{{ material.getNum }}" />
+                            <input class="form-check-input urgent deleted" type="checkbox" id="urgent{{ material.getNum }}" name="urgentContentApp[]" value="{{ material.getNum }}"{% if material.getUrgency %} checked="checked" {% endif %} disabled />
+                            <label class="form-check-label text-xsmall text-black-50 ms-1 us-none" for="urgent{{ material.getNum }}">Срочно</label>
+                        </div>
+                    </td>
+                    <td class="text-center align-middle">
+                        <i class="bi bi-arrow-repeat text-success fs-6 repeat-row" data-id="{{ material.getId }}"></i>
+                        <div class="spinner-border spinner-border-sm text-primary d-none" role="status"><span class="visually-hidden">Загрузка...</span></div>
+                    </td>
+                </tr>
+    {% else %}
+                <tr>
+                    <td class="align-middle text-center text-xsmall">{{ material.getNum }}</td>
+                    <td class="align-middle">
+                        <input class="form-control form-control-sm material-autocomplete" type="text" value="{{ material.getTitle }}" name="titleContentApp[]" />
+                        <input type="hidden" name="idContentApp[]" value="{{ material.getId }}" />
+                    </td>
+                    <td class="align-middle text-center">
+                    <select class="form-select form-select-sm" name="unitContentApp[]">
+{% for unit in units %}
+    {% if unit.getId == material.getUnit.getId %}
+                            <option value="{{ unit.getId }}" selected="selected">{{ unit.getTitle }}</option>
+    {% else %}
+                            <option value="{{ unit.getId }}">{{ unit.getTitle }}</option>
+    {% endif %}
+{% endfor %}
+                    </select>
+                    </td>
+                    <td class="align-middle"><input class="form-control form-control-sm" type="number" value="{{ material.getAmount }}" name="amountContentApp[]" /></td>
+                    <td class="align-middle" style="position: relative;"><input class="form-control form-control-sm toe-autocomplete" type="text" name="typeOfEquipmentContentApp[]" value="{% if material.getTypeOfEquipment != null %}{{ material.getTypeOfEquipment.getTitle }}{% endif %}" autocomplete="off" /></td>
+                    <td class="align-middle"><input class="form-control form-control-sm" type="text" name="commentContentApp[]" value="{{ material.getComment }}" autocomplete="off" /></td>
+                    <td class="text-center align-middle">
+                        <div class="form-switch mb-1" style="line-height: 1.3!important;">
+                            <input class="form-check-input shift-control urgent" type="checkbox" id="urgent{{ material.getNum }}" name="urgentContentApp[]" value="{{ material.getNum }}"{% if material.getUrgency %} checked="checked" {% endif %} />
+                            <label class="form-check-label text-xsmall text-black-50 ms-1 us-none" for="urgent{{ material.getNum }}">Срочно</label>
+                        </div>
+                    </td>
+                    <td class="text-center align-middle">
+                        <i class="bi bi-trash text-danger fs-6 delete-row delete-database" data-id="{{ material.getId }}"></i>
+                        <div class="spinner-border spinner-border-sm text-primary d-none" role="status"><span class="visually-hidden">Загрузка...</span></div>
+                    </td>
+                </tr>
+    {% endif %}
+{% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <button type="button" class="btn btn-outline-secondary btn-sm mb-4" id="addRowBtn"><i class="bi bi-plus-lg"></i> Добавить строку</button>
+
+        <h5 class="mb-3">Дополнительные файлы</h5>
+
+        <div class="mb-4">
+            <div class="file-loading">
+                <input id="attach" type="file" name="filesApp[]" multiple="multiple" />
+            </div>
+            <div class="clearfix"></div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                Прочие параметры
+            </div>
+            <div class="card-body">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="yearApplication" name="yearApplication" value="1"{% if application.getIsYear %} checked="checked" {% endif %} />
+                    <label class="form-check-label us-none" for="yearApplication">Годовая заявка</label>
+                </div>
+            </div>
+        </div>
+
+{% if users is defined %}
+    <div class="form-floating mb-3">
+        <select class="form-select" id="userSelect" name="user">
+    {% for user in users %}
+        {% if user.getId == application.getAuthor.getId %}
+            <option value="{{ user.getId }}" selected="selected">{{ user.getUsername }}</option>
+        {% else %}
+            <option value="{{ user.getId }}">{{ user.getUsername }}</option>
+        {% endif %}
+    {% endfor %}
+        </select>
+        <label for="userSelect">Пользователь, от имени которого добавляется заявка</label>
+    </div>
+{% endif %}
+    </fieldset>
+
+    <div class="clearfix"></div>
+
+    <button type="button" class="btn btn-outline-primary mb-5 me-2" id="sendBtn">Сохранить</button>
+    <button type="button" class="btn btn-outline-secondary mb-5 me-2" onclick="location.href='/applications/';">Отмена</button>
+    <div class="spinner-border text-primary d-none" role="status" style="margin-bottom: 0.8rem!important;"><span class="visually-hidden">Обработка...</span></div>
+</form>
+{% endblock %}
+
+{# Скрипты #}
+{% block scripts %}
+    <script src="{{ asset('js/jquery.autocomplete.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/fileinput.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/fileinput.ru.js') }}" type="text/javascript"></script>
+    <script type="text/javascript">
+{% if files is defined and files|length > 0 %}
+        var params = {
+            initialPreview: [
+{% for file in files %}
+    {% if file.type == 'image' %}
+        '<img src="{{ url('index') }}upload/applications/{{ file.path }}" class="file-preview-image" alt="" />',
+    {% else %}
+        '{{ url('index') }}upload/applications/{{ file.path }}',
+    {% endif %}
+{% endfor %}
+            ],
+            initialPreviewAsData: true,
+            initialPreviewConfig: [
+{% for file in files %}
+    {% if file.type == 'image' %}
+        {type: '{{ file.type }}', caption: '{{ file.name }}', downloadUrl: '{{ url('index') }}upload/applications/{{ file.path }}', size: {{ file.size }}, key: {{ file.key }}, previewAsData: false },
+    {% else %}
+        {type: '{{ file.type }}', caption: '{{ file.name }}', downloadUrl: '{{ url('index') }}upload/applications/{{ file.path }}', size: {{ file.size }}, key: {{ file.key }} },
+    {% endif %}
+{% endfor %}
+            ],
+            browseClass: 'btn btn-outline-secondary',
+            overwriteInitial: false,
+            language: 'ru',
+            uploadUrl: '/applications/upload-file',
+            deleteUrl: '/applications/delete-file',
+            maxFileSize: 10240,
+            fileActionSettings: {
+                showRemove: true,
+                showUpload: false,
+                showZoom: true,
+                showDrag: false,
+            }
+        };
+{% else %}
+        var params = {
+            browseClass: 'btn btn-outline-secondary',
+            language: 'ru',
+            uploadUrl: '/applications/upload-file',
+            maxFileSize: 10240,
+            fileActionSettings: {
+                showRemove: true,
+                showUpload: false,
+                showZoom: true,
+                showDrag: false,
+            }
+        };
+{% endif %}
+    </script>
+    <script src="{{ asset('js/applications/applications.js') }}" type="text/javascript"></script>
+{% endblock %}
+
+{# Стили #}
+{% block css %}
+    <link href="{{ asset('css/fileinput.css') }}" rel="stylesheet">
+{% endblock %}

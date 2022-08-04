@@ -1,0 +1,228 @@
+{# templates/bills/upload.html.twig #}
+{% extends 'default.html.twig' %}
+
+{# Заголовки #}
+{% block title %}{{ title }}{% endblock %}
+{% block caption %}{{ title }}{% endblock %}
+
+{# Контент #}
+{% block content %}
+    {% if applications|length == 0 %}
+        <p class="text-muted">По Вашим заявкам все счета уже загружены</p>
+    {% else %}
+        <div id="scrollDown">
+            <i class="bi bi-chevron-compact-down"></i>
+        </div>
+        <form class="mb-2" action="/applications/bills/upload" method="POST">
+            <fieldset>
+                <input type="hidden" name="token" value="{{ csrf_token('upload-bill') }}"/>
+                <input type="hidden" name="billFilePath" value="" />
+                <input type="hidden" id="billCurrency" name="billCurrency" value="руб." />
+                <div class="container-fluid w-100 overflow-scroll px-0 mb-2">
+                    <table class="table table-borderless">
+                        <tbody>
+                            <tr>
+                                <td class="ps-0"><label for="billFileInput">Файл</label></td>
+                                <td>
+                                    <div class="file-loading"><input id="billFileInput" name="billFile" type="file" data-allowed-file-extensions='["pdf", "jpg", "jpeg", "png"]' /></div>
+                                    <div class="form-text mt-0">Поддерживаются файлы PDF и изображения</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="ps-0"><label for="innInput">ИНН</label></td>
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input id="innInput" type="text" name="innInput" class="form-control form-control-sm numbersOnly" />
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" aria-expanded="false" data-bs-toggle="modal" data-bs-target="#innModal">Выбрать</button>
+                                    </div>
+                                    <div class="form-text mt-0">ИНН поставщика</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-nowrap px-0"><label for="billNumInput">Номер</label></td>
+                                <td><input id="billNumInput" name="billNumInput" type="text" class="form-control form-control-sm" /><div class="form-text mt-0">Номер спецификации или счета (используется для контроля оплаты)</div></td>
+                            </tr>
+                            <tr>
+                                <td class="ps-0"><label for="billSumInput">Сумма</label></td>
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input id="billSumInput" name="billSumInput" type="text" class="form-control form-control-sm numbersOnly" />
+                                        <label class="input-group-text" for="billSumInput" id="currencyLabel">руб.</label>
+                                        <button type="button" class="btn btn-sm btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false"></button>
+                                        <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item currency" href="#?">руб.</a></li>
+                                        <li><a class="dropdown-item currency" href="#?">&dollar;</a></li>
+                                        <li><a class="dropdown-item currency" href="#?">&euro;</a></li>
+                                        </ul>
+                                    </div>
+                                    <div class="form-text mt-0">Итого к оплате по счету/спецификации (используется для контроля оплаты)</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-nowrap px-0"><label for="billDateInput">Дата поставки</label></td>
+                                <td><input id="billDateInput" name="billDateInput" type="date" class="form-control form-control-sm" /><div class="form-text mt-0">Прогнозируемая поставка ТМЦ по счету на склад заказчика</div></td>
+                            </tr>
+                            <tr>
+                                <td class="text-nowrap px-0"><label for="billNoteInput">Комментарий</label></td>
+                                <td><input id="billNoteInput" name="billNoteInput" type="text" class="form-control form-control-sm" /><div class="form-text mt-0">Комментарий к счету</div></td>
+                            </tr>
+                            <tr>
+                                <td class="text-nowrap px-0"><label for="billCommentInput">Доп. информация</label></td>
+                                <td><input id="billCommentInput" name="billCommentInput" type="text" class="form-control form-control-sm" /><div class="form-text mt-0">Дополнительная информация (номер спецификации, номер счета)</div></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h5 class="mb-3" id="mark">Привязка к позициям в заявке</h5>
+                <div class="container-fluid w-100 overflow-scroll px-0 mb-4">
+                    <div class="accordion" id="applicationsAccordion">
+                    {% for application in applications %}
+                        {% set collapsed = true %}
+                        {% if app.request.query.all['application'] is defined and app.request.query.all['application'] == application.getId %}
+                            {% set collapsed = false %}
+                            <script type="text/javascript">
+                                var notCollapsedId = {{ application.getId }};
+                            </script>
+                        {% endif %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading{{ application.getId }}">
+                                <button class="accordion-button{% if collapsed == true %} collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ application.getId }}" aria-expanded="false" aria-controls="collapse{{ application.getId }}">
+                                    <div class="d-flex w-100">
+                                        <div>
+                                            {{ application.getTitle }}{% if application.urgency %}<i class="bi bi-exclamation-triangle text-danger ms-2" data-bs-toggle="tooltip" data-bs-placement="right" title="В заявке есть срочные позиции"></i>{% endif %}
+                                            <br /><span class="text-muted text-small">№{{ application.getId }} от {{ application.getDateCreate|date('d.m.Y') }}</span>
+                                        </div>
+                                        <div class="d-none d-sm-block ms-auto align-middle text-end">
+                                            <span class="text-muted me-3 text-small">Отправитель: {{ application.getAuthor.getShortUsername }}</span><br />
+                                            {% if application.responsibles != null %}
+                                                <span class="text-muted me-3 text-small">Ответственные: 
+                                                {% for responsible in application.responsibles %}
+                                                    {{ responsible.getShortUsername }}
+                                                    {% if not loop|last %}, {% endif %}
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="text-muted me-3 text-small">Ответственные: Не назначены</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </button>
+                            </h2>
+                            <div id="collapse{{ application.getId }}" data-id="{{ application.getId }}" class="accordion-collapse{% if collapsed == true %} collapse{% endif %}" aria-labelledby="heading{{ application.getId }}">
+                                <div class="accordion-body">
+                                    <div class="spinner-border spinner-border-sm text-primary me-1" role="status" aria-hidden="true"></div> <span class="text-muted">Секундочку, идет загрузка...</span>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    </div>
+                </div>
+            </fieldset>
+
+            {% if applications|length > 0 %}
+                <button type="button" id="sendBtn" class="btn btn-outline-primary mb-4 me-2" disabled>Загрузить</button>
+                <button type="button" onclick="location.href='/applications';" class="btn btn-outline-secondary mb-4">Отмена</button>
+                <div class="spinner-border text-primary ms-2 d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
+            {% endif %}
+        </form>
+    {% endif %}
+{% endblock %}
+
+{# Модальные окна #}
+{% block modal %}
+    <div class="modal fade" id="innModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="/applications" method="POST" id="filterForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Выбор поставщика</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="modal-body">
+                        <select id="innSelect" class="selectpicker with-ajax w-100" data-live-search="true"></select>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                      <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="setBtn">Применить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{# Скрипты #}
+{% block scripts %}
+    <script src="{{ asset('js/fileinput.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/fileinput.ru.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/fileinput.theme.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/bills/upload.js') }}" type="text/javascript"></script>
+    <script type="text/javascript">
+        //Правка вставляемого значения суммы
+        window.onload = function() {
+            var billSumInput = document.getElementById('billSumInput');
+            billSumInput.addEventListener('input', function() {
+                checkBullSum(billSumInput);
+            });
+        }
+
+        function checkBullSum(input) {
+            var newValue = input.value.replace(/,/g, '.').replace(/[^\.\d]/g, '');
+            if (input.value != newValue) {input.value = newValue;}
+        }
+
+        $(document).ready(function() {
+            //Инициализация поля для поиска поставщика
+            $('#innSelect').selectpicker().ajaxSelectPicker({
+                ajax: {
+                    url: '/autocomplete/provider', 
+                    type: 'GET',
+                    dataType: 'json',
+                    data: {
+                    q: '{{ '{{{' }}q{{ '}}}' }}'
+                    }
+                },
+                locale: {
+                    emptyTitle: 'Введите название или ИНН'
+                },
+                preserveSelected: false,
+                preprocessData: function (data) {
+                    var i, l = data.length, array = [];
+                    if (l) {
+                        for (i = 0; i < l; i++) {
+                            array.push($.extend(true, data[i], {
+                                text : data[i].Title,
+                                value: data[i].Inn,
+                                data : {
+                                    subtext: data[i].Inn
+                                }
+                            }));
+                        }
+                    }
+
+                    return array;
+                }
+            });
+
+            if (typeof notCollapsedId !== 'undefined') {
+                // Подгружаем информацию по позициям заявки
+                $(document).ready(function() {
+                    var id = notCollapsedId;
+
+                    $.post('/applications/bills/show-materials', {id: id})
+                    .done(function(data) {
+                        $('#collapse' + id + ' .accordion-body').html(data);
+                        $('.deleted-item').prop('indeterminate', true);
+                    }).fail(function() {
+                        $('#collapse' + id + ' .accordion-body').html('<i class="bi bi-x-circle text-danger"></i> Произошла ошибка при загрузке материалов по данной заявке. Попробуйте обновить страницу и попробовать еще раз.');
+                    });
+                });
+            }
+        });
+    </script>
+{% endblock %}
+
+{# Стили #}
+{% block css %}
+    <link href="{{ asset('css/fileinput.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/fileinput.theme.min.css') }}" rel="stylesheet">
+{% endblock %}

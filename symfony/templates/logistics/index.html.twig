@@ -1,0 +1,109 @@
+{# templates/logistics/index.html.twig #}
+{% extends 'default.html.twig' %}
+
+{# Заголовки #}
+{% block title %}{{ title }} ({{ app.user.getOffice.getTitle }}){% endblock %}
+{% block caption %}{{ title }} ({{ app.user.getOffice.getTitle }}){% endblock %}
+
+
+{# Контент #}
+{% block content %}
+  <ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab_incoming" type="button" role="tab">Ожидается получение</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab_instock" type="button" role="tab">Получено</button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+    <div class="tab-pane fade show active" id="tab_incoming" role="tabpanel">
+      {% if incoming|length == 0 %}
+        <p class="text-muted p-2 pt-0">Нет грузов</p>
+      {% else %}
+        <table class="table table-sm table-hover table-bordered table-striped mb-0 us-none">
+          <thead>
+              <tr>
+                  <th class="py-2 align-middle text-center text-small" scope="col" style="width: 40px;">№</th>
+                  <th class="py-2 align-middle text-small w-auto" scope="col">Поставщик</th>
+                  <th class="py-2 align-middle text-small" scope="col">Информация по грузу</th>
+                  <th class="py-2 align-middle text-small w-auto" scope="col"></th>
+              </tr>
+          </thead>
+          <tbody>
+            {% for row in incoming %}
+              <tr>
+                  <td class="py-2 align-middle text-center text-small" scope="col">{{ loop.index }}</td>
+                  <td class="py-2 align-middle text-small" scope="col">
+                    {# Получаем информацию по отправителям #}
+                    {% for bill in row.bills %}
+                      {% if bill.provider != null and bill.provider.getTitle != '' %}
+                        <p{% if row.bills|length > 1 and not loop.last %} class="pb-2 mb-2" style="border-bottom: 1px dotted #DFE2E6;"{% else %} class="mb-0"{% endif %}><span class="text-muted">Наименование:</span> {{ bill.provider.getTitle }}</p>
+                      {% else %}
+                        <p{% if row.bills|length > 1 and not loop.last %} class="pb-2 mb-2" style="border-bottom: 1px dotted #DFE2E6;"{% else %} class="mb-0"{% endif %}><span class="text-muted">ИНН:</span> {{ bill.getInn }}</p>
+                      {% endif %}
+                    {% endfor %}
+                  </td>
+                  <td class="py-2 align-middle text-small" scope="col">
+                    {{ row.getDate|date('d.m.Y') }} ({{ row.getUser.getShortUserName }})
+                    {% if row.getWay != '' %}<br />{{ row.getWay }}{% if row.getTrack != '' %} <i class="bi bi-arrow-right text-muted"></i> {{ row.getTrack }}{% endif %}{% endif %}
+                  </td>
+                  <td class="py-2 align-middle text-center text-small w-auto" scope="col">
+                    <button type="button" onclick="location.href='/applications/logistics/view?id={{ row.getId }}';" class="btn btn-sm btn-outline-primary text-nowrap"><i class="bi bi-search"></i> Просмотр</button>
+                  </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+    <div class="tab-pane fade" id="tab_instock" role="tabpanel">
+      {% if instock|length == 0 %}
+        <p class="text-muted p-2 pt-0">Нет грузов</p>
+      {% else %}
+        <table class="table table-sm table-hover table-bordered table-striped mb-0 us-none">
+          <thead>
+              <tr>
+                  <th class="py-2 align-middle text-center text-small" scope="col" style="width: 40px;">№</th>
+                  <th class="py-2 align-middle text-small w-auto" scope="col">Поставщик</th>
+                  <th class="py-2 align-middle text-small" scope="col">Информация по грузу</th>
+                  <th class="py-2 align-middle text-small w-auto" scope="col"></th>
+              </tr>
+          </thead>
+          <tbody>
+            {% for row in instock %}
+              <tr>
+                  <td class="py-2 align-middle text-center text-small" scope="col">{{ loop.index }}</td>
+                  <td class="py-2 align-middle text-small" scope="col">
+                    {# Получаем информацию по отправителям #}
+                    {% for bill in row.bills %}
+                      {% if bill.provider != null and bill.provider.getTitle != '' %}
+                        <p{% if row.bills|length > 1 and not loop.last %} class="pb-2 mb-2" style="border-bottom: 1px dotted #DFE2E6;"{% else %} class="mb-0"{% endif %}><span class="text-muted">Наименование:</span> {{ bill.provider.getTitle }}</p>
+                      {% else %}
+                        <p{% if row.bills|length > 1 and not loop.last %} class="pb-2 mb-2" style="border-bottom: 1px dotted #DFE2E6;"{% else %} class="mb-0"{% endif %}><span class="text-muted">ИНН:</span> {{ bill.getInn }}</p>
+                      {% endif %}
+                    {% endfor %}
+                  </td>
+                  <td class="py-2 align-middle text-small" scope="col">
+                    {{ row.getDate|date('d.m.Y') }} ({{ row.getUser.getShortUserName }})
+                    {% if row.getWay != '' %}<br />{{ row.getWay }}{% if row.getTrack != '' %} <i class="bi bi-arrow-right text-muted"></i> {{ row.getTrack }}{% endif %}{% endif %}
+                  </td>
+                  <td class="py-2 align-middle text-center text-small w-auto" scope="col">
+                    <button type="button" onclick="location.href='/applications/logistics/view?id={{ row.getId }}';" class="btn btn-sm btn-outline-primary text-nowrap"><i class="bi bi-search"></i> Просмотр</button>
+                  </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+
+{# Скрипты #}
+{% block scripts %}
+  {% if scripts is defined %}
+{{ scripts|raw }}
+  {% endif %}
+{% endblock %}

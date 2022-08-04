@@ -1,0 +1,480 @@
+{# templates/bills/view.html.twig #}
+{% extends 'default.html.twig' %}
+
+{# Получаем роли пользователя #}
+{% set roles = app.user.getroles(TRUE) %}
+
+{# Заголовки #}
+{% block title %}{{ title }}{% endblock %}
+{% block caption %}{{ title }}{% endblock %}
+
+{# Контент #}
+{% set avalibleMaterials = 0 %}
+{% block content %}
+    <div class="alert {{ statuses.0.status.getClassView }} alert-dismissible fade show" role="alert">
+        <i class="bi {{ statuses.0.status.getIcon }}"></i> {{ statuses.0.status.getTitle }}
+    </div>
+    <form action="/applications/bills/in-work/view" method="POST" id="saveBillForm">
+        <input type="hidden" name="token" value="{{ csrf_token('view-bill') }}"/>
+        <input type="hidden" name="bid" value="{{ bill.getId }}"/>
+        <input type="hidden" name="files" value=""/>
+        <input type="hidden" name="photos" value=""/>
+        <fieldset>
+            <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-4">
+                <table class="table" style="min-width: 900px;">
+                    <tbody>
+                        <tr>
+                            <td style="width: 200px!important;"><i class="bi bi-calendar3 text-muted me-1"></i> <strong>Даты</strong></td>
+                            <td>
+                                {% if statuses|length > 3 %}
+                                    <p class="mb-0">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#statusesDates" aria-expanded="false" aria-controls="statusesDates">Показать историю изменения статусов</button>
+                                    </p>
+                                    <div class="collapse mt-3" id="statusesDates">
+                                        {% for status in statuses %}
+                                            {% if not loop.first %}<br />{% endif %}<span class="text-muted">{{ status.status.getTitle }}:</span> {{ status.datetime|date('d.m.Y') }}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {% for status in statuses %}
+                                        {% if not loop.first %}<br />{% endif %}<span class="text-muted">{{ status.status.getTitle }}:</span> {{ status.datetime|date('d.m.Y') }}
+                                    {% endfor %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><i class="bi bi-person text-muted me-1"></i> <strong>Ответственный</strong></td>
+                            <td>{{ bill.getUser.getUsername }}</td>
+                        </tr>
+                        <tr>
+                            <td><i class="bi bi-briefcase text-muted me-1"></i> <strong>Поставщик</strong></td>
+                            <td>
+                                <div id="provider-info">
+                                    <table>
+                                        <tbody>
+                                            {% if provider != null and provider.getTitle != '' %}
+                                                <tr>
+                                                    <td class="text-muted pe-2">Наименование:</td>
+                                                    <td>{{ provider.getTitle }}</td>
+                                                </tr>
+                                            {% endif %}
+                                            <tr>
+                                                <td class="text-muted pe-2">ИНН:</td>
+                                                <td>{{ bill.getinn }}</td>
+                                            </tr>
+                                            {% if provider != null and provider.getAddress != '' %}
+                                                <tr>
+                                                    <td class="text-muted pe-2">Почтовый адрес:</td>
+                                                    <td>{{ provider.getAddress }}</td>
+                                                </tr>
+                                            {% endif %}
+                                            {% if provider != null and provider.getPhone != '' %}
+                                                <tr>
+                                                    <td class="text-muted pe-2">Телефон:</td>
+                                                    <td>{{ provider.getPhone }}</td>
+                                                </tr>
+                                            {% endif %}
+                                            {% if provider != null and provider.getComment != '' %}
+                                                <tr>
+                                                    <td class="text-muted pe-2 align-top">Комментарий:</td>
+                                                    <td>{{ provider.getComment|nl2br }}</td>
+                                                </tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {% if 'ROLE_SUPERVISOR' in roles or app.user.getId == bill.getUser.getId %}
+                                    <button type="button" class="btn btn-sm btn-outline-secondary text-start mt-2" data-bs-toggle="modal" data-bs-target="#providerModal"><i class="bi bi-pencil"></i> Редактировать информацию</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-nowrap"><i class="bi {{ billobj.icon }} text-muted me-1"></i> <strong>Счет</strong></td>
+                            <td>
+                                {% set fileId = 0 %}
+                                <button type="button" data-id="thumb-attachments-init-{{ fileId }}" class="btn {{ billobj.class }} btn-sm text-truncate text-start filePreview"><i class="bi {{ billobj.icon }}"></i> {{ billobj.title }}</button>
+                                {% set fileId = fileId + 1 %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-nowrap"><i class="bi bi-file-earmark-image text-muted me-1"></i> <strong>Заявки</strong></td>
+                            <td>
+                                {% if applications is empty %}
+                                    <span class="text-black-50">Нет заявки</span>
+                                {% else %}
+                                    {% for application in applications %}
+                                        {% if not loop.first %}<br />{% endif %}<a role="button" href="/applications/view?number={{ application.getId }}" class="btn btn-sm btn-outline-primary text-start{% if not loop.first %} mt-2{% endif %}">№{{ application.getId }} от {{ application.getDateCreate|date('d.m.Y') }}</a>
+                                    {% endfor %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% if documents != null and documents|length > 0 %}
+                        <tr>
+                            <td class="text-nowrap"><i class="bi bi-paperclip text-muted me-1"></i> <strong>Документы</strong></td>
+                            <td>
+                                {% for document in documents %}
+                                    <div class="btn-group{% if not loop.first %} mt-2{% endif %}" role="group">
+                                        <button type="button" data-id="thumb-attachments-init-{{ fileId }}" class="w-100 btn btn-sm {{ document.class }} filePreview text-start"><i class="bi {{ document.icon }}"></i> {{ document.title }}</button>
+                                        <a class="kv-file-download btn btn-sm btn-kv btn-default {{ document.class }}" title="Скачать файл" href="/upload/documents/{{ document.path }}" target="_blank" style="width: 30px!important;"><i class="bi-download"></i></a>
+                                        {% if 'ROLE_SUPERVISOR' in roles or app.user.getId == document.user %}
+                                            <button type="button" class="btn btn-sm btn-danger remove-document-btn" data-id="{{ document.id }}" data-name="{{ document.name }}"><i class="bi bi-x"></i></button>
+                                        {% endif %}
+                                    </div><div class="clearfix"></div>
+                                    {% set fileId = fileId + 1 %}
+                                {% endfor %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% if bill.getNote != '' %}
+                            <tr>
+                                <td><i class="bi bi-chat-left-text text-muted me-1"></i> <strong>Комментарий</strong></td>
+                                <td>{{ bill.getNote }}</td>
+                            </tr>
+                        {% endif %}
+                        <tr>
+                            <td><i class="bi bi-geo-alt text-muted me-1"></i> <strong>Логистика</strong></td>
+                            <td>
+                                {# Строим логистическое дерево #}
+                                {% if matrix|length == 0 %}
+                                    <span class="text-muted">Нет информации</span>
+                                {% else %}
+                                    <table class="table w-auto mb-0 table-borderless" id="logTable">
+                                        <tbody>
+                                            {% set arrowcnt = 1 %}
+                                            {% for row in matrix %}
+                                                <tr>
+                                                    {% for cell in row %}
+                                                        {% set arrowid = loop.index %}
+                                                        {% if not loop.first %}
+                                                            <td colspan="1" rowspan="{{ prev.rowspan }}" class="p-0 arrowsCell">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="50px" height="0px" class="arrowsContainer">
+                                                                    <defs>
+                                                                        <marker id="arrowhead{{ arrowid }}" viewBox="0 0 10 10" refX="5" refY="5"
+                                                                            markerWidth="12" markerHeight="8" orient="auto" fill="#6c757d">
+                                                                            <path d="M 0 0 L 10 5 L 0 10 z" />
+                                                                        </marker>
+                                                                    </defs>
+                                                                    <g fill="none" stroke-width="1" marker-end="url(#arrowhead{{ arrowid }})" data-id="{{ prev.value.logistics.getId }}">
+                                                                        {% for arrow in range(1, prev.children) %}
+                                                                            {% set arrowcnt = arrowcnt + 1 %}
+                                                                            <path stroke="#6c757d" id="arrow_{{ arrowcnt }}" class="logArrows" />
+                                                                        {% endfor %}
+                                                                    </g>
+                                                                </svg>
+                                                            </td>
+                                                        {% endif %}
+                                                        <td colspan="1" rowspan="{{ cell.rowspan }}" class="align-middle">
+                                                            <a role="button" class="w-100 btn btn-sm text-nowrap {% if cell.value.logistics.getType == 0 %}btn-outline-success{% else %}btn-outline-primary{% endif %} text-start{% if cell.value.parent != null %} parent{{ cell.value.parent.getId }}{% endif %}" href="/applications/logistics/view?id={{ cell.value.logistics.getId }}&bill={{ bill.getId }}">
+                                                                {% if cell.value.logistics.getType == 0 %}Получение{% else %}Отгрузка  <i class="bi bi-arrow-right"></i>{% endif %} {{ cell.value.logistics.getOffice.getTitle }} ({{cell.value.materials}})
+                                                                {% if cell.value.logistics.getWay != '' %}<br />{{ cell.value.logistics.getWay }}{% if cell.value.logistics.getTrack != '' %}: {{ cell.value.logistics.getTrack }}{% endif %}{% endif %}
+                                                                <br />{{ cell.value.logistics.getDate|date('d.m.Y') }}
+                                                            </a>
+                                                        </td>
+                                                        {% set prev = cell %}
+                                                    {% endfor %}
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><i class="bi bi-chat-left-text text-muted me-1"></i> <strong>Доп. информация</strong></td>
+                            <td>
+                                <span class="text-black-50{% if bill.getComment is not empty %} d-none{% endif %}" id="comment-info-none">Нет информации</span>
+                                <div id="comment-info">{{ bill.getComment }}</div>
+                                {% if 'ROLE_SUPERVISOR' in roles or app.user.getId == bill.getUser.getId %}
+                                    <div class="clearfix"><button type="button" class="btn btn-sm btn-outline-secondary text-start mt-2" data-bs-toggle="modal" data-bs-target="#commentModal"><i class="bi bi-pencil"></i> Редактировать информацию</button></div>
+                                {% endif %}    
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            {% if 'ROLE_SUPERVISOR' in roles or app.user.getId == bill.getUser.getId %}
+                <div id="documentsInput">
+                    <h5 class="mb-3">Загрузка документов</h5>
+                    <div class="mb-4">
+                        <div class="file-loading">
+                            <input id="attach" type="file" name="filesApp[]" multiple="multiple" />
+                        </div>
+                        <div class="clearfix"></div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
+                <h5 class="mb-3">Отгрузка/получение материалов по счету</h5>
+            {% else %}
+                <h5 class="mb-3">Материалы в счете</h5>
+            {% endif %}
+            <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-0">
+                <table class="table table-sm table-bordered table-striped table-hover mb-0" style="min-width: 900px;">
+                    <thead>
+                        <tr>
+                            <th class="py-2 align-middle text-center text-small" scope="col" style="width: 50px;">№</th>
+                            {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
+                                <th class="py-2 align-middle text-center" scope="col" style="width: 50px;"><input class="form-check-input material-select-all" type="checkbox" name="" value="" /></th>
+                                <th class="py-2 align-middle text-small text-nowrap" scope="col" style="width: 150px;">К отгрузке/получению</th>
+                            {% endif %}
+                            <th class="py-2 align-middle text-small" scope="col">Наименование</th>
+                            <th class="py-2 align-middle text-center text-small text-nowrap" scope="col" style="width: 150px;">Получено / В заявке</th>
+                            <th class="align-middle text-small">Ответственный</th>
+                            <th class="align-middle text-small">Заявка</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for material in materials %}
+                        {% set checked = '' %}
+                        {% if material.amount <= material.recieved %}{% set checked = ' checked' %}{% endif %}
+                        {% if material.getMaterial.getIsDeleted %}
+                            <tr class="text-muted">
+                                <td class="align-middle text-center text-xsmall text-decoration-line-through">{{ loop.index }}</td>
+                                {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
+                                    <td class="align-middle text-center"><input class="form-check-input freeze-ignore" type="checkbox" name="" value="" disabled{{ checked }} /></td>
+                                    <td class="align-middle text-center"><input type="number" name="" value="{{ material.amount - material.recieved }}" class="amount-input form-control form-control-sm freeze-ignore" min="1" max="{{ material.amount - material.recieved }}" disabled /></td>
+                                {% endif %}
+                                <td class="align-middle text-decoration-line-through text-xsmall">{{ material.getMaterial.getTitle }}</td>
+                                <td class="align-middle text-start text-decoration-line-through text-xsmall">{{ material.recieved }} {{ material.getMaterial.getUnit.getTitle }} / {{ material.getMaterial.getAmount }} {{ material.getMaterial.getUnit.getTitle }}</td>
+                                <td class="align-middle text-decoration-line-through text-xsmall">{% if material.getMaterial.getResponsible != null %}{{ material.getMaterial.getResponsible.getShortUserName }}{% else %}Не назначен{% endif %}</td>
+                                <td class="align-middle text-decoration-line-through text-xsmall"><a href="/applications/view?number={{ material.getMaterial.getApplication.getId }}">#{{ material.getMaterial.getApplication.getId }}</a> <i class="bi bi-arrow-right"></i> {{ material.getMaterial.getNum }} поз.</td>
+                            </tr>
+                        {% else %}
+                            {% if is_granted('ROLE_SUPERVISOR') or material.getMaterial.getResponsible.getId == app.user.id %}
+                                {# Пользователь может отмечать материал как полученный #}
+                                {% set avalibleMaterials = avalibleMaterials + 1 %}
+                                <tr class="">
+                                    <td class="align-middle text-center text-xsmall">{{ loop.index }}</td>
+                                    {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
+                                        <td class="align-middle text-center"><input class="form-check-input{% if checked != '' %} is-valid freeze-ignore{% else %} material-select{% endif %}" type="checkbox" name="material[]" value="{{ material.getId }}" {% if checked != '' %} checked disabled{% endif %} /></td>
+                                        <td class="align-middle text-center"><input type="number" name="" value="{{ material.amount - material.recieved }}" class="amount-input form-control form-control-sm{% if checked != '' %} freeze-ignore{% endif %}" min="1" max="{{ material.amount - material.recieved }}"{% if checked != '' %} disabled{% endif %} /></td>
+                                    {% endif %}
+                                    <td class="align-middle text-xsmall">{{ material.getMaterial.getTitle }}</td>
+                                    <td class="align-middle text-start text-xsmall">{{ material.recieved }} {{ material.getMaterial.getUnit.getTitle }} / {{ material.getMaterial.getAmount }} {{ material.getMaterial.getUnit.getTitle }}</td>
+                                    <td class="align-middle text-xsmall">{% if material.getMaterial.getResponsible != null %}{{ material.getMaterial.getResponsible.getShortUserName }}{% else %}Не назначен{% endif %}</td>
+                                    <td class="align-middle text-xsmall"><a href="/applications/view?number={{ material.getMaterial.getApplication.getId }}">#{{ material.getMaterial.getApplication.getId }}</a> <i class="bi bi-arrow-right"></i> {{ material.getMaterial.getNum }} поз.</td>
+                                </tr>
+                            {% else %}
+                                <tr class="text-muted">
+                                    <td class="align-middle text-center text-xsmall">{{ loop.index }}</td>
+                                    {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
+                                        <td class="align-middle text-center"><input class="form-check-input freeze-ignore{% if checked != '' %} is-valid{% endif %}" type="checkbox" name="" value="" disabled{{ checked }} /></td>
+                                        <td class="align-middle text-center"><input type="number" name="" value="{{ material.amount - material.recieved }}" class="amount-input form-control form-control-sm freeze-ignore" min="1" max="{{ material.amount - material.recieved }}" disabled /></td>
+                                    {% endif %}
+                                    <td class="align-middle text-xsmall">{{ material.getMaterial.getTitle }}</td>
+                                    <td class="align-middle text-start text-xsmall">{{ material.recieved }} {{ material.getMaterial.getUnit.getTitle }} / {{ material.getMaterial.getAmount }} {{ material.getMaterial.getUnit.getTitle }}</td>
+                                    <td class="align-middle text-xsmall">{% if material.getMaterial.getResponsible != null %}{{ material.getMaterial.getResponsible.getShortUserName }}{% else %}Не назначен{% endif %}</td>
+                                    <td class="align-middle text-xsmall"><a href="/applications/view?number={{ material.getMaterial.getApplication.getId }}">#{{ material.getMaterial.getApplication.getId }}</a> <i class="bi bi-arrow-right"></i> {{ material.getMaterial.getNum }} поз.</td>
+                                </tr>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if ('ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles) and avalibleMaterials > 0 %}
+                {# Добавление информации об отгрузке/получению #}
+                <input type="hidden" name="type" value="0" />
+                <div id="meta-info" style="display: none">
+                    <ul class="nav nav-tabs mt-4" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="reciept-tab" data-bs-toggle="tab" data-bs-target="#reciept" type="button" role="tab">Получение</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="ship-tab" data-bs-toggle="tab" data-bs-target="#ship" type="button" role="tab">Отгрузка</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="reciept" role="tabpanel">
+                            <input type="hidden" id="userOfficeReciept" name="userOfficeReciept" value="{{ app.user.getOffice.getId }}" />
+                            <div class="form-floating mb-3 mt-4">
+                                <input type="date" class="form-control is-valid" id="dateReciept" placeholder=" " value="{{ 'now'|date('Y-m-d') }}" name="dateReciept" />
+                                <label for="dateReciept">Дата операции</label>
+                            </div>
+                            <div class="form-floating mb-3 mt-4">
+                                <select class="form-control" placeholder="Структурное подразделение, в котором получены материалы" disabled>
+                                    <option value="-1">Нет</option>
+                                    {% for office in offices %}
+                                        <option value="{{ office.getId }}" {% if app.user.getOffice.getId == office.getId %} selected{% endif %}>{{ office.getTitle }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label for="userOfficeReciept">Структурное подразделение, в котором получены материалы</label>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="ship" role="tabpanel">
+                            <div class="form-floating mb-3 mt-4">
+                                <input type="date" class="form-control is-valid" id="dateShip" placeholder=" " value="{{ 'now'|date('Y-m-d') }}" name="dateShip" />
+                                <label for="dateShip">Дата операции</label>
+                            </div>
+                            <div class="form-floating mb-3 mt-4">
+                                <input type="text" class="form-control" id="way" name="way" placeholder="Способ отправки" />
+                                <label for="way">Способ отправки</label>
+                                <div class="invalid-feedback d-none"></div>
+                            </div>
+                            <div class="form-floating mb-3 mt-4">
+                                <input type="text" class="form-control" id="track" name="track" placeholder="Номер для отслеживания" />
+                                <label for="track">Номер для отслеживания</label>
+                                <div class="invalid-feedback d-none"></div>
+                            </div>
+                            <div class="form-floating mb-3 mt-4">
+                                <select class="form-control" id="userOfficeShip" name="userOfficeShip" placeholder="Структурное подразделение, в адрес которого произведена отгрузка">
+                                    {% for office in offices %}
+                                        <option value="{{ office.getId }}" {% if app.user.getOffice.getId == office.getId %} selected{% endif %}>{{ office.getTitle }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label for="userOfficeShip">Структурное подразделение, в адрес которого произведена отгрузка</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="photosInput">
+                        <h5 class="mb-3 mt-4">Фотографии и документы касательно получения/отгрузки</h5>
+                        <div class="mb-4">
+                            <div class="file-loading">
+                                <input id="photos" type="file" name="photos[]" multiple="multiple" />
+                            </div>
+                            <div class="clearfix"></div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </fieldset>
+        <div class="clearfix"></div>
+
+        {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
+            <button type="button" class="btn btn-outline-primary mb-5 me-2 mt-4" id="sendBtn" disabled>Сохранить</button>
+        {% endif %}
+        <button type="button" class="btn btn-outline-secondary mb-5 me-2 mt-4" onclick="location.href='/applications/bills/in-work/';">Закрыть</button>
+        <div class="spinner-border text-primary d-none mt-4" role="status"><span class="visually-hidden">Обработка...</span></div>
+    </form>
+
+    {# Скрытый fileinput для инициализации предпросмотра #}
+    <div class="d-none">
+        <input id="attachments" type="file" name="" multiple="multiple" />
+    </div>
+{% endblock %}
+
+{# Модальные окна #}
+{% block modal %}
+    <div class="modal fade" id="providerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="/applications/bills/provider" method="POST" id="providerForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Редактирование информации о поставщике</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="title" placeholder=" " value="{% if provider != null and provider.getTitle != '' %}{{ provider.getTitle }}{% endif %}" name="title" />
+                            <label for="title">Наименование поставщика</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="inn" placeholder=" " value="{{ bill.inn }}" name="inn" readonly />
+                            <label for="inn">ИНН</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="address" placeholder=" " value="{% if provider != null and provider.getAddress != '' %}{{ provider.getAddress }}{% endif %}" name="address" />
+                            <label for="address">Почтовый адрес</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="phone" placeholder=" " value="{% if provider != null and provider.getPhone != '' %}{{ provider.getPhone }}{% endif %}" name="phone" />
+                            <label for="phone">Телефон</label>
+                        </div>
+                        <div class="form-floating">
+                            <textarea class="form-control" placeholder="Комментарий" id="commentTextarea" style="height: 100px" name="comment">{% if provider != null and provider.getComment != '' %}{{ provider.getComment }}{% endif %}</textarea>
+                            <label for="commentTextarea">Комментарий</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                      <button type="button" class="btn btn-primary" id="saveProviderBtn">Сохранить</button>
+                      <div class="spinner-border text-primary d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="commentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="/applications/bills/savecomment" method="POST" id="commentForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Редактирование дополнительной информации</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-floating">
+                            <input type="hidden" name="id" value="{{ bill.getId }}"/>
+                            <textarea class="form-control" placeholder="Доп. информация" id="commentTextarea" style="height: 100px" name="comment">{% if bill != null and bill.getComment != '' %}{{ bill.getComment }}{% endif %}</textarea>
+                            <label for="commentTextarea">Доп. информация</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                      <button type="button" class="btn btn-primary" id="saveCommentBtn">Сохранить</button>
+                      <div class="spinner-border text-primary d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{# Скрипты #}
+{% block scripts %}
+    <script src="{{ asset('js/fileinput.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/fileinput.ru.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/jquery.autocomplete.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/bills/view.js') }}" type="text/javascript"></script>
+    <script type="text/javascript">
+        var paramsPreview = {
+            initialPreview: [
+            {% if billobj.type == 'image' %}
+                '<img src="{{ url('index') }}upload/bills/{{ billobj.path }}" class="file-preview-image" alt="" />',
+            {% else %}
+                '{{ url('index') }}upload/bills/{{ billobj.path }}',
+            {% endif %}
+            {% if documents|length > 0 %}
+                {% for file in documents %}
+                {% if file.type == 'image' %}
+                    '<img src="{{ url('index') }}upload/documents/{{ file.path }}" class="file-preview-image" alt="" />',
+                {% else %}
+                    '{{ url('index') }}upload/documents/{{ file.path }}',
+                {% endif %}
+                {% endfor %}
+            {% endif %}
+            ],
+            initialPreviewAsData: true,
+            hideThumbnailContent: true,
+            initialPreviewConfig: [
+            {% if billobj.type == 'image' %}
+                {type: '{{ billobj.type }}', caption: '{{ billobj.name }}', downloadUrl: '{{ url('index') }}upload/bills/{{ billobj.path }}', previewAsData: false},
+            {% else %}
+                {type: '{{ billobj.type }}', caption: '{{ billobj.name }}', downloadUrl: '{{ url('index') }}upload/bills/{{ billobj.path }}'},
+            {% endif %}
+            {% if documents|length > 0 %}
+                {% for file in documents %}
+                {% if file.type == 'image' %}
+                    {type: '{{ file.type }}', caption: '{{ file.name }}', downloadUrl: '{{ url('index') }}upload/documents/{{ file.path }}', previewAsData: false},
+                {% else %}
+                    {type: '{{ file.type }}', caption: '{{ file.name }}', downloadUrl: '{{ url('index') }}upload/documents/{{ file.path }}'},
+                {% endif %}
+                {% endfor %}
+            {% endif %}
+            ],
+            language: 'ru'
+        };
+    </script>
+
+    {% if scripts is defined %}
+{{ scripts|raw }}
+    {% endif %}
+{% endblock %}
+
+{# Стили #}
+{% block css %}
+    <link href="{{ asset('css/fileinput.css') }}" rel="stylesheet">
+{% endblock %}

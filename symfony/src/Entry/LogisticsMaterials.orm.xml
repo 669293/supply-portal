@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity name="annotation\LogisticsMaterials" table="logistics_materials">
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="logistics_materials_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <field name="amount" type="decimal" column="amount" precision="10" scale="0" nullable="false">
+      <options>
+        <option name="default">0.0</option>
+      </options>
+    </field>
+    <many-to-one field="logistic" target-entity="Logistics" fetch="LAZY">
+      <join-columns>
+        <join-column name="logistic" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="material" target-entity="Materials" fetch="LAZY">
+      <join-columns>
+        <join-column name="material" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+  </entity>
+</doctrine-mapping>
