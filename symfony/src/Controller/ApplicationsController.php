@@ -362,10 +362,26 @@ class ApplicationsController extends AbstractController
     public function setResultsCount(Request $request): Response
     {
         if ($request->request->get('results') === null) {return new Response();}
-        $cookie = new Cookie('resultsCount', $request->request->get('results'));
-        $response = new Response();
-        $response->headers->setCookie($cookie);
-        return $response;
+
+        //Получаем фильтр
+        if (isset($_SESSION['applicationsFilter'])) {
+            $filter = unserialize($_SESSION['applicationsFilter']);
+        } else {
+            $filter = new Filter;
+        }
+
+        $filter->resultsPerPage = (int)$request->request->get('results');
+        $_SESSION['applicationsFilter'] = serialize($filter);
+
+        return new Response();
+
+
+// die();
+        // 
+        // $cookie = new Cookie('resultsCount', $request->request->get('results'));
+        // $response = new Response();
+        // $response->headers->setCookie($cookie);
+        // return $response;
     }
 
     /**
@@ -382,10 +398,13 @@ class ApplicationsController extends AbstractController
         $filter = new Filter;
 
         //Получаем параметры
-        $results = 25; if ($request->cookies->get('resultsCount') !== null) {$results = $request->cookies->get('resultsCount');}
-        if (!is_numeric($results) || $results < 0) {$results = 25;}
+        $results = 25; 
+        if (isset($_SESSION['applicationsFilter'])) {
+            $filterCurrent = unserialize($_SESSION['applicationsFilter']);
+            if (is_numeric($filterCurrent->resultsPerPage) && $filterCurrent->resultsPerPage > 0) {$results = $filterCurrent->resultsPerPage;}
+        }
         $filter->resultsPerPage = $results;
-
+        
         //Фильтр по автору
         //Если у пользователя права ответственного, он может видеть только свои заявки
         if (in_array('ROLE_CREATOR', $roles) && !in_array('ROLE_SUPERVISOR', $roles)) {
@@ -2891,7 +2910,7 @@ class Filter
         $this->orderByIndex = 1;
         $this->sort = 'DESC';
         $this->page = 1;
-        $this->resultsPerPage = 0;
+        $this->resultsPerPage = 25;
         $this->done = null;
         $this->year = -1;
         $this->isFiltered = FALSE;

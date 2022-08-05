@@ -812,7 +812,8 @@ class BillsController extends AbstractController
         DocumentsRepository $documentsRepository,
         LogisticsRepository $logisticsRepository,
         OfficesRepository $officesRepository,
-        ProvidersRepository $providersRepository
+        ProvidersRepository $providersRepository,
+        StatusesOfBillsRepository $statusesOfBillsRepository,
     ): Response
     {
         $id = $request->query->get('id');
@@ -1018,6 +1019,9 @@ class BillsController extends AbstractController
 
         unset($tmp, $tmpLogisticsDates, $tmpLogisticsIDs, $logStack);
 
+        //Получаем всевозможные статусы счетов для списка
+        $arrStatuses = $statusesOfBillsRepository->findBy(array(), array('id' => 'ASC'));
+
         //Хлебные крошки
         $breadcrumbs = [];
         $breadcrumbs[0] = new \stdClass();
@@ -1041,7 +1045,8 @@ class BillsController extends AbstractController
             'provider' => $provider,
             'documents' => $documents,
             'offices' => $officesRepository->findAll(),
-            'matrix' => $logMatrix
+            'matrix' => $logMatrix,
+            'billsstatuses' => $arrStatuses
         ]);
     }
 
@@ -1301,6 +1306,100 @@ class BillsController extends AbstractController
     }
 
     /**
+     * Сохранение дополнительной информации по счету (принимает данные из формы)
+     * @Route("/applications/bills/in-work/save-additional-data", methods={"POST"}))
+     * @Security("is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR')")
+     */
+    public function saveBillAdditionalData(
+        BillsStatusesRepository $billsStatusesRepository,
+        BillsRepository $billsRepository, 
+        Request $request, 
+        StatusesOfBillsRepository $statusesOfBillsRepository, 
+    ): JsonResponse
+    {
+        $result = [];
+
+        $submittedToken = $request->request->get('token');
+
+        if ($this->isCsrfTokenValid('save-additional-bill', $submittedToken)) {
+            $billId = $request->request->get('id');
+
+            if ($billId === null) {
+                $result[] = 0;
+                $result[] = 'Ошибка во входных данных.';
+                return new JsonResponse($result);
+            }
+    
+            $this->entityManager->getConnection()->beginTransaction(); //Начинаем транзакцию
+
+            try {
+                //Получаем счет
+                $objBill = $billsRepository->findBy(array('id' => $billId));
+                if (is_array($objBill)) {$objBill = array_shift($objBill);}
+
+                //Получаем ИНН
+                $billInn = $request->request->get('billInn');
+                if ($billInn !== null) {$objBill->setInn($billInn);} unset($billInn);
+
+                //Получаем номер счета
+                $billNum = $request->request->get('billNum');
+                if ($billNum !== null) {$objBill->setNum($billNum);} unset($billNum);
+
+                //Получаем сумму и валюту
+                $billSum = $request->request->get('billSum');
+                if ($billSum !== null) {$objBill->setSum($billSum);} unset($billSum);
+                $billCurrency = $request->request->get('billCurrency');
+                if ($billCurrency !== null) {$objBill->setCurrency($billCurrency);} unset($billCurrency);
+
+                //Получаем комментарий
+                $billNote = $request->request->get('billNote');
+                if ($billNote !== null) {$objBill->setNote($billNote);} unset($billNote);
+
+                //Получаем доп информацию
+                $billComment = $request->request->get('billComment');
+                if ($billComment !== null) {$objBill->setComment($billComment);} unset($billComment);
+
+                $this->entityManager->persist($objBill);
+                $this->entityManager->flush();
+                $this->entityManager->getConnection()->commit();
+
+                //Разбираемся со статусами
+                $statusId = $request->request->get('billStatus');
+                $objStatus = $statusesOfBillsRepository->findby(array('id' => $statusId));
+                if (is_array($objStatus)) {$objStatus = array_shift($objStatus);}
+
+                //Проверяем текущий статус
+                $currentStatus = $request->request->get('currentStatus');
+                if ($currentStatus === null || empty($currentStatus) || (int)$currentStatus != $objStatus->getId()) {
+                    //Добавляем статус к счету
+                    $billStatus = new BillsStatuses;
+                    $billStatus->setBill($objBill);
+                    $billStatus->setStatus($objStatus);
+                    $this->entityManager->persist($billStatus);
+                    $this->entityManager->flush();
+                }
+
+                $result[] = 1;
+                $result[] = '';
+            } catch (Exception $e) {
+                $this->entityManager->getConnection()->rollBack();
+
+                $result[] = 0;
+                $result[] = $e;
+                //throw $e;
+            }
+
+            $this->entityManager->clear();
+
+            return new JsonResponse($result);
+        } else {
+            $result[] = 0;
+            $result[] = 'Недействительный токен CSRF.';
+            return new JsonResponse($result);
+        }
+    }
+
+    /**
      * Сохранение информации по поставщику (принимает данные из формы)
      * @Route("/applications/bills/provider", methods={"POST"}))
      * @Security("is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR')")
@@ -1358,55 +1457,6 @@ class BillsController extends AbstractController
                     $this->entityManager->persist($objProvider);
                     $this->entityManager->flush();
                 }
-            }
-
-            $result[] = 1;
-            $result[] = '';
-        } catch (Exception $e) {
-            $result[] = 0;
-            $result[] = $e;
-            //throw $e;
-        }
-
-        return new JsonResponse($result);
-    }
-
-    /**
-     * Сохранение дополнительной информации о счете (принимает данные из формы)
-     * @Route("/applications/bills/savecomment", methods={"POST"}))
-     * @Security("is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR')")
-     */
-    public function saveComment(
-        Request $request, 
-        BillsRepository $billsRepository
-    ): JsonResponse
-    {
-        $result = [];
-
-        $id = $request->request->get('id');
-        $comment = $request->request->get('comment');
-        if (empty($comment)) {$comment = null;}
-
-        if ($id === null) {
-            $result[] = 0;
-            $result[] = 'Ошибка во входных данных.';
-            return new JsonResponse($result);
-        }
-
-        try {
-            //Проверяем, есть ли запись
-            $objBill = $billsRepository->findBy( array('id' => $id) );
-
-            if (sizeof($objBill) == 0) {
-                $result[] = 0;
-                $result[] = 'Ошибка во входных данных.';
-                return new JsonResponse($result);
-            } else {
-                //Редактируем
-                if (is_array($objBill)) {$objBill = array_shift($objBill);}
-                $objBill->setComment($comment);
-                $this->entityManager->persist($objBill);
-                $this->entityManager->flush();
             }
 
             $result[] = 1;

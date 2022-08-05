@@ -184,9 +184,9 @@
                             <td>
                                 <span class="text-black-50{% if bill.getComment is not empty %} d-none{% endif %}" id="comment-info-none">Нет информации</span>
                                 <div id="comment-info">{{ bill.getComment }}</div>
-                                {% if 'ROLE_SUPERVISOR' in roles or app.user.getId == bill.getUser.getId %}
+                                {# {% if 'ROLE_SUPERVISOR' in roles or app.user.getId == bill.getUser.getId %}
                                     <div class="clearfix"><button type="button" class="btn btn-sm btn-outline-secondary text-start mt-2" data-bs-toggle="modal" data-bs-target="#commentModal"><i class="bi bi-pencil"></i> Редактировать информацию</button></div>
-                                {% endif %}    
+                                {% endif %} #}
                             </td>
                         </tr>
                     </tbody>
@@ -347,6 +347,12 @@
             <button type="button" class="btn btn-outline-primary mb-5 me-2 mt-4" id="sendBtn" disabled>Сохранить</button>
         {% endif %}
         <button type="button" class="btn btn-outline-secondary mb-5 me-2 mt-4" onclick="location.href='/applications/bills/in-work/';">Закрыть</button>
+        {# Кнопка редактирования данных счета #}
+        {% if 'ROLE_SUPERVISOR' in roles or app.user.getId == bill.getUser.getId %}
+            <button type="button" class="btn btn-outline-secondary mb-5 me-2 mt-4" data-bs-toggle="modal" data-bs-target="#billModal">Редактировать данные счета</button>
+        {% endif %}
+
+
         <div class="spinner-border text-primary d-none mt-4" role="status"><span class="visually-hidden">Обработка...</span></div>
     </form>
 
@@ -397,24 +403,63 @@
             </div>
         </div>
     </div>
-    <div class="modal fade" id="commentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="billModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form action="/applications/bills/savecomment" method="POST" id="commentForm">
+                <form action="/applications/bills/in-work/save-additional-data" method="POST" id="additionalDataForm">
+                    <input type="hidden" name="token" value="{{ csrf_token('save-additional-bill') }}"/>
+                    <input type="hidden" name="id" value="{{ bill.getId }}"/>
+                    <input type="hidden" id="billCurrency" name="billCurrency" value="руб." />
+                    <input type="hidden" name="currentStatus" value="{{ statuses|first.status.getId }}" />
                     <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLabel">Редактирование дополнительной информации</h5>
+                        <h5 class="modal-title" id="exampleModalLabel">Редактирование данных счета</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="form-floating">
-                            <input type="hidden" name="id" value="{{ bill.getId }}"/>
-                            <textarea class="form-control" placeholder="Доп. информация" id="commentTextarea" style="height: 100px" name="comment">{% if bill != null and bill.getComment != '' %}{{ bill.getComment }}{% endif %}</textarea>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="innInput" placeholder=" " value="{{ bill.inn }}" name="billInn" />
+                            <label for="innInput">ИНН поставщика</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="numInput" placeholder=" " value="{{ bill.num }}" name="billNum" />
+                            <label for="numInput">Номер спецификации или счета</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <div class="input-group input-group-sm">
+                                <input id="billSumInput" name="billSum" type="text" class="form-control form-control-sm numbersOnly" value="{{ bill.sum }}" />
+                                <label class="input-group-text" for="billSumInput" id="currencyLabel">{{ bill.currency }}</label>
+                                <button type="button" class="btn btn-sm btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false"></button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item currency" href="#?">руб.</a></li>
+                                    <li><a class="dropdown-item currency" href="#?">$</a></li>
+                                    <li><a class="dropdown-item currency" href="#?">€</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input id="dateInput" name="billDate" type="date" class="form-control form-control-sm" value="{{ bill.dateClose|date('Y-m-d') }}" />
+                            <label for="dateInput">Дата поставки</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <textarea class="form-control" placeholder="Комментарий" id="noteTextarea" style="height: 100px" name="billNote">{{ bill.note }}</textarea>
+                            <label for="noteTextarea">Комментарий</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <textarea class="form-control" placeholder="Доп. информация" id="commentTextarea" style="height: 100px" name="billComment">{{ bill.getComment }}</textarea>
                             <label for="commentTextarea">Доп. информация</label>
+                        </div>
+                        <div class="form-floating">
+                            <select class="form-select" id="statusSelect" name="billStatus">
+                                {% for status in billsstatuses %}
+                                    <option value="{{ status.getId }}"{% if status.getId == statuses|first.status.getId %} selected{% endif %}>{{ status.getTitle }}</option>
+                                {% endfor %}
+                            </select>
+                            <label for="statusSelect">Статус</label>
                         </div>
                     </div>
                     <div class="modal-footer">
                       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                      <button type="button" class="btn btn-primary" id="saveCommentBtn">Сохранить</button>
+                      <button type="button" class="btn btn-primary" id="saveAdditionslDataBtn">Сохранить</button>
                       <div class="spinner-border text-primary d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
                     </div>
                 </form>
@@ -430,6 +475,19 @@
     <script src="{{ asset('js/jquery.autocomplete.js') }}" type="text/javascript"></script>
     <script src="{{ asset('js/bills/view.js') }}" type="text/javascript"></script>
     <script type="text/javascript">
+        //Правка вставляемого значения суммы
+        window.onload = function() {
+            var billSumInput = document.getElementById('billSumInput');
+            billSumInput.addEventListener('input', function() {
+                checkBullSum(billSumInput);
+            });
+        }
+
+        function checkBullSum(input) {
+            var newValue = input.value.replace(/,/g, '.').replace(/[^\.\d]/g, '');
+            if (input.value != newValue) {input.value = newValue;}
+        }
+
         var paramsPreview = {
             initialPreview: [
             {% if billobj.type == 'image' %}

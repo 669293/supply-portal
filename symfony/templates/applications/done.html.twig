@@ -292,10 +292,10 @@
         <div class="input-group input-group-sm mb-3">
           <label class="input-group-text" for= "paginationResultsCount">Показывать записей</label>
           <select class="form-select" id="paginationResultsCount">
-            <option value="25" selected>25</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-            <option value="0">Все</option>
+            <option value="25"{% if filter.resultsPerPage == 25 %} selected{% endif %}>25</option>
+            <option value="50"{% if filter.resultsPerPage == 50 %} selected{% endif %}>50</option>
+            <option value="100"{% if filter.resultsPerPage == 100 %} selected{% endif %}>100</option>
+            <option value="0"{% if filter.resultsPerPage == 0 %} selected{% endif %}>Все</option>
           </select>
         </div>
       </div>

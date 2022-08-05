@@ -184,7 +184,11 @@ class Bills
 
     public function setNote(string $note): self
     {
-        $this->note = $note;
+        if (empty($note)) {
+            $this->note = null;
+        } else {
+            $this->note = $note;
+        }
 
         return $this;
     }
@@ -196,7 +200,11 @@ class Bills
 
     public function setComment(?string $comment): self
     {
-        $this->comment = $comment;
+        if (empty($comment)) {
+            $this->comment = null;
+        } else {
+            $this->comment = $comment;
+        }
 
         return $this;
     }

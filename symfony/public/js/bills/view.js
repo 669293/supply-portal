@@ -359,14 +359,14 @@ $(document).ready(function() {
   });
 
   //Редактирование дополнительной информации о счете
-  $('#saveCommentBtn').click(function() {
-    var form = $('#commentForm');
+  $('#saveAdditionslDataBtn').click(function() {
+    var form = $('#additionalDataForm');
     
     formData = form.serialize();
     freezeForm(form);
 
     //Получаем instance окна
-    var commentModal = bootstrap.Modal.getInstance(document.getElementById('commentModal'));
+    var commentModal = bootstrap.Modal.getInstance(document.getElementById('billModal'));
 
     $.ajax({
       type: form.attr('method'),
@@ -377,16 +377,7 @@ $(document).ready(function() {
         //Все хорошо
         freezeForm(form, false);
 
-        //Собираем таблицу с информацией
-        if (form.find('textarea[name="comment"]').val() != '') {
-          $('#comment-info-none').addClass('d-none');
-          $('#comment-info').html(form.find('textarea[name="comment"]').val());
-        } else {
-          $('#comment-info-none').removeClass('d-none');
-          $('#comment-info').html('');
-        }
-
-        commentModal.hide();
+        location.reload();
       } else {
         showFormAlert(form, data[1]);
         freezeForm(form, false);
@@ -520,4 +511,12 @@ $(document).ready(function() {
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>\
     </div>');
   }
+
+  //Выбор валюты
+  $('.currency').click(function(event) {
+    event.preventDefault();
+    var currency = $(this).text();
+    $('#billCurrency').val(currency);
+    $('#currencyLabel').text(currency);
+  });
 });

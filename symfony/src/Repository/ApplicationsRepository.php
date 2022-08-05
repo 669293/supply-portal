@@ -163,7 +163,7 @@ class ApplicationsRepository extends ServiceEntityRepository
         $query->orderBy($filter->orderBy, $filter->sort);
 
         //Подключаем постраничный вывод
-        if ($filter->resultsPerPage > 0) {
+        if ($filter->resultsPerPage > 0 && $filter->office == null) {
             $paginator = new Paginator($query);
             $totalItems = (int)count($paginator);
             $pagesCount = (int)ceil($totalItems / $filter->resultsPerPage);
