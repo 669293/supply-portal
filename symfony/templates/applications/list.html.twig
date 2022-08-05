@@ -198,7 +198,7 @@
             {% if application.0.getDateClose < date('now') %}{% set dateClass = 'text-danger' %}{% endif %}
             {% if application.0.getDateClose != null %} <span class="text-muted"><i class="bi bi-arrow-right"></i> <span class="{{ dateClass }}">{{ application.0.getDateClose|date('d.m.Y') }}</span></span>{% endif %}
             </td>
-            <td class="text-nowrap">
+            <td>
               <a href="/applications/view?number={{ application.0.getId }}">{{ application.0.getTitle }}</a>
               {% if application.urgency %}
                 <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="В заявке есть срочные позиции"></i>
