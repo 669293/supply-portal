@@ -191,7 +191,18 @@
               <p class="text-muted d-block d-sm-none mb-0 mt-1">{{ application.0.getDateCreate|date('d.m.Y') }}</p>
               <p class="text-muted d-block d-sm-none mb-0 mt-1"><span class="{{ application.status_class }}">{{ application.status_title }}</span></p>
             </td>
-            <td class="text-nowrap d-table-cell d-sm-none">{{ application.0.getAuthor.getShortUsername }}<p class="row-separator"><span class="text-black-50">Не назначены</span></p></td>
+            <td class="text-nowrap d-table-cell d-sm-none">
+              {{ application.0.getAuthor.getShortUsername }}
+              <p class="row-separator">
+                {% if application.responsibles is empty %}
+                  <span class="text-black-50">Не назначены</span>
+                {% else %}
+                  {% for responsible in application.responsibles %}
+                    <p class="mb-0">{{ responsible.username }}</p>
+                  {% endfor %}
+                {% endif %}
+              </p>
+            </td>
             <td class="text-nowrap d-none d-sm-table-cell">{{ application.0.getAuthor.getShortUsername }}</td>
             <td class="text-nowrap d-none d-sm-table-cell">
             {% if application.responsibles is empty %}
