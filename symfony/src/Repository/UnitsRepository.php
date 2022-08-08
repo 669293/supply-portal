@@ -18,4 +18,9 @@ class UnitsRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Units::class);
     }
+
+    public function findAll()
+    {
+        return $this->findBy(array(), array('title' => 'ASC'));
+    }
 }

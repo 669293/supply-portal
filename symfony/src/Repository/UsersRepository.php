@@ -22,6 +22,11 @@ class UsersRepository extends ServiceEntityRepository implements PasswordUpgrade
         parent::__construct($registry, Users::class);
     }
 
+    public function findAll()
+    {
+        return $this->findBy(array(), array('username' => 'ASC'));
+    }
+
     /**
      * Used to upgrade (rehash) the user's password automatically over time.
      */
@@ -58,6 +63,7 @@ class UsersRepository extends ServiceEntityRepository implements PasswordUpgrade
         ->select('u')
         ->from($this->_entityName, 'u')
         ->where('u.id IN ('.implode(',', $ids).')')
+        ->orderBy('u.username', 'ASC')
         ;
 
         return $qb->getQuery()->getResult();
