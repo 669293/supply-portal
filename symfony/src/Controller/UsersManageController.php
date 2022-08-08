@@ -302,7 +302,7 @@ class UsersManageController extends AbstractController
             $roles = ['ROLE_USER']; if ($request->request->get('userRole')) {$roles = array_merge($roles, $request->request->get('userRole'));}
             $user->setRoles($roles);
 
-            if ($request->request->get('userPassword') !== null) {
+            if ($request->request->get('userActive') !== null) {
                 $user->setActive(true);
             } else {
                 $user->setActive(false);

@@ -619,8 +619,8 @@ class ApplicationsController extends AbstractController
 
         if (in_array('ROLE_ADMIN', $roles)) {
             $params['users'] = $usersRepository->findBy(
-                array(),
-                array('active' => 'DESC', 'login' => 'ASC')
+                array('active' => TRUE),
+                array('username' => 'ASC')
             );
         }
 
