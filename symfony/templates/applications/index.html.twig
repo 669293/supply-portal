@@ -272,6 +272,55 @@
         <input id="attachments" type="file" name="" multiple="multiple" />
       </div>
     {% endif %}
+
+    {# Активные заявки #}
+    <p>Активные заявки:</p>
+    {% if active|length > 0 %}
+      <div class="table-responsive">
+        <table class="table table-hover table-bordered table-striped text-xsmall mb-2">
+          <thead>
+            <tr>
+              <th class="align-middle">№</th>
+              <th class="align-middle d-none d-sm-table-cell">Дата поступления</th>
+              <th class="align-middle text-nowrap">Название</th>
+              <th class="align-middle d-table-cell d-sm-none">Отправитель<p class="row-separator">Ответственные</p></th>
+              <th class="align-middle d-none d-sm-table-cell">Отправитель</th>
+              <th class="align-middle d-none d-sm-table-cell">Статус</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for application in active %}
+            <tr{% if application.status_id == 1 %} class="table-primary"{% endif %}>
+              <td>
+                {{ application.0.getId }}
+                {% if application.0.getNumber != '' %}
+                  <p class="text-muted mb-0 text-xsmall">{{ application.0.getNumber }}</p>
+                {% endif %}
+              </td>
+              <td class="d-none d-sm-table-cell">
+              {{ application.0.getDateCreate|date('d.m.Y') }}
+              {% set dateClass = 'text-muted' %}
+              {% if application.0.getDateClose < date('now') %}{% set dateClass = 'text-danger' %}{% endif %}
+              {% if application.0.getDateClose != null %} <span class="text-muted"><i class="bi bi-arrow-right"></i> <span class="{{ dateClass }}">{{ application.0.getDateClose|date('d.m.Y') }}</span></span>{% endif %}
+              </td>
+              <td>
+                <a href="/applications/view?number={{ application.0.getId }}">{{ application.0.getTitle }}</a>
+                {% if application.urgency %}
+                  <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="В заявке есть срочные позиции"></i>
+                {% endif %}
+                <p class="text-muted mb-0 text-xsmall">{% if application.0.getIsYear %}<span class="text-warning">Годовая заявка</span>{% endif %} Позиций: {{ application.materials_count }}{% if application.materials_deleted > 0 %}-{{ application.materials_deleted }}{% endif %}{% if application.materials_impossible > 0 %} <span class="text-danger">(Невозможно поставить: {{ application.materials_impossible }})</span>{% endif %}</p>
+                <p class="text-muted d-block d-sm-none mb-0 mt-1">{{ application.0.getDateCreate|date('d.m.Y') }}</p>
+                <p class="text-muted d-block d-sm-none mb-0 mt-1"><span class="{{ application.status_class }}">{{ application.status_title }}</span></p>
+              </td>
+              <td class="text-nowrap d-table-cell d-sm-none">{{ application.0.getAuthor.getShortUsername }}<p class="row-separator"><span class="text-black-50">Не назначены</span></p></td>
+              <td class="text-nowrap d-none d-sm-table-cell">{{ application.0.getAuthor.getShortUsername }}</td>
+              <td class="d-none d-sm-table-cell text-nowrap"><span class="{{ application.status_class }}">{{ application.status_title }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
   {% endif %}
 
   {# Заказчик #}

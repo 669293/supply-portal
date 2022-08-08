@@ -110,6 +110,7 @@ class ApplicationsController extends AbstractController
         //Если пользователь исполняет роль исполнителя
         $materialsInWork = [];
         $expiredBills = [];
+        $activeApplications = [];
         if (in_array('ROLE_EXECUTOR', $roles)) {
             //Получаем заявки и позиции, по которым не выставлены счета
 
@@ -222,6 +223,13 @@ class ApplicationsController extends AbstractController
 
                 unset($objBill, $billMaterials);
             }
+
+            //Получаем список активных заявок
+            $filter = new Filter;
+            $filter->responsible = $this->security->getUser(); //Текущий пользователь
+            $filter->done = FALSE; //Активные заявки
+
+            $activeApplications = $applicationsRepository->getList($filter);
         }
 
         //Если пользователь исполняет роль заказчика
@@ -318,6 +326,7 @@ class ApplicationsController extends AbstractController
             'inwork' => $materialsInWork,
             'notordered' => $notOrderedYet,
             'expired' => $expiredBills,
+            'active' => $activeApplications,
             'printcount' => $this->getPrintBillsCount()
         ]);
     }
