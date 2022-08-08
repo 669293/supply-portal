@@ -189,6 +189,10 @@
                                 {% endif %} #}
                             </td>
                         </tr>
+                        <tr>
+                            <td style="width: 200px!important;"><i class="bi bi-calendar3 text-muted me-1"></i> <strong>Дата поступления</strong></td>
+                            <td>{{ bill.getDateClose|date('d.m.Y') }}</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>

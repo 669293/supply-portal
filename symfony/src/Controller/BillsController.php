@@ -123,7 +123,7 @@ class BillsController extends AbstractController
     }
 
     /**
-     * Загрузка счета
+     * Загрузка файла
      * @Route("/applications/bills/upload-bill", methods={"POST"})
      * @IsGranted("ROLE_EXECUTOR")
      */
@@ -1315,10 +1315,12 @@ class BillsController extends AbstractController
      * @Security("is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR')")
      */
     public function saveBillAdditionalData(
-        BillsStatusesRepository $billsStatusesRepository,
+        BillsMaterialsRepository $billsMaterialsRepository,
         BillsRepository $billsRepository, 
+        BillsStatusesRepository $billsStatusesRepository,
+        MaterialsRepository $materialsRepository,
         Request $request, 
-        StatusesOfBillsRepository $statusesOfBillsRepository, 
+        StatusesOfBillsRepository $statusesOfBillsRepository,
     ): JsonResponse
     {
         $result = [];
@@ -1363,9 +1365,13 @@ class BillsController extends AbstractController
                 $billComment = $request->request->get('billComment');
                 if ($billComment !== null) {$objBill->setComment($billComment);} unset($billComment);
 
+                //Получаем дату закрытия
+                $dateClose = new \DateTime();
+                $dateClose->setTimestamp(strtotime($request->request->get('billDate')));
+                if ($request->request->get('billDate') !== null) {$objBill->setDateClose($dateClose);}
+
                 $this->entityManager->persist($objBill);
                 $this->entityManager->flush();
-                $this->entityManager->getConnection()->commit();
 
                 //Разбираемся со статусами
                 $statusId = $request->request->get('billStatus');
@@ -1382,6 +1388,73 @@ class BillsController extends AbstractController
                     $this->entityManager->persist($billStatus);
                     $this->entityManager->flush();
                 }
+
+                //Возможно стоит обновить дату закрытия заявки
+                if ($request->request->get('billDate') !== null) {
+                    //Получаем массив заявок
+                    $applications = [];
+
+                    //Для начала надо получить материалы, привязанные к данному счету
+                    $materials = [];
+                    $billMaterials = $billsMaterialsRepository->findBy(array('bill' => $objBill->getId()));
+                    foreach ($billMaterials as $billMaterial) {
+                        $materials[] = $billMaterial->getMaterial();
+                    }
+                    
+                    foreach ($materials as $material) {
+                        $flag = false;
+                        foreach ($applications as $application) {
+                            if ($application->getId() == $material->getApplication()->getId()) {$flag = true; break;}
+                        }
+
+                        if (!$flag) {$applications[] = $material->getApplication();}
+                    }
+
+                    unset($billMaterials, $materials);
+
+                    foreach ($applications as $application) {
+                        //Проверяем, стоит ли обновить дату закрытия заявки
+                        $appDateClose = new \DateTime();
+                        $appDateClose->setTimestamp(strtotime('1970-01-01 00:00:01'));
+                        if ($application->getDateClose() !== null) {$appDateClose = $application->getDateClose();}
+
+                        if ($dateClose < $appDateClose) {
+                            //Если дата сдвинулась назад
+                            //Получаем все счета по заявке, берем максимальную дату и прописываем ее как дату закрытия
+                            $bills = [];
+                            $materials = $materialsRepository->findBy(array('application' => (int)$application->getId()));
+                            foreach ($materials as $material) {
+                                $billsMaterial = $billsMaterialsRepository->findBy(array('material' => $material->getId()));
+                                foreach ($billsMaterial as $billMaterial) {
+                                    $flag = false;
+                                    foreach ($bills as $bill) {
+                                        if ($bill->getId() == $billMaterial->getBill()->getId()) {$flag = true; break;}
+                                    }
+                
+                                    if (!$flag) {$bills[] = $billMaterial->getBill();}
+                                }
+                            }
+
+                            foreach ($bills as $bill) {
+                                if ($bill->getDateClose() > $dateClose) {
+                                    $dateClose = $bill->getDateClose();
+                                }
+                            }
+
+
+                        }
+
+                        $application->setDateClose($dateClose);
+
+                        //Записываем
+                        $this->entityManager->persist($application);
+                        $this->entityManager->flush();
+                    }
+
+                    unset($materials, $billsMaterial, $dateClose);
+                }
+
+                $this->entityManager->getConnection()->commit();
 
                 $result[] = 1;
                 $result[] = '';
