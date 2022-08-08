@@ -887,7 +887,7 @@ class BillsController extends AbstractController
 
         //Проверяем может ли пользователь смотреть содержимое этого счета
         $canSee = false;
-        if (in_array('ROLE_SUPERVISOR', $roles) || in_array('ROLE_LOGISTICS', $roles)) {
+        if (in_array('ROLE_SUPERVISOR', $roles) || in_array('ROLE_LOGISTICS', $roles) || in_array('ROLE_WATCHER', $roles)) {
             $canSee = true;
         }
 
@@ -1027,9 +1027,13 @@ class BillsController extends AbstractController
         $breadcrumbs[0] = new \stdClass();
         $breadcrumbs[0]->href = '/applications';
         $breadcrumbs[0]->title = 'Активные заявки';
-        $breadcrumbs[1] = new \stdClass();
-        $breadcrumbs[1]->href = '/applications/bills/in-work';
-        $breadcrumbs[1]->title = 'Счета в работе';
+
+        if (in_array('ROLE_SUPERVISOR', $roles) || in_array('ROLE_EXECUTOR', $roles)) {
+            $breadcrumbs[1] = new \stdClass();
+            $breadcrumbs[1]->href = '/applications/bills/in-work';
+            $breadcrumbs[1]->title = 'Счета в работе';
+        }
+
         $breadcrumbs[2] = new \stdClass();
         $breadcrumbs[2]->href = '/applications/bills/in-work/view/?id='.$id;
         $breadcrumbs[2]->title = 'Просмотр счета №'.$bill->getNum().' на сумму '.number_format($bill->getSum(), 2, ',', ' ').' '.$bill->getCurrency();

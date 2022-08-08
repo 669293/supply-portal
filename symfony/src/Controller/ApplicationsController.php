@@ -1559,7 +1559,7 @@ class ApplicationsController extends AbstractController
         //Проверяем наличие прав просмотра
         $canSee = false;
         
-        if (in_array('ROLE_SUPERVISOR', $roles)) {$canSee = true;}
+        if (in_array('ROLE_SUPERVISOR', $roles) || in_array('ROLE_WATCHER', $roles)) {$canSee = true;}
         if (in_array('ROLE_CREATOR', $roles) && $this->security->getUser()->getId() == $objApplication->getAuthor()->getId()) {$canSee = true;}
 
         $arrMaterials = $materialsRepository->findBy(array('application' => $id)); //Также пригодится потом

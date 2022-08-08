@@ -36,7 +36,8 @@ class UsersManageController extends AbstractController
             'ROLE_CREATOR' => ['Создание заявок', 'bg-secondary'],
             'ROLE_EXECUTOR' => ['Исполнение заявок', 'bg-primary'],
             'ROLE_LOGISTICS' => ['Добавление логистической информации', 'bg-warning text-dark'],
-            'ROLE_BUH' => ['Бухгалтерия', 'bg-warning text-dark']
+            'ROLE_BUH' => ['Бухгалтерия', 'bg-warning text-dark'],
+            'ROLE_WATCHER' => ['Наблюдатель', 'bg-success']
         ];
     }
 
