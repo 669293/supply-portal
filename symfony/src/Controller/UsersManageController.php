@@ -88,7 +88,7 @@ class UsersManageController extends AbstractController
     {
         $users = $usersRepository->findBy(
             array(),
-            array('active' => 'DESC', 'login' => 'ASC')
+            array('active' => 'DESC', 'username' => 'ASC')
         );
 
         $users_list = [];
