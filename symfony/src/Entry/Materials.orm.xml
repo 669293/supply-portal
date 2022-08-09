@@ -36,7 +36,7 @@
         <option name="default"/>
       </options>
     </field>
-    <field name="comment" type="string" column="comment" length="255" nullable="true">
+    <field name="comment" type="string" column="comment" length="1000" nullable="true">
       <options>
         <option name="fixed"/>
       </options>
