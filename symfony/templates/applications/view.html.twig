@@ -353,6 +353,7 @@
     {% endif %}
     <button type="button" class="btn btn-outline-secondary mb-5 me-2 mt-4" onclick="location.href='/applications/';">Закрыть</button>
     <a role="button" class="btn btn-outline-secondary mb-5 me-2 mt-4" href="/applications/print?number={{ application.getId }}" target="_blank">Распечатать для согласования</a>
+    <a role="button" class="btn btn-outline-secondary mb-5 me-2 mt-4" href="/applications/export-to-excel?number={{ application.getId }}" target="_blank">Экспортировать в Excel</a>
     <div class="spinner-border text-primary d-none mt-4" role="status"><span class="visually-hidden">Обработка...</span></div>
 </form>
 

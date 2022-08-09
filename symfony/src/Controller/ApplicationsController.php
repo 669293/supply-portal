@@ -2580,6 +2580,225 @@ class ApplicationsController extends AbstractController
     }
 
     /**
+     * Экспорт заявки в Excel
+     * @Route("/applications/export-to-excel", methods={"GET"})
+     * @IsGranted("ROLE_USER")
+     */
+    public function exportToExcelApplication(
+        Request $request, 
+        ApplicationsRepository $applicationsRepository, 
+        MaterialsRepository $materialsRepository, 
+        UsersRepository $usersRepository
+        ): Response
+    {
+        //Получаем роли текущего пользователя
+        $roles = $this->security->getUser()->getRoles();
+
+        $id = $request->query->get('number');
+        if ($id === null || empty($id) || !is_numeric($id)) {
+            return new RedirectResponse('/applications');
+        }
+
+        //Проверяем наличие заявки
+        $objApplication = $applicationsRepository->findBy( array('id' => $id) );
+        if (sizeof($objApplication) == 0) {
+            return new RedirectResponse('/applications');
+        }
+        if (is_array($objApplication)) {$objApplication = array_shift($objApplication);}
+
+        //Проверяем наличие прав просмотра
+        $canPrint = false;
+        
+        if (in_array('ROLE_SUPERVISOR', $roles)) {$canPrint = true;}
+        if (in_array('ROLE_CREATOR', $roles) && $this->security->getUser()->getId() == $objApplication->getAuthor()->getId()) {$canPrint = true;}
+
+        $arrMaterials = $materialsRepository->findBy(array('application' => $id)); //Также пригодится потом
+
+        if (in_array('ROLE_EXECUTOR', $roles)) {
+            foreach ($arrMaterials as $material) {
+                if ($material->getResponsible() !== null) {
+                    if ($material->getResponsible()->getId() == $this->security->getUser()->getId()) {
+                        $canPrint = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!$canPrint) { 
+            return new RedirectResponse('/applications');
+        }
+
+        //Заголовок
+        $title = $objApplication->getTitle().' №'.$id;
+
+        //Список материалов
+        $arrMaterials = $materialsRepository->findBy( array('application' => $objApplication->getId()), array('num' => 'ASC') );
+
+        //Список пользователей
+        $users = $usersRepository->findByRole('ROLE_EXECUTOR');
+
+        $objPHPExcel = new \PHPExcel();
+
+        //Свойства документа
+        $objPHPExcel->getProperties()->setTitle($objApplication->getTitle().' №'.$id.(empty($objApplication->getNumber()) ? '' : ' ('.$objApplication->getNumber().')'));
+        $objPHPExcel->getProperties()->setCompany('ЗАО «Артель старателей «Витим»');
+        $objPHPExcel->getProperties()->setCreated(date('d.m.Y'));
+
+        //Создаем лист
+        $objPHPExcel->setActiveSheetIndex(0);
+        $sheet = $objPHPExcel->getActiveSheet();
+        $sheet->setTitle('Заявка '.$id);
+        
+        //Формат
+        $sheet->getPageSetup()->SetPaperSize(\PHPExcel_Worksheet_PageSetup::PAPERSIZE_A4);
+        
+        //Ориентация
+        $sheet->getPageSetup()->setOrientation(\PHPExcel_Worksheet_PageSetup::ORIENTATION_LANDSCAPE); //ORIENTATION_PORTRAIT, ORIENTATION_LANDSCAPE
+        
+        //Поля
+        $sheet->getPageMargins()->setTop(1);
+        $sheet->getPageMargins()->setRight(0.75);
+        $sheet->getPageMargins()->setLeft(0.75);
+        $sheet->getPageMargins()->setBottom(1);
+
+        //Задаем шапку
+        $sheet->setCellValueByColumnAndRow(0, 1, '№');
+        $sheet->setCellValueByColumnAndRow(1, 1, 'Наименование');
+        $sheet->setCellValueByColumnAndRow(2, 1, 'Ед.изм.');
+        $sheet->setCellValueByColumnAndRow(3, 1, 'Кол-во');
+        $sheet->setCellValueByColumnAndRow(4, 1, 'Вид техники');
+        $sheet->setCellValueByColumnAndRow(5, 1, 'Уточнение');
+        $sheet->setCellValueByColumnAndRow(6, 1, 'Срочность');
+        $sheet->setCellValueByColumnAndRow(7, 1, 'Ответственный');
+
+        $style = array(
+            'fill' => array(
+                'type' => \PHPExcel_Style_Fill::FILL_SOLID,
+                'color' => array('rgb' => 'EEEEEE')
+            ),
+            'font' => array(
+                'name'      => 'Times New Roman',
+                'size'      => 14,
+                'bold'      => true
+            ),
+            'borders'=>array(
+                'allborders' => array(
+                    'style' => \PHPExcel_Style_Border::BORDER_THIN,
+                    'color' => array('rgb' => '000000')
+                )
+            )
+        );
+
+        $sheet->getStyle('A1:H1')->applyFromArray($style);
+
+        //Заполняем содержимое
+        $num = 0;
+        foreach ($arrMaterials as $material) {
+            $num++;
+
+            $sheet->setCellValueByColumnAndRow(0, $num + 1, $num);
+            $sheet->setCellValueByColumnAndRow(1, $num + 1, $material->getTitle());
+            $sheet->setCellValueByColumnAndRow(2, $num + 1, $material->getUnit()->getTitle());
+            $sheet->setCellValueByColumnAndRow(3, $num + 1, $material->getAmount());
+            $sheet->setCellValueByColumnAndRow(4, $num + 1, ( $material->getTypeOfEquipment() ? $material->getTypeOfEquipment()->getTitle() : '' ));
+            $sheet->setCellValueByColumnAndRow(5, $num + 1, $material->getComment());
+
+            if ($material->getUrgency()) {
+                $sheet->setCellValueByColumnAndRow(6, $num + 1, 'Срочно');
+                $style = array(
+                    'font' => array(
+                        'color'     => array('rgb' => 'FF0000'),
+                        'bold'      => true
+                    )
+                );
+        
+                $sheet->getStyle('G'.($num + 1))->applyFromArray($style);
+            }
+
+            if ($material->getResponsible()) {
+                $sheet->setCellValueByColumnAndRow(7, $num + 1, $material->getResponsible()->getShortUsername());
+            } else {
+                $sheet->setCellValueByColumnAndRow(7, $num + 1, 'Не назначен');
+                $style = array(
+                    'font' => array(
+                        'color'     => array('rgb' => 'CCCCCC'),
+                        'bold'      => true
+                    )
+                );
+        
+                $sheet->getStyle('H'.($num + 1))->applyFromArray($style);
+            }
+        }
+
+        $style = array(
+            'borders'=>array(
+                'allborders' => array(
+                    'style' => \PHPExcel_Style_Border::BORDER_THIN,
+                    'color' => array('rgb' => '000000')
+                )
+            )
+        );
+
+        $sheet->getStyle('A2:H'.($num + 1))->applyFromArray($style);
+
+        //Авто ширина колонки по содержимому
+        foreach(range('A','H') as $columnID) {
+            $sheet->getColumnDimension($columnID)->setAutoSize(TRUE);
+        }
+        
+        //Отдаем на скачивание
+        header('Content-type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename=Заявка '.$id.'.xlsx');
+         
+        $objWriter = new \PHPExcel_Writer_Excel2007($objPHPExcel);
+        $objWriter->save('php://output'); 
+        exit();	
+
+
+//         echo <<<HERE
+//             <table>
+//                 <thead>
+//                     <tr>
+//                         <th>№</th>
+//                         <th style="text-align: left;">Наименование</th>
+//                         <th>Ед.изм.</th>
+//                         <th>Кол-во</th>
+//                         <th style="text-align: left;">Вид техники</th>
+//                         <th style="text-align: left;">Уточнение</th>
+//                         <th>Срочность</th>
+//                         <th>Ответственный</th>
+//                     </tr>
+//                 </thead>
+//                 <tbody>
+// HERE;
+
+//                     $num = 0;
+//                     foreach ($arrMaterials as $material) {
+//                         $num++;
+//                         echo '                    <tr>'."\n";
+//                         echo '                        <td style="text-align: center;">'.$num.'</td>'."\n";
+//                         echo '                        <td>'.$material->getTitle().'</td>'."\n";
+//                         echo '                        <td style="text-align: center;">'.$material->getUnit()->getTitle().'</td>'."\n";
+//                         echo '                        <td style="text-align: center;">'.$material->getAmount().'</td>'."\n";
+//                         echo '                        <td>'.( $material->getTypeOfEquipment() ? $material->getTypeOfEquipment()->getTitle() : '' ).'</td>'."\n";
+//                         echo '                        <td>'.$material->getComment().'</td>'."\n";
+//                         echo '                        <td style="text-align: center;">'.( $material->getUrgency() ? '<span style="color: #ff0000; font-size: 12px; text-transform:uppercase;">Срочно</span>' : '' ).'</td>'."\n";
+//                         echo '                        <td style="text-align: center;">'.( $material->getResponsible() ? $material->getResponsible()->getShortUsername() : '<span style="color: #777; font-size: 12px;">Не назначен</span>' ).'</td>'."\n";
+//                         echo '                    </tr>'."\n";
+//                     }
+
+//                     echo <<<HERE
+//                 </tbody>
+//             </table>
+// HERE;
+
+//         $content = ob_get_contents();
+//         ob_end_clean();
+
+    }
+
+    /**
      * Печать заявки для согласования
      * @Route("/applications/print", methods={"GET"})
      * @IsGranted("ROLE_USER")
