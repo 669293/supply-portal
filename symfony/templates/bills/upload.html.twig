@@ -90,7 +90,7 @@
                                     <div class="d-flex w-100">
                                         <div>
                                             {{ application.getTitle }}{% if application.urgency %}<i class="bi bi-exclamation-triangle text-danger ms-2" data-bs-toggle="tooltip" data-bs-placement="right" title="В заявке есть срочные позиции"></i>{% endif %}
-                                            <br /><span class="text-muted text-small">№{{ application.getId }} от {{ application.getDateCreate|date('d.m.Y') }}</span>
+                                            <br /><span class="text-muted text-small">№{{ application.getId }}{% if application.getNumber != '' %} ({{ application.getNumber }}){% endif %} от {{ application.getDateCreate|date('d.m.Y') }}</span>
                                         </div>
                                         <div class="d-none d-sm-block ms-auto align-middle text-end">
                                             <span class="text-muted me-3 text-small">Отправитель: {{ application.getAuthor.getShortUsername }}</span><br />

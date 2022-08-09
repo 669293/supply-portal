@@ -2678,8 +2678,7 @@ class ApplicationsController extends AbstractController
                 'color' => array('rgb' => 'EEEEEE')
             ),
             'font' => array(
-                'name'      => 'Times New Roman',
-                'size'      => 14,
+                'size'      => 12,
                 'bold'      => true
             ),
             'borders'=>array(
@@ -2695,39 +2694,41 @@ class ApplicationsController extends AbstractController
         //Заполняем содержимое
         $num = 0;
         foreach ($arrMaterials as $material) {
-            $num++;
+            if (!$material->getIsDeleted()) {
+                $num++;
 
-            $sheet->setCellValueByColumnAndRow(0, $num + 1, $num);
-            $sheet->setCellValueByColumnAndRow(1, $num + 1, $material->getTitle());
-            $sheet->setCellValueByColumnAndRow(2, $num + 1, $material->getUnit()->getTitle());
-            $sheet->setCellValueByColumnAndRow(3, $num + 1, $material->getAmount());
-            $sheet->setCellValueByColumnAndRow(4, $num + 1, ( $material->getTypeOfEquipment() ? $material->getTypeOfEquipment()->getTitle() : '' ));
-            $sheet->setCellValueByColumnAndRow(5, $num + 1, $material->getComment());
+                $sheet->setCellValueByColumnAndRow(0, $num + 1, $num);
+                $sheet->setCellValueByColumnAndRow(1, $num + 1, $material->getTitle());
+                $sheet->setCellValueByColumnAndRow(2, $num + 1, $material->getUnit()->getTitle());
+                $sheet->setCellValueByColumnAndRow(3, $num + 1, $material->getAmount());
+                $sheet->setCellValueByColumnAndRow(4, $num + 1, ( $material->getTypeOfEquipment() ? $material->getTypeOfEquipment()->getTitle() : '' ));
+                $sheet->setCellValueByColumnAndRow(5, $num + 1, $material->getComment());
 
-            if ($material->getUrgency()) {
-                $sheet->setCellValueByColumnAndRow(6, $num + 1, 'Срочно');
-                $style = array(
-                    'font' => array(
-                        'color'     => array('rgb' => 'FF0000'),
-                        'bold'      => true
-                    )
-                );
-        
-                $sheet->getStyle('G'.($num + 1))->applyFromArray($style);
-            }
+                if ($material->getUrgency()) {
+                    $sheet->setCellValueByColumnAndRow(6, $num + 1, 'Срочно');
+                    $style = array(
+                        'font' => array(
+                            'color'     => array('rgb' => 'FF0000'),
+                            'bold'      => true
+                        )
+                    );
+            
+                    $sheet->getStyle('G'.($num + 1))->applyFromArray($style);
+                }
 
-            if ($material->getResponsible()) {
-                $sheet->setCellValueByColumnAndRow(7, $num + 1, $material->getResponsible()->getShortUsername());
-            } else {
-                $sheet->setCellValueByColumnAndRow(7, $num + 1, 'Не назначен');
-                $style = array(
-                    'font' => array(
-                        'color'     => array('rgb' => 'CCCCCC'),
-                        'bold'      => true
-                    )
-                );
-        
-                $sheet->getStyle('H'.($num + 1))->applyFromArray($style);
+                if ($material->getResponsible()) {
+                    $sheet->setCellValueByColumnAndRow(7, $num + 1, $material->getResponsible()->getShortUsername());
+                } else {
+                    $sheet->setCellValueByColumnAndRow(7, $num + 1, 'Не назначен');
+                    $style = array(
+                        'font' => array(
+                            'color'     => array('rgb' => 'CCCCCC'),
+                            'bold'      => true
+                        )
+                    );
+            
+                    $sheet->getStyle('H'.($num + 1))->applyFromArray($style);
+                }
             }
         }
 
@@ -2747,55 +2748,13 @@ class ApplicationsController extends AbstractController
             $sheet->getColumnDimension($columnID)->setAutoSize(TRUE);
         }
         
-        //Отдаем на скачивание
+        // //Отдаем на скачивание
         header('Content-type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment; filename=Заявка '.$id.'.xlsx');
          
         $objWriter = new \PHPExcel_Writer_Excel2007($objPHPExcel);
         $objWriter->save('php://output'); 
-        exit();	
-
-
-//         echo <<<HERE
-//             <table>
-//                 <thead>
-//                     <tr>
-//                         <th>№</th>
-//                         <th style="text-align: left;">Наименование</th>
-//                         <th>Ед.изм.</th>
-//                         <th>Кол-во</th>
-//                         <th style="text-align: left;">Вид техники</th>
-//                         <th style="text-align: left;">Уточнение</th>
-//                         <th>Срочность</th>
-//                         <th>Ответственный</th>
-//                     </tr>
-//                 </thead>
-//                 <tbody>
-// HERE;
-
-//                     $num = 0;
-//                     foreach ($arrMaterials as $material) {
-//                         $num++;
-//                         echo '                    <tr>'."\n";
-//                         echo '                        <td style="text-align: center;">'.$num.'</td>'."\n";
-//                         echo '                        <td>'.$material->getTitle().'</td>'."\n";
-//                         echo '                        <td style="text-align: center;">'.$material->getUnit()->getTitle().'</td>'."\n";
-//                         echo '                        <td style="text-align: center;">'.$material->getAmount().'</td>'."\n";
-//                         echo '                        <td>'.( $material->getTypeOfEquipment() ? $material->getTypeOfEquipment()->getTitle() : '' ).'</td>'."\n";
-//                         echo '                        <td>'.$material->getComment().'</td>'."\n";
-//                         echo '                        <td style="text-align: center;">'.( $material->getUrgency() ? '<span style="color: #ff0000; font-size: 12px; text-transform:uppercase;">Срочно</span>' : '' ).'</td>'."\n";
-//                         echo '                        <td style="text-align: center;">'.( $material->getResponsible() ? $material->getResponsible()->getShortUsername() : '<span style="color: #777; font-size: 12px;">Не назначен</span>' ).'</td>'."\n";
-//                         echo '                    </tr>'."\n";
-//                     }
-
-//                     echo <<<HERE
-//                 </tbody>
-//             </table>
-// HERE;
-
-//         $content = ob_get_contents();
-//         ob_end_clean();
-
+        exit();
     }
 
     /**
@@ -2931,17 +2890,19 @@ HERE;
 
                     $num = 0;
                     foreach ($arrMaterials as $material) {
-                        $num++;
-                        echo '                    <tr>'."\n";
-                        echo '                        <td style="text-align: center;">'.$num.'</td>'."\n";
-                        echo '                        <td>'.$material->getTitle().'</td>'."\n";
-                        echo '                        <td style="text-align: center;">'.$material->getUnit()->getTitle().'</td>'."\n";
-                        echo '                        <td style="text-align: center;">'.$material->getAmount().'</td>'."\n";
-                        echo '                        <td>'.( $material->getTypeOfEquipment() ? $material->getTypeOfEquipment()->getTitle() : '' ).'</td>'."\n";
-                        echo '                        <td>'.$material->getComment().'</td>'."\n";
-                        echo '                        <td style="text-align: center;">'.( $material->getUrgency() ? '<span style="color: #ff0000; font-size: 12px; text-transform:uppercase;">Срочно</span>' : '' ).'</td>'."\n";
-                        echo '                        <td style="text-align: center;">'.( $material->getResponsible() ? $material->getResponsible()->getShortUsername() : '<span style="color: #777; font-size: 12px;">Не назначен</span>' ).'</td>'."\n";
-                        echo '                    </tr>'."\n";
+                        if (!$material->getIsDeleted()) {
+                            $num++;
+                            echo '                    <tr>'."\n";
+                            echo '                        <td style="text-align: center;">'.$num.'</td>'."\n";
+                            echo '                        <td>'.$material->getTitle().'</td>'."\n";
+                            echo '                        <td style="text-align: center;">'.$material->getUnit()->getTitle().'</td>'."\n";
+                            echo '                        <td style="text-align: center;">'.$material->getAmount().'</td>'."\n";
+                            echo '                        <td>'.( $material->getTypeOfEquipment() ? $material->getTypeOfEquipment()->getTitle() : '' ).'</td>'."\n";
+                            echo '                        <td>'.$material->getComment().'</td>'."\n";
+                            echo '                        <td style="text-align: center;">'.( $material->getUrgency() ? '<span style="color: #ff0000; font-size: 12px; text-transform:uppercase;">Срочно</span>' : '' ).'</td>'."\n";
+                            echo '                        <td style="text-align: center;">'.( $material->getResponsible() ? $material->getResponsible()->getShortUsername() : '<span style="color: #777; font-size: 12px;">Не назначен</span>' ).'</td>'."\n";
+                            echo '                    </tr>'."\n";
+                        }
                     }
 
                     echo <<<HERE

@@ -69,6 +69,7 @@ class BillsController extends AbstractController
         ->andWhere(
             $this->entityManager->createQueryBuilder()->expr()->in('a.id', $subQuery->getDQL())
         )
+        ->orderBy('a.id', 'ASC')
         ->getQuery()
         ->setParameter('uid', $this->security->getUser()->getId())
         ->getResult();

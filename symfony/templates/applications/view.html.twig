@@ -46,14 +46,14 @@
         {% endif %}
         {% if canloadbill and 'ROLE_EXECUTOR' in roles %}
             {# Исполнитель, может загружать счета в эту заявку #}
-            <button type="button" onclick="location.href='/applications/bills/upload';" class="btn btn-sm btn-outline-success text-nowrap"><i class="bi bi-file-earmark-arrow-up"></i> Загрузить счет</button>
+            <button type="button" onclick="location.href='/applications/bills/upload?application={{ application.getId }}';" class="btn btn-sm btn-outline-success text-nowrap"><i class="bi bi-file-earmark-arrow-up"></i> Загрузить счет</button>
         {% endif %}
         </div>
     {% else %}
         {% if canloadbill and 'ROLE_EXECUTOR' in roles %}
             <div class="mb-2 me-0">
                 {# Исполнитель, может загружать счета в эту заявку #}
-                <button type="button" onclick="location.href='/applications/bills/upload';" class="btn btn-sm btn-outline-success text-nowrap"><i class="bi bi-file-earmark-arrow-up"></i> Загрузить счет</button>
+                <button type="button" onclick="location.href='/applications/bills/upload?application={{ application.getId }}';" class="btn btn-sm btn-outline-success text-nowrap"><i class="bi bi-file-earmark-arrow-up"></i> Загрузить счет</button>
             </div>
         {% endif %}
         {# {% if is_granted('ROLE_CREATOR') and application.getAuthor.getId == app.user.id %}
