@@ -443,8 +443,8 @@ class BillsController extends AbstractController
             
             $titles = []; $title = '';
             foreach ($applications as $application) {
-                $titles[] = '<span style="font-weight: bold;">'.$application->getId().'</span> ('.$application->getAuthor()->getShortUsername().')';
-                $title = $application->getId().' ('.$application->getAuthor()->getShortUsername().')'; //Используется для формирования имени файла, если счет один
+                $titles[] = '<span style="font-weight: bold;">'.$application->getId().( !empty($application->getNumber()) ? ' ['.$application->getNumber().']' : '' ).'</span> ('.$application->getAuthor()->getShortUsername().')';
+                $title = $application->getId().( !empty($application->getNumber()) ? ' ['.$application->getNumber().']' : '' ).' ('.$application->getAuthor()->getShortUsername().')'; //Используется для формирования имени файла, если счет один
             }
 
             ob_start();

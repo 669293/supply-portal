@@ -2748,7 +2748,7 @@ class ApplicationsController extends AbstractController
             $sheet->getColumnDimension($columnID)->setAutoSize(TRUE);
         }
         
-        // //Отдаем на скачивание
+        //Отдаем на скачивание
         header('Content-type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment; filename=Заявка '.$id.'.xlsx');
          
@@ -2860,7 +2860,7 @@ HERE;
 
         ob_start();
 
-        echo '<table>';
+        echo '<table autosize="1" border="1" width="100%" style="overflow: wrap">';
         echo '    <tbody>';
         echo '        <tr>';
         echo '            <td class="no-border"><h1>'.$objApplication->getTitle().'</h1></td>';
@@ -2898,7 +2898,7 @@ HERE;
                             echo '                        <td style="text-align: center;">'.$material->getUnit()->getTitle().'</td>'."\n";
                             echo '                        <td style="text-align: center;">'.$material->getAmount().'</td>'."\n";
                             echo '                        <td>'.( $material->getTypeOfEquipment() ? $material->getTypeOfEquipment()->getTitle() : '' ).'</td>'."\n";
-                            echo '                        <td>'.$material->getComment().'</td>'."\n";
+                            echo '                        <td>'.wordwrap($material->getComment(), 60, '<br />', true).'</td>'."\n";
                             echo '                        <td style="text-align: center;">'.( $material->getUrgency() ? '<span style="color: #ff0000; font-size: 12px; text-transform:uppercase;">Срочно</span>' : '' ).'</td>'."\n";
                             echo '                        <td style="text-align: center;">'.( $material->getResponsible() ? $material->getResponsible()->getShortUsername() : '<span style="color: #777; font-size: 12px;">Не назначен</span>' ).'</td>'."\n";
                             echo '                    </tr>'."\n";
@@ -2935,8 +2935,10 @@ HERE;
         ]);
         // $mpdf->debug = true;
 
+        $mpdf->packTableData = true;
+        $mpdf->keep_table_proportions = TRUE;
+        $mpdf->shrink_tables_to_fit=1;
         $mpdf->SetHTMLFooter($footer);
-
         $mpdf->SetTitle($title);
         // $mpdf->setFooter('{PAGENO} / {nbpg}');
         $mpdf->WriteHTML($css, \Mpdf\HTMLParserMode::HEADER_CSS);
