@@ -1546,6 +1546,7 @@ class ApplicationsController extends AbstractController
         LogisticsMaterialsRepository $logisticsMaterialsRepository,
         MaterialsRepository $materialsRepository, 
         StatusesOfBillsRepository $statusesOfBillsRepository,
+        StatusesOfApplicationsRepository $statusesOfApplicationsRepository,
         UsersRepository $usersRepository,
         UnitsRepository $unitsRepository
         ): Response
@@ -1676,6 +1677,9 @@ class ApplicationsController extends AbstractController
         //Получаем всевозможные статусы счетов для списка
         $arrStatuses = $statusesOfBillsRepository->findBy(array(), array('id' => 'ASC'));
 
+        //Получаем всевозможные статусы заявок для списка
+        $arrStatusesOfApplications = $statusesOfApplicationsRepository->findBy(array(), array('id' => 'ASC'));
+
         //Список материалов
         $arrMaterials = $materialsRepository->findBy( array('application' => $objApplication->getId()), array('num' => 'ASC') );
         for ($i=0; $i<sizeof($arrMaterials); $i++) {
@@ -1759,6 +1763,7 @@ class ApplicationsController extends AbstractController
             'files' => $files,
             'bills' => $bills,
             'billsstatuses' => $arrStatuses,
+            'applicationsstatuses' => $arrStatusesOfApplications,
             'materials' => $arrMaterials,
             'users' => $users,
             'units' => $unitsRepository->findAll()
@@ -1775,7 +1780,7 @@ class ApplicationsController extends AbstractController
         $id = $request->request->get('id');
         $status = $request->request->get('status');
 
-        if ($id === null || $status === null || !in_array((int)$status, [2, 4, 5])) {
+        if ($id === null || $status === null) { // || !in_array((int)$status, [2, 4, 5])) {
             return new RedirectResponse('/applications');
         }
 
@@ -2957,6 +2962,7 @@ HERE;
     public function splitMaterialForm(
         Request $request, 
         ApplicationsRepository $applicationsRepository, 
+        BillsMaterialsRepository $billsMaterialsRepository,
         MaterialsRepository $materialsRepository, 
         TypesOfEquipmentRepository $typesOfEquipmentRepository, 
         UnitsRepository $unitsRepository, 
@@ -2976,6 +2982,13 @@ HERE;
             //Получаем материал
             $originalMaterial = $materialsRepository->findBy( array('id' => $request->request->get('material')) );
             if (sizeof($originalMaterial) > 0) {$originalMaterial = array_shift($originalMaterial);}
+
+            //Получаем счет, если он есть
+            $billMaterial = $billsMaterialsRepository->findBy(array('material' => $originalMaterial->getId()));
+            if (sizeof($billMaterial) > 0) {
+                $billMaterial = array_shift($billMaterial);
+                $objBill = $billMaterial->getBill();
+            }
 
             //Получаем количество позиций в заявке
             // $materials = $materialsRepository->findBy( array('application' => $application->getId()) );
@@ -3021,6 +3034,8 @@ HERE;
                     }
                 }
                 
+                $materials = [];
+
                 //Добавляем материалы к заявке
                 for ($i = 0; $i < sizeof($arrTitles); $i++) {
                     $material = new Materials(
@@ -3039,8 +3054,30 @@ HERE;
                     $material->setResponsible($originalMaterial->getResponsible());
                     $this->entityManager->persist($material);
                     $this->entityManager->flush();
+
+                    $materials[] = $material;
                     unset($material);
                 }
+
+                //Если был загружен счет, добавляем материалы в данный счет
+                if (isset($objBill)) {
+                    //Удаляем материал из счета
+                    $this->entityManager->remove($billMaterial);
+                    $this->entityManager->flush();
+
+                    foreach ($materials as $material) {
+                        $objBillMaterial = new BillsMaterials;
+                        $objBillMaterial->setBill($objBill);
+                        $objBillMaterial->setAmount($material->getAmount());
+                        $objBillMaterial->setMaterial($material);
+
+                        //Записываем
+                        $this->entityManager->persist($objBillMaterial);
+                        $this->entityManager->flush();
+                    }
+                }
+
+                unset($materials);
 
                 $this->entityManager->getConnection()->commit();
 

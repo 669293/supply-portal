@@ -33,17 +33,18 @@
     {% if is_granted('ROLE_SUPERVISOR') %}
         <div class="mb-2 me-0">
         {% if currentstatus not in ['Отменена', 'Выполнена'] %}
-            <a href="/applications/edit?number={{ application.getId }}" class="btn btn-sm btn-secondary"><i class="bi bi-pencil-square"></i> Редактировать</a>
+            <a href="/applications/edit?number={{ application.getId }}" class="btn btn-sm btn-secondary me-2"><i class="bi bi-pencil-square"></i> Редактировать</a>
         {% endif %}
         {% if currentstatus == 'Согласовать' %}
-            <button type="button" class="btn btn-sm btn-success" id="playBtn"><i class="bi bi-play"></i> Продолжить</button>
+            <button type="button" class="btn btn-sm btn-success me-2" id="playBtn"><i class="bi bi-play"></i> Продолжить</button>
         {% endif %}
         {% if currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
-            <button type="button" class="btn btn-sm btn-warning" id="pauseBtn"><i class="bi bi-pause"></i> Согласовать</button>
+            <button type="button" class="btn btn-sm btn-warning me-2" id="pauseBtn"><i class="bi bi-pause"></i> Согласовать</button>
         {% endif %}
         {% if currentstatus not in ['Отменена', 'Выполнена'] %}
-            <button type="button" class="btn btn-sm btn-danger" id="cancelBtn"><i class="bi bi-stop"></i> Отменить</button>
+            <button type="button" class="btn btn-sm btn-danger me-2" id="cancelBtn"><i class="bi bi-stop"></i> Отменить</button>
         {% endif %}
+        <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="statusBtn" data-bs-toggle="modal" data-bs-target="#statusModal">Изменить статус</button>
         {% if canloadbill and 'ROLE_EXECUTOR' in roles %}
             {# Исполнитель, может загружать счета в эту заявку #}
             <button type="button" onclick="location.href='/applications/bills/upload?application={{ application.getId }}';" class="btn btn-sm btn-outline-success text-nowrap"><i class="bi bi-file-earmark-arrow-up"></i> Загрузить счет</button>
@@ -365,6 +366,36 @@
 
 {# Модальные окна #}
 {% block modal %}
+    {# Изменение статуса заявки #}
+    <div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="/applications/set-status" method="POST" id="statusForm">
+                    <input type="hidden" name="id" value="{{ application.getId }}" />
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Изменение статуса заявки</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-floating">
+                            <select class="form-select" id="statusSelect" name="status">
+                                {% for status in applicationsstatuses %}
+                                    <option value="{{ status.getId }}"{% if status.getId == statuses|first.status.getId %} selected{% endif %}>{{ status.getTitle }}</option>
+                                {% endfor %}
+                            </select>
+                            <label for="statusSelect">Статус</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                      <button type="button" class="btn btn-primary" id="saveStatusBtn" onclick="$('#statusForm').submit();">Сохранить</button>
+                      <div class="spinner-border text-primary d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     {# Добавление комментария к позиции #}
     <div class="modal fade" id="commentModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
