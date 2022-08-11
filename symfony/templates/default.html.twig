@@ -52,11 +52,16 @@
                   {% if 'ROLE_EXECUTOR' in roles %}
                     <li><a class="dropdown-item text-xsmall" href="/applications/bills/upload">Загрузить счет</a></li>
                   {% endif %}
+                  {% if 'ROLE_BUH' not in roles %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-xsmall" href="/applications/providers"><i class="bi bi-info-circle me-1"></i> Список контрагентов</a></li>
+                  {% endif %}
                 {% endif %}
                 {% if 'ROLE_BUH' in roles %}
                   <li><hr class="dropdown-divider"></li>
                   <li><a class="dropdown-item text-xsmall" href="#?" data-bs-toggle="modal" data-bs-target="#buhModal"><i class="bi bi-info-circle me-1"></i> Просмотр информации о контрагенте</a></li>
-                {% endif %}
+                  <li><a class="dropdown-item text-xsmall" href="/applications/providers"><i class="bi bi-info-circle me-1"></i> Список контрагентов</a></li>
+                 {% endif %}
                 <li><hr class="dropdown-divider"></li>
                 <li><a class="dropdown-item text-xsmall" href="/applications/search"><i class="bi bi-search me-1"></i> Поиск по содержимому заявок</a></li>
                 <li><a class="dropdown-item text-xsmall" href="/applications/bills/search"><i class="bi bi-search me-1"></i> Поиск по счетам и спецификациям</a></li>

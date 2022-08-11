@@ -9,11 +9,12 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\Security\Core\Security;
+use Symfony\Component\Security\Core\Security as SecurityCore;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Validator\Constraints\File;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Applications;
 use App\Entity\ApplicationsStatuses;
@@ -43,7 +44,7 @@ class ApplicationsController extends AbstractController
     private $security;
     private $entityManager;
 
-    public function __construct(Security $security, EntityManagerInterface $entityManager)
+    public function __construct(SecurityCore $security, EntityManagerInterface $entityManager)
     {
         $this->security = $security;
         $this->entityManager = $entityManager;
@@ -383,14 +384,6 @@ class ApplicationsController extends AbstractController
         $_SESSION['applicationsFilter'] = serialize($filter);
 
         return new Response();
-
-
-// die();
-        // 
-        // $cookie = new Cookie('resultsCount', $request->request->get('results'));
-        // $response = new Response();
-        // $response->headers->setCookie($cookie);
-        // return $response;
     }
 
     /**
@@ -3099,6 +3092,48 @@ HERE;
             $result[] = 'Недействительный токен CSRF.';
             return new JsonResponse($result);
         }
+    }
+
+    /**
+     * Список контрагентов
+     * @Route("/applications/providers", methods={"GET"})
+     * @Security("is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR') or is_granted('ROLE_BUH')")
+     */
+    public function providersList(
+        BillsRepository $billsRepository,
+        ProvidersRepository $providersRepository,
+        Request $request): Response
+    {
+        //Получаем список известных поставщиков
+        $providers = $providersRepository->findAll();
+
+        //Получаем список всех ИНН из загруженных счетов
+        $innQuery = $billsRepository->createQueryBuilder('b')
+        ->select('DISTINCT b.inn AS inn')
+        ->orderBy('b.inn', 'ASC')
+        ->getQuery()
+        ->getResult();
+
+        $inn = [];
+        foreach ($innQuery as $inn_) {
+            //Смотрим, есть ли в поставщиках информация по данному ИНН
+            $exist = FALSE;
+            foreach ($providers as $provider) {if ($provider->getInn() == $inn_['inn']) {$exist = TRUE; break;}}
+            if (!$exist) {$inn[] = $inn_['inn'];}
+        }
+
+        //Хлебные крошки
+        $breadcrumbs = [];
+        $breadcrumbs[0] = new \stdClass();
+        $breadcrumbs[0]->href = '/applications/providers';
+        $breadcrumbs[0]->title = 'Список контрагентов';
+
+        return $this->render('applications/providers.html.twig', [
+            'title' => 'Список контрагентов',
+            'breadcrumbs' => $breadcrumbs,
+            'providers' => $providers,
+            'inns' => $inn
+        ]);
     }
 }
 

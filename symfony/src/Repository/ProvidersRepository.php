@@ -33,4 +33,9 @@ class ProvidersRepository extends ServiceEntityRepository
             ->getResult()
         ;
     }
+
+    public function findAll()
+    {
+        return $this->findBy(array(), array('title' => 'ASC'));
+    }
 }

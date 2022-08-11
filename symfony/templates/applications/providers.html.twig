@@ -1,0 +1,135 @@
+{# templates/applications/providers.html.twig #}
+{% extends 'default.html.twig' %}
+
+{# Заголовки #}
+{% block title %}{{ title }}{% endblock %}
+{% block caption %}{{ title }}{% endblock %}
+
+{# Получаем роли пользователя #}
+{% set roles = app.user.getroles(TRUE) %}
+
+{# Хлебные крошки #}
+{% block breadcrumbs %}
+        <nav aria-label="breadcrumb" class="mt-2 d-block">
+          <ol class="breadcrumb text-xsmall mb-3">
+            <li class="breadcrumb-item" aria-current="page"><a href="/"><i class="bi bi-three-dots"></i></a></li>
+            {% if breadcrumbs is defined %}
+                {% for breadcrumb in breadcrumbs %}
+                    {% if loop.last %}
+                        <li class="breadcrumb-item active" aria-current="page">{{ breadcrumb.title }}</li>
+                    {% else %}
+                        <li class="breadcrumb-item" aria-current="page"><a href="{{ breadcrumb.href }}">{{ breadcrumb.title }}</a></li>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+          </ol>
+        </nav>
+{% endblock %}
+
+{# Контент #}
+{% block content %}
+  {% if providers is defined or inn is defined %}
+      {% if providers|length == 0 and inn|length == 0 %}
+          <p><span class="text-muted">Нет контрагентов</span></p>
+          <div class="clearfix"></div>
+      {% else %}
+          <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-1 pb-3">
+          <table class="table table-sm table-bordered table-striped mb-0">
+              <thead class="text-xsmall">
+              <tr>
+                  <th class="py-2 align-middle" scope="col">ИНН</th>
+                  <th class="py-2 align-middle" scope="col">Наименование поставщика</th>
+                  <th class="py-2 align-middle" scope="col">Почтовый адрес</th>
+                  <th class="py-2 align-middle" scope="col">Телефон</th>
+                  <th class="py-2 align-middle" scope="col">Комментарий</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for provider in providers %}
+                  <tr>
+                      <td class="py-2 align-middle text-xsmall">
+                      {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
+                        <a href="#?" class="editProvider">{{ provider.getInn }}</a>
+                      {% else %}
+                        {{ provider.getInn }}
+                      {% endif %}
+                      </td>
+                      <td class="py-2 align-middle text-xsmall">{% if provider.getTitle == '' %}<span class="text-muted">Не заполнено</span>{% else %}{{ provider.getTitle }}{% endif %}</td>
+                      <td class="py-2 align-middle text-xsmall">{% if provider.getAddress == '' %}<span class="text-muted">Не заполнено</span>{% else %}{{ provider.getAddress }}{% endif %}</td>
+                      <td class="py-2 align-middle text-xsmall">{% if provider.getPhone == '' %}<span class="text-muted">Не заполнено</span>{% else %}{{ provider.getPhone }}{% endif %}</td>
+                      <td class="py-2 align-middle text-xsmall">{% if provider.getComment == '' %}<span class="text-muted">Не заполнено</span>{% else %}{{ provider.getComment }}{% endif %}</td>
+                  </tr>
+              {% endfor %}
+              {% for inn in inns %}
+                  <tr>
+                      <td class="py-2 align-middle text-xsmall">
+                      {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
+                        <a href="#?" class="editProvider">{{ inn }}</a>
+                      {% else %}
+                        {{ inn }}
+                      {% endif %}
+                      </td>
+                      <td class="py-2 align-middle text-xsmall"><span class="text-muted">Не заполнено</span></td>
+                      <td class="py-2 align-middle text-xsmall"><span class="text-muted">Не заполнено</span></td>
+                      <td class="py-2 align-middle text-xsmall"><span class="text-muted">Не заполнено</span></td>
+                      <td class="py-2 align-middle text-xsmall"><span class="text-muted">Не заполнено</span></td>
+                  </tr>
+              {% endfor %}
+              </tbody>
+          </table>
+          </div>
+      {% endif %}
+  {% endif %}
+{% endblock %}
+
+{# Модальные окна #}
+{% block modal %}
+    <div class="modal fade" id="providerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="/applications/bills/provider" method="POST" id="providerForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Редактирование информации о поставщике</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="title" placeholder=" " value="" name="title" />
+                            <label for="title">Наименование поставщика</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="inn" placeholder=" " value="" name="inn" readonly />
+                            <label for="inn">ИНН</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="address" placeholder=" " value="" name="address" />
+                            <label for="address">Почтовый адрес</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="phone" placeholder=" " value="" name="phone" />
+                            <label for="phone">Телефон</label>
+                        </div>
+                        <div class="form-floating">
+                            <textarea class="form-control" placeholder="Комментарий" id="commentTextarea" style="height: 100px" name="comment"></textarea>
+                            <label for="commentTextarea">Комментарий</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                      <button type="button" class="btn btn-primary" id="saveProviderBtn">Сохранить</button>
+                      <div class="spinner-border text-primary d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{# Скрипты #}
+{% block scripts %}
+    <script src="{{ asset('js/applications/providers.js') }}" type="text/javascript"></script>
+
+    {% if scripts is defined %}
+{{ scripts|raw }}
+    {% endif %}
+{% endblock %}
