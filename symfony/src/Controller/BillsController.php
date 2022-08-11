@@ -468,12 +468,14 @@ class BillsController extends AbstractController
 
             if ($ext == 'pdf') {
                 //Понижаем версию pdf до 1.4 для того чтобы mPDF могла его обработать
-                $filename = $this->getParameter('bills_directory').'/'.$bill->getPath();
-                $newFilename = str_replace('.pdf', '_1_4.pdf', $filename);
-                $cmd = 'gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -o '.$newFilename.' '.$filename;
+                $filename = basename($this->getParameter('bills_directory').'/'.$bill->getPath());
+                $dirname = dirname($this->getParameter('bills_directory').'/'.$bill->getPath());
+
+                rename($dirname.'/'.$filename, $dirname.'/old.pdf');
+                $cmd = 'gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -o '.$dirname.'/new.pdf '.$dirname.'/old.pdf';
                 $result = shell_exec($cmd);
-                rename($filename, str_replace('.pdf', '.old.pdf', $filename));
-                rename($newFilename, $filename);
+                rename($dirname.'/old.pdf', $dirname.'/'.str_replace('.pdf', '.old.pdf', $filename));
+                rename($dirname.'/new.pdf', $dirname.'/'.$filename);
 
                 $pagesCount = $mpdf->SetSourceFile($this->getParameter('bills_directory').'/'.$bill->getPath());
 
