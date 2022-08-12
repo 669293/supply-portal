@@ -1690,6 +1690,7 @@ class ApplicationsController extends AbstractController
             $arrMaterials[$i]->done = $amount;
             $arrMaterials[$i]->dateClose = $dateClose;
             $arrMaterials[$i]->duplicates = [];
+            $arrMaterials[$i]->prices = [];
 
             //Смотрим, есть ли логистическая информация
             $logistics = $logisticsMaterialsRepository->findBy( array('material' => $arrMaterials[$i]->getId()) );
@@ -1725,6 +1726,30 @@ class ApplicationsController extends AbstractController
             }
 
             unset($arrSameMaterials);
+
+            //Получаем счета в которых ранее встречалась данная позиция
+            $arrPrices = $materialsRepository->createQueryBuilder('m')
+            ->select('IDENTITY(bm.bill) AS id, b.num')
+            ->where('LOWER(m.title) LIKE LOWER(:mtitle)')
+            ->andWhere('m.id <> :mid')
+            ->setParameter('mtitle', '%'.$arrMaterials[$i]->getTitle().'%')
+            ->setParameter('mid', $arrMaterials[$i]->getId())
+            ->join('App\Entity\BillsMaterials', 'bm', 'WITH' ,'bm.material = m.id')
+            ->join('App\Entity\Bills', 'b', 'WITH' ,'bm.bill = b.id')
+            ->groupBy('bm.bill, b.num')
+            ->getQuery()
+            ->getResult()
+            ;
+
+            if (is_array($arrPrices) && sizeof($arrPrices) > 0) {
+                foreach ($arrPrices as $bill) {
+                    //Получаем дату загрузки счета
+                    $status = $this->entityManager->getRepository(BillsStatuses::class)->findBy(array('bill' => $bill['id']), array('datetime' => 'DESC'));
+                    if (is_array($status)) {$status = array_shift($status);}
+
+                    $arrMaterials[$i]->prices[] = ['id' => $bill['id'], 'num' => $bill['num'], 'datetime' => $status->getDateTime()];
+                }
+            }
 
             //Подгружаем счета
             $billsTmp = $billsMaterialsRepository->findBy(array('material' => $arrMaterials[$i]->getId()));

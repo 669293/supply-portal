@@ -263,6 +263,14 @@
                                     {% endfor %}
                                     <a role="button" class="text-danger" data-bs-html="true" data-bs-toggle="popover" title="Возможен дубликат" data-bs-content="{{ duplicatestext }}"><i class="bi bi-info-circle"></i></a>
                                 {% endif %}
+                                {% if material.prices|length > 0 %}
+                                    {% set pricestext = '' %}
+                                    {% for bill in material.prices %}
+                                        {% if not loop.first %}{% set pricestext = pricestext ~ '<br />' %}{% endif %}
+                                        {% set pricestext = pricestext ~ '<a href="/applications/bills/in-work/view?id=' ~ bill.id ~ '" target="_blank">Счет №' ~ bill.num ~ '</a> от ' ~ bill.datetime|date('d.m.Y') %}
+                                    {% endfor %}
+                                    <a role="button" class="text-success" data-bs-html="true" data-bs-toggle="popover" title="Возможные счета по данной позиции" data-bs-content="{{ pricestext }}"><i class="bi bi-bar-chart-fill"></i></a>
+                                {% endif %}
                                 {% if material.getNote != '' %}
                                     <a role="button" class="text-primary material-note" data-bs-html="true" data-bs-toggle="popover" title="Комментарий к позиции" data-bs-content="{{ material.getNote }}"><i class="bi bi-chat-text"></i></a>
                                 {% endif %}
