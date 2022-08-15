@@ -49,6 +49,13 @@ class ApplicationsStatuses
      */
     private $status;
 
+    /**
+     * @var string|null
+     *
+     * @ORM\Column(name="comment", type="string", length=1000)
+     */
+    private $comment;
+
     public function __construct()
     {
         $this->datetime = new \DateTime();
@@ -95,5 +102,15 @@ class ApplicationsStatuses
         return $this;
     }
 
+    public function getComment(): ?string
+    {
+        return $this->comment;
+    }
 
+    public function setComment(?string $comment): self
+    {
+        $this->comment = $comment;
+
+        return $this;
+    }
 }

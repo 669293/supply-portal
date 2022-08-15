@@ -32,17 +32,17 @@ $(document).ready(function() {
   });
 
   //Отмена заявки
-  $('#cancelBtn').click(function() {
-    //Вызываем подтверждение
-    modalConfirm(function(confirm) {
-      if (confirm) {
-        $.redirectPost('/applications/set-status', {'id': id, 'status': 5});
-      }
-    }, 
-    'Вы уверены что хотите отменить данную заявку?<br />Вернуться к ее выполнению будет невозможно.',
-    'Отмена заявки'
-    );
-  });
+  // $('#cancelBtn').click(function() {
+  //   //Вызываем подтверждение
+  //   modalConfirm(function(confirm) {
+  //     if (confirm) {
+  //       $.redirectPost('/applications/set-status', {'id': id, 'status': 5});
+  //     }
+  //   }, 
+  //   'Вы уверены что хотите отменить данную заявку?<br />Вернуться к ее выполнению будет невозможно.',
+  //   'Отмена заявки'
+  //   );
+  // });
 
   //Выделение всех позиций в заявке
   $('body').on('change', '.material-select-all', function() {
@@ -252,7 +252,8 @@ $(document).ready(function() {
     }).done(function(data) {
       if ($.isArray(data) && data[0] == 1) {
         //Все хорошо
-        $.redirectPost('/applications', {'msg': 'Заявка №' + $('input[name="aid"]').val() + ' успешно сохранена', 'bg-color': 'bg-success', 'text-color': 'text-white'});
+        location.reload();
+        // $.redirectPost('/applications', {'msg': 'Заявка №' + $('input[name="aid"]').val() + ' успешно сохранена', 'bg-color': 'bg-success', 'text-color': 'text-white'});
       } else {
         showFormAlert(appForm, data[1]);
         freezeForm(appForm, false);
@@ -355,7 +356,7 @@ $(document).ready(function() {
     checkContent();
   });
 
-  //Фильтрация
+  //Разделение позиции
   $('#saveSplitBtn').click(function() {
     var form = $('#splitForm');
     var data = {};

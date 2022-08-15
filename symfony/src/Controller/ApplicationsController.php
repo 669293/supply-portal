@@ -1797,6 +1797,7 @@ class ApplicationsController extends AbstractController
     {
         $id = $request->request->get('id');
         $status = $request->request->get('status');
+        $comment = $request->request->get('comment');
 
         if ($id === null || $status === null) { // || !in_array((int)$status, [2, 4, 5])) {
             return new RedirectResponse('/applications');
@@ -1827,6 +1828,7 @@ class ApplicationsController extends AbstractController
         $applicationStatus = new ApplicationsStatuses;
         $applicationStatus->setApplication($objApplication);
         $applicationStatus->setStatus($objStatus);
+        if (!empty($comment)) {$applicationStatus->setComment($comment);}
         
         $this->entityManager->persist($applicationStatus);
         $this->entityManager->flush();
