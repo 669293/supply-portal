@@ -196,7 +196,8 @@ class UsersManageController extends AbstractController
             $user->setEmail($request->request->get('userEmail'));
             $user->setComment($request->request->get('userComment'));
             
-            $roles = ['ROLE_USER']; if ($request->request->get('userRole')) {$roles = array_merge($roles, $request->request->get('userRole'));}
+            $roles = []; //['ROLE_USER']; 
+            if ($request->request->get('userRole')) {$roles = array_merge($roles, $request->request->get('userRole'));}
             $user->setRoles($roles);
             
             $user->setActive(true);
@@ -299,7 +300,9 @@ class UsersManageController extends AbstractController
             $user->setEmail($request->request->get('userEmail'));
             $user->setComment($request->request->get('userComment'));
 
-            $roles = ['ROLE_USER']; if ($request->request->get('userRole')) {$roles = array_merge($roles, $request->request->get('userRole'));}
+            $roles = []; //['ROLE_USER']; 
+            if ($request->request->get('userRole')) {$roles = array_merge($roles, $request->request->get('userRole'));}
+            $roles = array_unique($roles);
             $user->setRoles($roles);
 
             if ($request->request->get('userActive') !== null) {

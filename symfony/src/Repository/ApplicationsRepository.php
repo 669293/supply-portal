@@ -67,8 +67,8 @@ class ApplicationsRepository extends ServiceEntityRepository
                 $responsiblesIDs[] = $responsible['id'];
             }
 
-            $query->join('App\Entity\Materials', 'm', 'WITH' ,'m.application=a.id')
-            ->andWhere('m.responsible IN ('.implode(',', $responsiblesIDs).')')
+            $query->join('App\Entity\Materials', 'm2', 'WITH' ,'m2.application=a.id')
+            ->andWhere('m2.responsible IN ('.implode(',', $responsiblesIDs).')')
             ;
         }
 

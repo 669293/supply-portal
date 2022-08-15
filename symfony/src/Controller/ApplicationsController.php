@@ -541,6 +541,9 @@ class ApplicationsController extends AbstractController
             $filter = unserialize($_SESSION['applicationsFilter']);
         } else {
             $filter = new Filter;
+            if (in_array('ROLE_EXECUTOR', $roles) && !in_array('ROLE_SUPERVISOR', $roles) && !in_array('ROLE_WATCHER', $roles)) {
+                $filter->responsible = $usersRepository->findBy(array('id' => $this->security->getUser()->getId()));
+            }
         }
 
         //Фильтр готов, выводим форму
