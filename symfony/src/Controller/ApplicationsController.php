@@ -74,6 +74,7 @@ class ApplicationsController extends AbstractController
         StatusesOfApplicationsRepository $statusesOfApplicationsRepository
     ): Response
     {
+phpinfo();
         //Получаем роли текущего пользователя
         $roles = $this->security->getUser()->getRoles();
 
@@ -541,9 +542,6 @@ class ApplicationsController extends AbstractController
             $filter = unserialize($_SESSION['applicationsFilter']);
         } else {
             $filter = new Filter;
-            if (in_array('ROLE_EXECUTOR', $roles) && !in_array('ROLE_SUPERVISOR', $roles) && !in_array('ROLE_WATCHER', $roles)) {
-                $filter->responsible = $usersRepository->findBy(array('id' => $this->security->getUser()->getId()));
-            }
         }
 
         //Фильтр готов, выводим форму
@@ -760,8 +758,8 @@ class ApplicationsController extends AbstractController
         
                 if (in_array('ROLE_ADMIN', $roles)) {
                     $params['users'] = $usersRepository->findBy(
-                        array(),
-                        array('active' => 'DESC', 'login' => 'ASC')
+                        array('active' => TRUE),
+                        array('username' => 'ASC')
                     );
                 }
         

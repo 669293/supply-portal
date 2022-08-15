@@ -377,4 +377,40 @@ $(document).ready(function() {
       }
     });
   });
+
+  //Получаем instance модального окна
+  const filterModal = new bootstrap.Modal(document.getElementById('filterModal'));
+
+  //Фильтрация по ответственному
+  $('#filterBtn').click(function() {
+    //Получаем текущее значение
+    var filterResponsible = $('#filterSelect').val();
+
+    $('#materialsTable tbody tr').removeClass('d-none');
+
+    if (filterResponsible != 'Выберите') {
+      $('#materialsTable tbody tr').each(function() {
+        var tr = $(this);
+        if (!tr.hasClass('text-muted')) {
+          if ($('#materialsTable').hasClass('supervisor')) {
+            if (filterResponsible == 'Не назначен') {
+              console.log(tr.find('select option:selected').html());
+              if (tr.find('select option:selected').html() != 'Выберите') {tr.addClass('d-none');}
+            } else {
+              if (tr.find('select option:selected').html() != filterResponsible) {tr.addClass('d-none');}
+            }
+          } else {
+            if (tr.find('td:nth-child(11)').text().trim() != filterResponsible) {tr.addClass('d-none');}
+          }
+        } else {
+          tr.addClass('d-none');
+        }
+      });
+      $('#toggleFilterModal i').removeClass('bi-funnel').addClass('bi-funnel-fill');
+    } else {
+      $('#toggleFilterModal i').removeClass('bi-funnel-fill').addClass('bi-funnel');
+    }
+
+    filterModal.hide();
+  });
 });
