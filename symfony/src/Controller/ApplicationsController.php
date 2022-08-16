@@ -74,7 +74,6 @@ class ApplicationsController extends AbstractController
         StatusesOfApplicationsRepository $statusesOfApplicationsRepository
     ): Response
     {
-phpinfo();
         //Получаем роли текущего пользователя
         $roles = $this->security->getUser()->getRoles();
 
@@ -518,10 +517,17 @@ phpinfo();
      * @Route("/applications/delete-filter", methods={"GET"})
      * @IsGranted("ROLE_USER")
      */
-    public function applicationsDeleteFilter(Request $request): Response
+    public function applicationsDeleteFilter(Request $request, UsersRepository $usersRepository): Response
     {
+        $roles = $this->security->getUser()->getRoles();
+
         //Получаем фильтр
         $filter = new Filter;
+        if (in_array('ROLE_EXECUTOR', $roles) && !in_array('ROLE_SUPERVISOR', $roles)) {
+            $filter->responsible = $usersRepository->findBy(array('id' => $this->security->getUser()->getId()));
+            if (is_array($filter->responsible)) {$filter->responsible = array_shift($filter->responsible);}
+            $filter->resultsPerPage = 0;
+        }
 
         $_SESSION['applicationsFilter'] = serialize($filter);
         return new RedirectResponse('/applications');
@@ -542,6 +548,11 @@ phpinfo();
             $filter = unserialize($_SESSION['applicationsFilter']);
         } else {
             $filter = new Filter;
+            if (in_array('ROLE_EXECUTOR', $roles) && !in_array('ROLE_SUPERVISOR', $roles)) {
+                $filter->responsible = $usersRepository->findBy(array('id' => $this->security->getUser()->getId()));
+                if (is_array($filter->responsible)) {$filter->responsible = array_shift($filter->responsible);}
+                $filter->resultsPerPage = 0;
+            }
         }
 
         //Фильтр готов, выводим форму
@@ -2532,10 +2543,17 @@ phpinfo();
      * @Route("/applications/delete-filter-done", methods={"GET"})
      * @IsGranted("ROLE_USER")
      */
-    public function doneApplicationsDeleteFilter(Request $request): Response
+    public function doneApplicationsDeleteFilter(Request $request, UsersRepository $usersRepository): Response
     {
+        $roles = $this->security->getUser()->getRoles();
+
         //Получаем фильтр
         $filter = new Filter;
+        if (in_array('ROLE_EXECUTOR', $roles) && !in_array('ROLE_SUPERVISOR', $roles)) {
+            $filter->responsible = $usersRepository->findBy(array('id' => $this->security->getUser()->getId()));
+            if (is_array($filter->responsible)) {$filter->responsible = array_shift($filter->responsible);}
+            $filter->resultsPerPage = 0;
+        }
 
         $_SESSION['applicationsDoneFilter'] = serialize($filter);
         return new RedirectResponse('/applications/done');
@@ -2556,6 +2574,11 @@ phpinfo();
             $filter = unserialize($_SESSION['applicationsDoneFilter']);
         } else {
             $filter = new Filter;
+            if (in_array('ROLE_EXECUTOR', $roles) && !in_array('ROLE_SUPERVISOR', $roles)) {
+                $filter->responsible = $usersRepository->findBy(array('id' => $this->security->getUser()->getId()));
+                if (is_array($filter->responsible)) {$filter->responsible = array_shift($filter->responsible);}
+                $filter->resultsPerPage = 0;
+            }
         }
         $filter->done = true;
 
