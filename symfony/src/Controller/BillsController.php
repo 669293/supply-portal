@@ -956,8 +956,11 @@ class BillsController extends AbstractController
         $logistics = $this->entityManager->getRepository(LogisticsMaterials::class)->createQueryBuilder('lm')
         ->select('IDENTITY(lm.logistic) AS logistic, COUNT(lm.material) AS cnt')
         ->where('lm.material IN (:materials)')
+        ->join('App\Entity\Logistics', 'l', 'WITH' ,'lm.logistic=l.id')
+        ->andWhere('(l.bill = :bid) OR l.bill IS NULL')
         ->groupBy('lm.logistic')
         ->setParameter('materials', $materialsIDs)
+        ->setParameter('bid', $id)
         ->distinct()
         ->getQuery()
         ->getResult();
@@ -1231,6 +1234,9 @@ class BillsController extends AbstractController
                     $type = $request->request->get('type');
                     if ($type !== null && is_numeric($type)) {
                         $objLogistics = new Logistics;
+
+                        //Добавляем информацию о счете
+                        $objLogistics->setBill($objBill);
 
                         if ($type == 0) {
                             //Получение

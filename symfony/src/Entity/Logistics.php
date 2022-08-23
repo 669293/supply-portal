@@ -79,6 +79,16 @@ class Logistics
      */
     private $done = false;
 
+    /**
+     * @var \Bills
+     *
+     * @ORM\ManyToOne(targetEntity="Bills")
+     * @ORM\JoinColumns({
+     *   @ORM\JoinColumn(name="bill", referencedColumnName="id")
+     * })
+     */
+    private $bill;
+
     public function __construct()
     {
         $this->date = new \DateTime();
@@ -181,6 +191,18 @@ class Logistics
     public function setDone(bool $done): self
     {
         $this->done = $done;
+
+        return $this;
+    }
+
+    public function getBill(): ?Bills
+    {
+        return $this->bill;
+    }
+
+    public function setBill(?Bills $bill): self
+    {
+        $this->bill = $bill;
 
         return $this;
     }

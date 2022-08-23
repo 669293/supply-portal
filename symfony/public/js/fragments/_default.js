@@ -1,9 +1,9 @@
 //Функция заморозки формы на время отправки
 function freezeForm(form, disable = true) {
   form.find('input').not('.freeze-ignore').prop('disabled', disable);
-  form.find('textarea').prop('disabled', disable);
-  form.find('select').prop('disabled', disable);
-  form.find('button').prop('disabled', disable);
+  form.find('textarea').not('.freeze-ignore').prop('disabled', disable);
+  form.find('select').not('.freeze-ignore').prop('disabled', disable);
+  form.find('button').not('.freeze-ignore').prop('disabled', disable);
 
   if (disable) {
     form.find('i.delete-row').addClass('text-muted').prop('disabled', disable);

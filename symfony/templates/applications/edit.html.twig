@@ -47,16 +47,19 @@
                     </tr>
                 </thead>
                 <tbody>
+{% set deletedMaterials = 0 %}
 {% for material in materials %}
     {% if material.getIsDeleted %}
+        {% set deletedMaterials = deletedMaterials + 1 %}
                 <tr>
                     <td class="align-middle text-center text-xsmall text-decoration-line-through">{{ material.getNum }}</td>
                     <td class="align-middle text-decoration-line-through">
-                        <input class="form-control form-control-sm material-autocomplete deleted" type="text" value="{{ material.getTitle }}" name="titleContentApp[]" disabled />
-                        <input type="hidden" name="idContentApp[]" value="{{ material.getId }}" disabled />
+                        <input class="form-control form-control-sm material-autocomplete deleted freeze-ignore" type="text" value="{{ material.getTitle }}" name="titleContentApp[]" disabled />
+                        <input type="hidden" name="idContentApp[]" class="freeze-ignore" value="{{ material.getId }}" disabled />
+                        <input type="hidden" name="numContentApp[]" class="freeze-ignore" value="{{ material.getNum }}" disabled />
                     </td>
                     <td class="align-middle text-center text-decoration-line-through">
-                        <select class="form-select form-select-sm deleted" name="unitContentApp[]" disabled>
+                        <select class="form-select form-select-sm deleted freeze-ignore" name="unitContentApp[]" disabled>
 {% for unit in units %}
     {% if unit.getId == material.getUnit.getId %}
                             <option value="{{ unit.getId }}" selected="selected">{{ unit.getTitle }}</option>
@@ -66,13 +69,12 @@
 {% endfor %}
                         </select>
                     </td>
-                    <td class="align-middle text-decoration-line-through"><input class="form-control form-control-sm deleted" type="number" value="{{ material.getAmount }}" name="amountContentApp[]" disabled /></td>
-                    <td class="align-middle text-decoration-line-through" style="position: relative;"><input class="form-control form-control-sm toe-autocomplete deleted" type="text" name="typeOfEquipmentContentApp[]" value="{% if material.getTypeOfEquipment != null %}{{ material.getTypeOfEquipment.getTitle }}{% endif %}" autocomplete="off" disabled /></td>
-                    <td class="align-middle text-decoration-line-through"><input class="form-control form-control-sm deleted" type="text" name="commentContentApp[]" value="{{ material.getComment }}" autocomplete="off" disabled /></td>
+                    <td class="align-middle text-decoration-line-through"><input class="form-control form-control-sm deleted freeze-ignore" type="number" value="{{ material.getAmount }}" name="amountContentApp[]" disabled /></td>
+                    <td class="align-middle text-decoration-line-through" style="position: relative;"><input class="form-control form-control-sm toe-autocomplete deleted freeze-ignore" type="text" name="typeOfEquipmentContentApp[]" value="{% if material.getTypeOfEquipment != null %}{{ material.getTypeOfEquipment.getTitle }}{% endif %}" autocomplete="off" disabled /></td>
+                    <td class="align-middle text-decoration-line-through"><input class="form-control form-control-sm deleted freeze-ignore" type="text" name="commentContentApp[]" value="{{ material.getComment }}" autocomplete="off" disabled /></td>
                     <td class="text-center align-middle">
                         <div class="form-switch mb-1" style="line-height: 1.3!important;">
-                            <input type="hidden" name="disabledRowsContentApp[]" value="{{ material.getNum }}" />
-                            <input class="form-check-input urgent deleted" type="checkbox" id="urgent{{ material.getNum }}" name="urgentContentApp[]" value="{{ material.getNum }}"{% if material.getUrgency %} checked="checked" {% endif %} disabled />
+                            <input class="form-check-input urgent deleted freeze-ignore" type="checkbox" id="urgent{{ material.getNum }}" name="urgentContentApp[]" value="{{ material.getNum }}"{% if material.getUrgency %} checked="checked" {% endif %} disabled />
                             <label class="form-check-label text-xsmall text-black-50 ms-1 us-none" for="urgent{{ material.getNum }}">Срочно</label>
                         </div>
                     </td>
@@ -87,6 +89,7 @@
                     <td class="align-middle">
                         <input class="form-control form-control-sm material-autocomplete" type="text" value="{{ material.getTitle }}" name="titleContentApp[]" />
                         <input type="hidden" name="idContentApp[]" value="{{ material.getId }}" />
+                        <input type="hidden" name="numContentApp[]" value="{{ material.getNum }}" />
                     </td>
                     <td class="align-middle text-center">
                     <select class="form-select form-select-sm" name="unitContentApp[]">
@@ -119,6 +122,7 @@
             </table>
         </div>
         <button type="button" class="btn btn-outline-secondary btn-sm mb-4" id="addRowBtn"><i class="bi bi-plus-lg"></i> Добавить строку</button>
+        <input type="hidden" name="deletedMaterialsContentApp" class="freeze-ignore" value="{{ deletedMaterials }}" />
 
         <h5 class="mb-3">Дополнительные файлы</h5>
 

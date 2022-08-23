@@ -503,6 +503,7 @@ class LogisticsController extends AbstractController
      */
     public function logisticsDelInfoForm(
         Request $request, 
+        BillsMaterialsRepository $billsMaterialsRepository,
         LogisticsRepository $logisticsRepository,
         LogisticsMaterialsRepository $logisticsMaterialsRepository,
         PhotosRepository $photosRepository
@@ -511,6 +512,23 @@ class LogisticsController extends AbstractController
         $id = $request->request->get('id');
         if ($id === null || empty($id) || !is_numeric($id)) {
             return new RedirectResponse('/applications');
+        }
+
+        //Получаем материалы в логистике, изменяем количество отгруженных
+        $logisticsMaterials = $logisticsMaterialsRepository->findBy( array('logistic' => $id) );
+        foreach ($logisticsMaterials as $logisticsMaterial) {
+            $amount = $logisticsMaterial->getAmount();
+            $material = $logisticsMaterial->getMaterial();
+            $bill = $logisticsMaterial->getLogistics()->getBill();
+
+            if ($bill) {
+                $billMaterial = $billsMaterialsRepository->findBy(array('bill' => $bill->getId(), 'material' => $material->getId()));
+                if (is_array($billMaterial)) {$billMaterial = array_shift($billMaterial);}
+
+                $billMaterial->setRecieved($billMaterial->getRecieved() - $amount);
+                $this->entityManager->persist($billMaterial);
+                $this->entityManager->flush();
+            }
         }
 
         //Получаем логистику

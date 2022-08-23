@@ -61,19 +61,15 @@ $(document).ready(function() {
   //Изменение статуса сторки
   function setDatabaseRowStatus(row, deleted = true) {
     if (deleted) {
-      row.find('input').addClass('deleted').prop('disabled', true);
-      row.find('select').addClass('deleted').prop('disabled', true);
-      row.find('td').slice(0,6).addClass('text-decoration-line-through');
+      row.find('input').addClass('deleted').addClass('freeze-ignore').prop('disabled', true);
+      row.find('select').addClass('deleted').addClass('freeze-ignore').prop('disabled', true);
+      row.find('td').slice(0,6).addClass('text-decoration-line-through').addClass('freeze-ignore');
       row.find('td:last i:first').removeClass('delete-database').removeClass('delete-row').removeClass('bi-trash').removeClass('text-danger').addClass('bi-arrow-repeat').addClass('text-success').addClass('repeat-row');
-      //Добавляем скрытый input с номером (используется для тех случаев когда при неактивных строках сбивается нумерация при установке флагов срочности)
-      row.find('.form-switch').append('<input type="hidden" name="disabledRowsContentApp[]" value="' + row.find('td:first').text() + '" />');
     } else {
-      row.find('input').removeClass('deleted').prop('disabled', false);
-      row.find('select').removeClass('deleted').prop('disabled', false);
-      row.find('td').slice(0,6).removeClass('text-decoration-line-through');
+      row.find('input').removeClass('deleted').removeClass('freeze-ignore').prop('disabled', false);
+      row.find('select').removeClass('deleted').removeClass('freeze-ignore').prop('disabled', false);
+      row.find('td').slice(0,6).removeClass('text-decoration-line-through').removeClass('freeze-ignore');
       row.find('td:last i:first').addClass('delete-database').addClass('delete-row').addClass('bi-trash').addClass('text-danger').removeClass('bi-arrow-repeat').removeClass('text-success').removeClass('repeat-row');
-      //Удаляем скрытый input с номером
-      row.find('input[name="disabledRowsContentApp[]"]').remove();
     }
   }
 
@@ -161,6 +157,7 @@ $(document).ready(function() {
     $('#materialsTable tbody tr:visible').each(function(index, element) {
       $(this).find('td:first').text(index + 1);
       $(this).find('input[name="urgentContentApp[]"]').attr('id', 'urgent' + (index + 1)).val(index + 1);
+      $(this).find('input[name="numContentApp[]"]').val(index + 1);
       $(this).find('label').attr('for', 'urgent' + (index + 1));
     });
   }
@@ -168,11 +165,12 @@ $(document).ready(function() {
   //Добавление позиции в заявку
   $('#addRowBtn').click(function() {
     var row = $('#materialsTable tbody tr:visible:last').clone();
-    row.find('input[type="text"]').val('');
-    row.find('input[type="number"]').val('');
-    row.find('input[type="checkbox"]').prop('checked', false);
-    row.find('input[type="hidden"]').remove();
-    row.find('select').val(row.find('select option').filter(function() {return $(this).text() === 'шт';}).first().attr('value'));
+    row.find('.text-decoration-line-through').removeClass('text-decoration-line-through');
+    row.find('input[type="text"]').val('').removeClass('freeze-ignore');
+    row.find('input[type="number"]').val('').removeClass('freeze-ignore');
+    row.find('input[type="checkbox"]').prop('checked', false).removeClass('freeze-ignore');
+    row.find('input[name="idContentApp[]"]').remove();
+    row.find('select').removeClass('freeze-ignore').val(row.find('select option').filter(function() {return $(this).text() === 'шт';}).first().attr('value'));
     row.find('.delete-row').removeClass('delete-database');
     row.attr('style', 'none');
     row.css('display', 'none');
@@ -388,7 +386,8 @@ $(document).ready(function() {
         if (appForm.attr('id') == 'createAppForm') {
           $.redirectPost('/applications', {'msg': 'Заявка №' + data[1] + ' успешно добавлена', 'bg-color': 'bg-success', 'text-color': 'text-white'});
         } else {
-          $.redirectPost('/applications', {'msg': 'Заявка №' + data[1] + ' успешно сохранена', 'bg-color': 'bg-success', 'text-color': 'text-white'});
+          location.href = '/applications/view?number=' + data[1];
+          // $.redirectPost('/applications', {'msg': 'Заявка №' + data[1] + ' успешно сохранена', 'bg-color': 'bg-success', 'text-color': 'text-white'});
         }
       } else {
         showFormAlert(appForm, data[1]);

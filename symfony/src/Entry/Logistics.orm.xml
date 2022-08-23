@@ -57,5 +57,10 @@
         <join-column name="&quot;user&quot;" referenced-column-name="id"/>
       </join-columns>
     </many-to-one>
+    <many-to-one field="bill" target-entity="Bills" fetch="LAZY">
+      <join-columns>
+        <join-column name="bill" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
   </entity>
 </doctrine-mapping>

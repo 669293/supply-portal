@@ -1333,6 +1333,7 @@ class ApplicationsController extends AbstractController
                     $result[] = 'Нет прав для сохранения изменений';
 
                     return new JsonResponse($result);
+                    die();
                 }
             }
 
@@ -1343,10 +1344,12 @@ class ApplicationsController extends AbstractController
                 //Получаем массив ID
                 $arrId = $request->request->get('idContentApp');
 
+                //Получаем массив номеров
+                $arrNum = $request->request->get('numContentApp');
+
                 //Получаем массив наименований
                 $arrTitles = $request->request->get('titleContentApp');
-                $rowsCount = sizeof($arrTitles) - sizeof($arrId); //Определяем полезное количество строк
-                while ($rowsCount > 0) {if (empty($arrTitles[$rowsCount - 1])) {$rowsCount--;} else {break;}}
+                $rowsCount = sizeof($arrTitles) - sizeof($arrId); //Определяем количество строк для добавления
                 
                 $arrTitlesToSave = array_slice($arrTitles, 0, sizeof($arrId)); //Массив для сохраннения изменений
                 $arrTitles = array_slice($arrTitles, sizeof($arrId), $rowsCount); //Массив для добавления новых строк
@@ -1356,42 +1359,30 @@ class ApplicationsController extends AbstractController
                 
                 $arrCommentsToSave = array_slice($request->request->get('commentContentApp'), 0, sizeof($arrId)); //Массив для сохраннения изменений
                 $arrComments = array_slice($request->request->get('commentContentApp'), sizeof($arrId), $rowsCount); //Получаем массив коментариев
-                
+
                 //Получаем массив срочности
                 $arrUrgency = array_pad([], $rowsCount + sizeof($arrId), false);
                 $tmp = $request->request->get('urgentContentApp'); 
-                
+
                 if ($tmp !== null) {
                     asort($tmp);
-
+                    
                     //Преобразовываем типы
                     for ($i=0; $i<sizeof($tmp); $i++) {$tmp[$i] = (int)$tmp[$i];}
 
-                    //Делаем корректировку массива с учетом неактивных строк
-                    if ($request->request->get('disabledRowsContentApp') !== null) {
-                        $inactiveRows = $request->request->get('disabledRowsContentApp'); 
-                        
-                        if ($inactiveRows !== null) {
-                            asort($inactiveRows);
-
-                            //Преобразовываем типы
-                            for ($i=0; $i<sizeof($inactiveRows); $i++) {$inactiveRows[$i] = (int)$inactiveRows[$i];}
-
-                            for ($i=0; $i<sizeof($inactiveRows); $i++) {
-                                for ($j=0; $j<sizeof($tmp); $j++) {
-                                    if ($tmp[$j] >= $inactiveRows[$i]) {$tmp[$j]--;}
-                                }
+                    //Получаем массив активности
+                    for ($i=0; $i<sizeof($arrNum); $i++) {
+                        foreach ($tmp as $value) {
+                            if ($value == $arrNum[$i]) {
+                                $arrUrgency[$i] = true;
                             }
-                            unset($inactiveRows);    
                         }
                     }
 
-                    foreach ($tmp as $value) {if (isset($arrUrgency[$value - 1])) {$arrUrgency[$value - 1] = true;}} 
+                    $arrUrgencyToSave = array_slice($arrUrgency, 0, sizeof($arrId)); //Массив для сохраннения изменений
+                    $arrUrgency = array_slice($arrUrgency, sizeof($arrId), $rowsCount); //Массив для добавления новых строк
                 }
                 unset($tmp);
-
-                $arrUrgencyToSave = array_slice($arrUrgency, 0, sizeof($arrId)); //Массив для сохраннения изменений
-                $arrUrgency = array_slice($arrUrgency, sizeof($arrId), $rowsCount); //Массив для добавления новых строк
 
                 //Получаем массив единиц измерения
                 $unitsRaw = $request->request->get('unitContentApp');
@@ -1484,22 +1475,24 @@ class ApplicationsController extends AbstractController
 
                 //Добавляем материалы к заявке
                 for ($i = 0; $i < sizeof($arrTitles); $i++) {
-                    $material = new Materials(
-                        $arrTitles[$i],
-                        $arrCounts[$i], 
-                        $arrUnits[$i], //Units::class
-                        $arrUrgency[$i], 
-                        $arrTOE[$i], //TypesOfEquipment::class
-                        $arrComments[$i],
-                        null,
-                        $application, //Applications::class
-                        $i + 1 + sizeof($arrId)
-                    );
+                    if (!empty($arrTitles[$i])) {
+                        $material = new Materials(
+                            $arrTitles[$i],
+                            $arrCounts[$i], 
+                            $arrUnits[$i], //Units::class
+                            $arrUrgency[$i], 
+                            $arrTOE[$i], //TypesOfEquipment::class
+                            $arrComments[$i],
+                            null,
+                            $application, //Applications::class
+                            $i + 1 + sizeof($arrId) + (int)$request->request->get('deletedMaterialsContentApp')
+                        );
 
-                    $material->setApplication($application);
-                    $this->entityManager->persist($material);
-                    $this->entityManager->flush();
-                    unset($material);
+                        $material->setApplication($application);
+                        $this->entityManager->persist($material);
+                        $this->entityManager->flush();
+                        unset($material);
+                    }
                 }
 
                 //Добавляем файлы
