@@ -28,7 +28,7 @@ class AppExtension extends AbstractExtension
         return preg_replace("/(\p{L}*?)(".$pattern.")(\p{L}*)/ui", "$1<mark>$2</mark>$3", $string);
     }
 
-    public function getVersion()
+    public function getVersion($is_admin = false)
     {
         ob_start();
         include 'version.php';

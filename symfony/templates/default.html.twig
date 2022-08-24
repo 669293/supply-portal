@@ -115,7 +115,7 @@
 
     <footer class="footer mt-auto py-3" style="background-color:rgba(0, 0, 0, 0.025);">
       <div class="container-lg">
-        <span class="text-muted text-xsmall">ЗАО «Артель старателей «Витим» © {% if 'now'|date('Y') == 2021 %} 2021 {% else %} 2021 &ndash; {{ 'now'|date('Y') }} {% endif %}<br />{{ version()|raw }}</span>
+        <span class="text-muted text-xsmall">ЗАО «Артель старателей «Витим» © {% if 'now'|date('Y') == 2021 %} 2021 {% else %} 2021 &ndash; {{ 'now'|date('Y') }} {% endif %}<br />{% if 'ROLE_ADMIN' in roles %}{{ version(true)|raw }}{% else %}{{ version(false)|raw }}{% endif %}</span>
         <a id="darkmode-button" class="btn btn-sm btn-outline-secondary float-end"><i class="bi bi-moon d-none d-light-inline" title="Темная тема"></i><i class="bi bi-brightness-high d-none d-dark-inline" title="Светлая тема"></i></a>
       </div>
     </footer>
