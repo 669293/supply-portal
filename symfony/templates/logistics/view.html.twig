@@ -25,6 +25,14 @@
                 {% endif %}
             </h5>
             <p class="mb-0 text-muted">{{ tree.logistics.getUser.getShortUserName }}</p>
+            {% if tree.logistics.getDocInfo != '' or tree.logistics.getSum != '' %}
+                <p class="mb-0 text-muted">
+                    {% if tree.logistics.getDocInfo != '' %}Информация о документе: {{ tree.logistics.getDocInfo }} {% endif %}
+                    {% if tree.logistics.getSum != '' %}
+                        {% if tree.logistics.getDocInfo == '' %}На сумму: {% else %} на сумму {% endif %}{{ tree.logistics.getSum|number_format(2, '.', ' ') }} {{ tree.logistics.getBill.getCurrency }}
+                    {% endif %}
+                </p>
+            {% endif %}
             <p class="{% if 'ROLE_LOGISTICS' in roles %}mb-1{% else %}mb-3{% endif %} text-muted text-nowrap">{{ tree.logistics.getDate|date('d.m.Y') }} {% if tree.logistics.getWay != '' %}{{ tree.logistics.getWay }}{% if tree.logistics.getTrack != '' %} <i class="bi bi-arrow-right"></i> {{ tree.logistics.getTrack }}{% endif %}{% endif %}</p>
 
             {% if 'ROLE_LOGISTICS' in roles %}
@@ -115,6 +123,14 @@
                         {% endif %}
                     </h5>
                     <p class="mb-0 text-muted">{{ tree.logistics.getUser.getShortUserName }}</p>
+                    {% if tree.logistics.getDocInfo != '' or tree.logistics.getSum != '' %}
+                        <p class="mb-0 text-muted">
+                            {% if tree.logistics.getDocInfo != '' %}Информация о документе: {{ tree.logistics.getDocInfo }} {% endif %}
+                            {% if tree.logistics.getSum != '' %}
+                                {% if tree.logistics.getDocInfo == '' %}На сумму: {% else %} на сумму {% endif %}{{ tree.logistics.getSum|number_format(2, '.', ' ') }} {{ tree.logistics.getBill.getCurrency }}
+                            {% endif %}
+                        </p>
+                    {% endif %}
                     <p class="{% if 'ROLE_LOGISTICS' in roles %}mb-1{% else %}mb-3{% endif %} text-muted text-nowrap">{{ tree.logistics.getDate|date('d.m.Y') }} {% if tree.logistics.getWay != '' %}{{ tree.logistics.getWay }}{% if tree.logistics.getTrack != '' %} <i class="bi bi-arrow-right"></i> {{ tree.logistics.getTrack }}{% endif %}{% endif %}</p>
 
                     {% if 'ROLE_LOGISTICS' in roles %}
@@ -210,6 +226,14 @@
             {% endif %}
         </h5>
         <p class="mb-0 text-muted">{{ tree.logistics.getUser.getShortUserName }}</p>
+        {% if tree.logistics.getDocInfo != '' or tree.logistics.getSum != '' %}
+            <p class="mb-0 text-muted">
+                {% if tree.logistics.getDocInfo != '' %}Информация о документе: {{ tree.logistics.getDocInfo }} {% endif %}
+                {% if tree.logistics.getSum != '' %}
+                    {% if tree.logistics.getDocInfo == '' %}На сумму: {% else %} на сумму {% endif %}{{ tree.logistics.getSum|number_format(2, '.', ' ') }} {{ tree.logistics.getBill.getCurrency }}
+                {% endif %}
+            </p>
+        {% endif %}
         <p class="{% if 'ROLE_LOGISTICS' in roles %}mb-1{% else %}mb-3{% endif %} text-muted text-nowrap">{{ tree.logistics.getDate|date('d.m.Y') }} {% if tree.logistics.getWay != '' %}{{ tree.logistics.getWay }}{% if tree.logistics.getTrack != '' %} <i class="bi bi-arrow-right"></i> {{ tree.logistics.getTrack }}{% endif %}{% endif %}</p>
 
         {% if 'ROLE_LOGISTICS' in roles %}

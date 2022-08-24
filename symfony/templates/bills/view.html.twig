@@ -179,10 +179,25 @@
                                 {% endif %}
                             </td>
                         </tr>
+
+                        <tr>
+                            <td><i class="bi bi-lightning-charge"></i> Прогресс</td>
+                            <td>
+                                {% set logisticsSum = 0 %}
+                                {% for log in logistics %}
+                                    {% set logisticsSum = logisticsSum + log.logistics.getSum %}
+                                {% endfor %}
+                                {% set progress = (logisticsSum / bill.getSum * 100)|round(1, 'ceil') %}
+                                <div class="progress" style="height: 24px;">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: {{ progress }}%;" aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100">{{ progress }}%</div>
+                                </div>
+                            </td>
+                        </tr>
+
                         <tr>
                             <td><i class="bi bi-chat-left-text text-muted me-1"></i> <strong>Доп. информация</strong></td>
                             <td>
-                                <span class="text-black-50{% if bill.getComment is not empty %} d-none{% endif %}" id="comment-info-none">Нет информации</span>
+                                <span class="text-muted{% if bill.getComment is not empty %} d-none{% endif %}" id="comment-info-none">Нет информации</span>
                                 <div id="comment-info">{{ bill.getComment }}</div>
                                 {# {% if 'ROLE_SUPERVISOR' in roles or app.user.getId == bill.getUser.getId %}
                                     <div class="clearfix"><button type="button" class="btn btn-sm btn-outline-secondary text-start mt-2" data-bs-toggle="modal" data-bs-target="#commentModal"><i class="bi bi-pencil"></i> Редактировать информацию</button></div>
@@ -333,6 +348,18 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="form-floating mb-3 mt-4">
+                        <input type="text" class="form-control" id="docinfo" name="docinfo" placeholder="Номер УПД, спецификации, дата документа" />
+                        <label for="docinfo">Информация по документам</label>
+                        <div class="invalid-feedback d-none"></div>
+                    </div>
+                    <div class="form-floating mb-3 mt-4">
+                        <input type="text" class="form-control numbersOnly" id="sum" name="sum" placeholder="Сумма материалов по отгрузке/получению в валюте счета" />
+                        <label for="sum">Сумма</label>
+                        <div class="invalid-feedback d-none"></div>
+                    </div>
+
                     <div id="photosInput">
                         <h5 class="mb-3 mt-4">Фотографии и документы касательно получения/отгрузки</h5>
                         <div class="mb-4">

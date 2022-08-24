@@ -89,6 +89,21 @@ class Logistics
      */
     private $bill;
 
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="docinfo", type="string", length=255, nullable=false)
+     */
+    private $docinfo;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="sum", type="decimal", precision=10, scale=0)
+     */
+    private $sum;
+
     public function __construct()
     {
         $this->date = new \DateTime();
@@ -203,6 +218,30 @@ class Logistics
     public function setBill(?Bills $bill): self
     {
         $this->bill = $bill;
+
+        return $this;
+    }
+
+    public function getDocInfo(): ?string
+    {
+        return $this->docinfo;
+    }
+
+    public function setDocInfo(string $docinfo): self
+    {
+        $this->docinfo = $docinfo;
+
+        return $this;
+    }
+
+    public function getSum(): ?string
+    {
+        return $this->sum;
+    }
+
+    public function setSum(string $sum): self
+    {
+        $this->sum = $sum;
 
         return $this;
     }

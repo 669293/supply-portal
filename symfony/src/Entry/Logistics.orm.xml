@@ -62,5 +62,15 @@
         <join-column name="bill" referenced-column-name="id"/>
       </join-columns>
     </many-to-one>
+    <field name="docinfo" type="string" column="docinfo" length="255" nullable="true">
+      <options>
+        <option name="fixed"/>
+      </options>
+    </field>
+    <field name="sum" type="decimal" column="sum" precision="10" scale="0" nullable="true">
+      <options>
+        <option name="default"></option>
+      </options>
+    </field>
   </entity>
 </doctrine-mapping>

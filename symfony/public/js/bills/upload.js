@@ -96,9 +96,9 @@ $(document).ready(function() {
     if (!fileUploadError) {
       //Загрузка файла окончена, деактивируем выбор, отправляем форму
       //Подтягиваем значения идентификаторов загруженного файла
-      if ($('.file-preview-thumbnails .file-preview-success').length > 0) {
+      if ($('#billFileField .file-preview-thumbnails .file-preview-success').length > 0) {
         var filePath = '';
-        $('.file-preview-thumbnails .file-preview-success').each(function() {
+        $('#billFileField .file-preview-thumbnails .file-preview-success').each(function() {
           filePath = $(this).data('path');
         });
 
@@ -107,10 +107,7 @@ $(document).ready(function() {
         $('input[name="billFilePath"]').val('');
       }
 
-      formData = billForm.serialize();
-      freezeForm(billForm);
-      $('#billFileInput').fileinput('disable');
-      sendForm();
+      prepareOtherFiles();
     }
   }).on('fileuploaderror', function(event, data, msg) {
     fileUploadError = true;
@@ -333,7 +330,7 @@ $(document).ready(function() {
   }
 
   $('#sendBtn').click(function() {
-    billForm = $(this).closest('form');
+    billForm = $('#sendBtn').closest('form');
 
     if (billForm.find('.form-message').length == 0) {
       prepareForm();
@@ -360,7 +357,7 @@ $(document).ready(function() {
       });
 
       //Вызываем загрузку всех файлов
-      if ($('.file-preview-thumbnails .kv-preview-thumb').not('.file-preview-success').not('.file-preview-initial').length > 0) {
+      if ($('#billFileField .file-preview-thumbnails .kv-preview-thumb').not('.file-preview-success').not('.file-preview-initial').length > 0) {
         fileUploadError = false;
         $('#billFileInput').fileinput('upload');
       } else {
@@ -368,12 +365,28 @@ $(document).ready(function() {
         formData = billForm.serialize();
         freezeForm(billForm);
         $('#billFileInput').fileinput('disable');
-        sendForm();
+        prepareOtherFiles();
       }
     } else {
       showFormAlert(billForm, 'Не заполнены необходимые поля');
       return false;
     }
+  }
+
+  function prepareOtherFiles() {
+      billForm = $('#sendBtn').closest('form');
+
+      //Вызываем загрузку дополнительных файлов
+      if ($('#documentsInput .file-preview-thumbnails .kv-preview-thumb').not('.file-preview-success').not('.file-preview-initial').length > 0) {
+        fileUploadError = false;
+        $('#attach').fileinput('upload');
+      } else {
+        //Загружать нечего/все загружено, отправляем форму
+        formData = billForm.serialize();
+        freezeForm(billForm);
+        $('#attach').fileinput('disable');
+        sendForm();
+      }    
   }
 
   function sendForm() {
@@ -431,5 +444,56 @@ $(document).ready(function() {
     checkButtonState();
     var innModal = new bootstrap.Modal(document.getElementById('innModal'), {keyboard: false});
     innModal.hide();
+  });
+
+  //Плагин загрузки документов
+  $('#attach').fileinput({
+    browseClass: 'btn btn-outline-secondary',
+    language: 'ru',
+    uploadUrl: '/applications/bills/upload-file',
+    maxFileSize: 10240,
+    dropZoneEnabled: false,
+    fileActionSettings: {
+        showRemove: true,
+        showUpload: false,
+        showZoom: true,
+        showDrag: false,
+    }
+  })
+  .on('fileselect', function(event, numFiles, label) {
+    checkButtonState();
+  }).on('fileremoved', function(event) {
+    checkButtonState();
+  }).on('fileuploaded', function(event, data, index, fileId) {
+      //Файл успешно загружен
+      document.getElementById(index).setAttribute('data-id', data.response.id);
+  }).on('filesuccessremove', function(event, id) {
+      //Удаление файла если он загружен
+      var db_id = document.getElementById(id).getAttribute('data-id');
+      //Отправляем запрос на удаление файла
+      $.post('/applications/bills/delete-file', {key: db_id});
+  }).on('filebatchuploadcomplete', function(event, data, previewId, index) {
+      if (!fileUploadError) {
+        //Загрузка всех файлов окончена, деактивируем выбор файлов, отправляем форму
+        //Подтягиваем значения идентификаторов загруженных файлов
+        if ($('#documentsInput .file-preview-thumbnails .file-preview-success').length > 0) {
+            var arrFiles = [];
+            $('#documentsInput .file-preview-thumbnails .file-preview-success').each(function() {
+              arrFiles.push($(this).data('id'));
+            });
+
+            $('input[name="files"]').val(JSON.stringify(arrFiles));
+        } else {
+            $('input[name="files"]').val('');
+        }
+
+        formData = billForm.serialize();
+        freezeForm(billForm);
+        $('#billFileInput').fileinput('disable');
+  
+        sendForm();
+      }
+  }).on('fileuploaderror', function(event, data, msg) {
+      fileUploadError = true;
   });
 });

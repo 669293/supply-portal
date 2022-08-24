@@ -18,12 +18,13 @@
                 <input type="hidden" name="token" value="{{ csrf_token('upload-bill') }}"/>
                 <input type="hidden" name="billFilePath" value="" />
                 <input type="hidden" id="billCurrency" name="billCurrency" value="руб." />
+                <input type="hidden" name="files" value=""/>
                 <div class="container-fluid w-100 overflow-scroll px-0 mb-2">
                     <table class="table table-borderless">
                         <tbody>
                             <tr>
                                 <td class="ps-0"><label for="billFileInput">Файл</label></td>
-                                <td>
+                                <td id="billFileField">
                                     <div class="file-loading"><input id="billFileInput" name="billFile" type="file" data-allowed-file-extensions='["pdf", "jpg", "jpeg", "png"]' /></div>
                                     <div class="form-text mt-0">Поддерживаются файлы PDF и изображения</div>
                                 </td>
@@ -50,9 +51,9 @@
                                         <label class="input-group-text" for="billSumInput" id="currencyLabel">руб.</label>
                                         <button type="button" class="btn btn-sm btn-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false"></button>
                                         <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item currency" href="#?">руб.</a></li>
-                                        <li><a class="dropdown-item currency" href="#?">&dollar;</a></li>
-                                        <li><a class="dropdown-item currency" href="#?">&euro;</a></li>
+                                            <li><a class="dropdown-item currency" href="#?">руб.</a></li>
+                                            <li><a class="dropdown-item currency" href="#?">&dollar;</a></li>
+                                            <li><a class="dropdown-item currency" href="#?">&euro;</a></li>
                                         </ul>
                                     </div>
                                     <div class="form-text mt-0">Итого к оплате по счету/спецификации (используется для контроля оплаты)</div>
@@ -72,6 +73,16 @@
                             </tr>
                         </tbody>
                     </table>
+
+                    <div id="documentsInput">
+                        <h5 class="mb-3">Загрузка документов</h5>
+                        <div class="mb-4">
+                            <div class="file-loading">
+                                <input id="attach" type="file" name="filesApp[]" multiple="multiple" />
+                            </div>
+                            <div class="clearfix"></div>
+                        </div>
+                    </div>
                 </div>
                 <h5 class="mb-3" id="mark">Привязка к позициям в заявке</h5>
                 <div class="container-fluid w-100 overflow-scroll px-0 mb-4">

@@ -135,7 +135,7 @@ class ApplicationsController extends AbstractController
                         m.impossible = FALSE AND
                         m.cash = FALSE
                     GROUP BY m.application, m.id, m.amount 
-                    ORDER BY m.application ASC) res
+                    ORDER BY m.application ASC, m.num ASC) res
                 WHERE 
                     res.amount <> res.bills OR 
                     res.bills IS NULL;

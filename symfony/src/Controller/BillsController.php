@@ -183,7 +183,14 @@ class BillsController extends AbstractController
      * @Route("/applications/bills/upload", methods={"POST"}))
      * @IsGranted("ROLE_EXECUTOR")
      */
-    public function uploadBillForm(Request $request, UsersRepository $usersRepository, MaterialsRepository $materialsRepository, StatusesOfBillsRepository $statusesOfBillsRepository, BillsMaterialsRepository $billsMaterialsRepository): JsonResponse
+    public function uploadBillForm(
+        Request $request, 
+        BillsMaterialsRepository $billsMaterialsRepository,
+        DocumentsRepository $documentsRepository,
+        MaterialsRepository $materialsRepository, 
+        StatusesOfBillsRepository $statusesOfBillsRepository, 
+        UsersRepository $usersRepository
+    ): JsonResponse
     {
         $result = [];
 
@@ -295,6 +302,18 @@ class BillsController extends AbstractController
                         $this->entityManager->flush();
                     }
                 }
+
+                //Добавляем файлы
+                $arrFiles = json_decode($request->request->get('files'));
+                if ($arrFiles !== null ) {
+                    foreach ($arrFiles as $file) {
+                        $objDocument = $documentsRepository->findBy( array('id' => $file) );
+                        if (is_array($objDocument)) {$objDocument = array_shift($objDocument);}
+                        $objDocument->setBill($objBill);
+                        $this->entityManager->persist($objDocument);
+                    }
+                }
+                $this->entityManager->flush();
 
                 $this->entityManager->getConnection()->commit();
 
@@ -1064,7 +1083,8 @@ class BillsController extends AbstractController
             'documents' => $documents,
             'offices' => $officesRepository->findAll(),
             'matrix' => $logMatrix,
-            'billsstatuses' => $arrStatuses
+            'billsstatuses' => $arrStatuses,
+            'logistics' => $arrLogistics
         ]);
     }
 
@@ -1237,6 +1257,10 @@ class BillsController extends AbstractController
 
                         //Добавляем информацию о счете
                         $objLogistics->setBill($objBill);
+
+                        //Если нужно, добавляем информацию о документе и сумме
+                        if (!empty($request->request->get('docinfo'))) {$objLogistics->setDocInfo(trim($request->request->get('docinfo')));}
+                        if (!empty($request->request->get('sum'))) {$objLogistics->setSum(trim($request->request->get('sum')));}
 
                         if ($type == 0) {
                             //Получение
