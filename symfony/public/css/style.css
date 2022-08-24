@@ -68,6 +68,7 @@ body {
     font-size: 0.9em;
     margin-top: -1px;
     outline: 0;
+    overflow-y: scroll;
 }
 
 .autocomplete-suggestions .autocomplete-suggestion {
@@ -112,3 +113,24 @@ body {
 .d-dark-inline { display: none !important; }
 html.dark .d-light-inline { display: none !important; }
 html.dark .d-dark-inline { display: inline !important; }
+
+html.dark .autocomplete-suggestions {
+    background: #222222;
+    border: 1px solid #515151;
+}
+
+html.dark .autocomplete-suggestions .autocomplete-suggestion:hover {
+    background: #2d2d2d;
+}
+
+html.dark .theme-explorer .file-preview-frame {
+    border: 1px solid #515151;
+}
+
+html.dark .theme-explorer .file-preview-frame:hover {
+    background: #2d2d2d;
+}
+
+html.dark .file-preview {
+    border: 1px solid #515151;
+}
