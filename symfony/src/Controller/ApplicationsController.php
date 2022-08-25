@@ -529,6 +529,12 @@ class ApplicationsController extends AbstractController
             $filter->resultsPerPage = 0;
         }
 
+        if (in_array('ROLE_CREATOR', $roles) && !in_array('ROLE_SUPERVISOR', $roles)) {
+            $filter->author = $usersRepository->findBy(array('id' => $this->security->getUser()->getId()));
+            if (is_array($filter->author)) {$filter->author = array_shift($filter->author);}
+            $filter->resultsPerPage = 0;
+        }
+
         $_SESSION['applicationsFilter'] = serialize($filter);
         return new RedirectResponse('/applications');
     }
@@ -548,11 +554,18 @@ class ApplicationsController extends AbstractController
             $filter = unserialize($_SESSION['applicationsFilter']);
         } else {
             $filter = new Filter;
-            if (in_array('ROLE_EXECUTOR', $roles) && !in_array('ROLE_SUPERVISOR', $roles)) {
-                $filter->responsible = $usersRepository->findBy(array('id' => $this->security->getUser()->getId()));
-                if (is_array($filter->responsible)) {$filter->responsible = array_shift($filter->responsible);}
-                $filter->resultsPerPage = 0;
-            }
+        }
+
+        if (in_array('ROLE_EXECUTOR', $roles) && !in_array('ROLE_SUPERVISOR', $roles)) {
+            $filter->responsible = $usersRepository->findBy(array('id' => $this->security->getUser()->getId()));
+            if (is_array($filter->responsible)) {$filter->responsible = array_shift($filter->responsible);}
+            $filter->resultsPerPage = 0;
+        }
+
+        if (in_array('ROLE_CREATOR', $roles) && !in_array('ROLE_SUPERVISOR', $roles)) {
+            $filter->author = $usersRepository->findBy(array('id' => $this->security->getUser()->getId()));
+            if (is_array($filter->author)) {$filter->author = array_shift($filter->author);}
+            $filter->resultsPerPage = 0;
         }
 
         //Фильтр готов, выводим форму
@@ -1378,11 +1391,11 @@ class ApplicationsController extends AbstractController
                             }
                         }
                     }
-
-                    $arrUrgencyToSave = array_slice($arrUrgency, 0, sizeof($arrId)); //Массив для сохраннения изменений
-                    $arrUrgency = array_slice($arrUrgency, sizeof($arrId), $rowsCount); //Массив для добавления новых строк
                 }
                 unset($tmp);
+
+                $arrUrgencyToSave = array_slice($arrUrgency, 0, sizeof($arrId)); //Массив для сохраннения изменений
+                $arrUrgency = array_slice($arrUrgency, sizeof($arrId), $rowsCount); //Массив для добавления новых строк
 
                 //Получаем массив единиц измерения
                 $unitsRaw = $request->request->get('unitContentApp');
