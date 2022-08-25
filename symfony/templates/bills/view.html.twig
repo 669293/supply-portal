@@ -100,7 +100,7 @@
                             <td class="text-nowrap"><i class="bi bi-file-earmark-image text-muted me-1"></i> <strong>Заявки</strong></td>
                             <td>
                                 {% if applications is empty %}
-                                    <span class="text-black-50">Нет заявки</span>
+                                    <span class="text-muted">Нет заявки</span>
                                 {% else %}
                                     {% for application in applications %}
                                         {% if not loop.first %}<br />{% endif %}<a role="button" href="/applications/view?number={{ application.getId }}" class="btn btn-sm btn-outline-primary text-start{% if not loop.first %} mt-2{% endif %}">№{{ application.getId }} от {{ application.getDateCreate|date('d.m.Y') }}</a>

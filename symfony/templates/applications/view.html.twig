@@ -104,7 +104,7 @@
                     <td class="text-nowrap"><i class="bi bi-file-earmark-image text-muted me-1"></i> <strong>Вложеные файлы</strong></td>
                     <td>
                         {% if files is empty %}
-                            <span class="text-black-50">Нет файлов</span>
+                            <span class="text-muted">Нет файлов</span>
                         {% else %}
                             {% for file in files %}
                                 <div class="btn-group{% if not loop.first %} mt-1{% endif %}" role="group">
@@ -120,7 +120,7 @@
                     <td><i class="bi bi-file-earmark text-muted me-1"></i> <strong>Счета</strong></td>
                     <td class="pe-0">
                     {% if bills is empty %}
-                        <span class="text-black-50">Нет счетов</span>
+                        <span class="text-muted">Нет счетов</span>
                     {% else %}
                         <table class="table table-sm table-bordered mb-0 text-xsmall">
                             <thead>
@@ -298,17 +298,29 @@
                                 <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="Срочная позиция"></i> <span class="text-danger">Срочно</span>
                             {% endif %}
                             </td>
-                            <td class="text-center align-middle">
+                            <td class="text-center align-middle text-nowrap">
                                 {% if is_granted('ROLE_SUPERVISOR') and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
                                     <input type="hidden" name="mid[]" value="{{ material.id }}" />
-                                    <select class="form-select form-select-sm" name="mresponsible[]">
-                                    {% if material.getResponsible == null %}
-                                        <option value="" selected disabled>Выберите</option>
-                                    {% endif %}
-                                    {% for user in users %}
-                                        <option value="{{ user.getId }}"{% if material.getResponsible != null and user.getId == material.getResponsible.getId %} selected{% endif %}>{{ user.getShortUserName }}</option>
-                                    {% endfor %}
+                                    <select class="form-select form-select-sm" name="mresponsible[]"{% if material.log|length > 0 %} style="width: 80%!important; float: left;"{% endif %}>
+                                        <option value=""{% if material.getResponsible == null %} selected{% endif %}>Выберите</option>
+                                        {% for user in users %}
+                                            <option value="{{ user.getId }}"{% if material.getResponsible != null and user.getId == material.getResponsible.getId %} selected{% endif %}>{{ user.getShortUserName }}</option>
+                                        {% endfor %}
                                     </select>
+                                    {# Лог назначения ответственных #}
+                                    {% if material.log|length > 0 %}
+                                        {% set history = '' %}
+                                        {% for row in material.log %}
+                                            {% if not loop.first %}{% set history = history ~ '<br />' %}{% endif %}
+                                            {% set history = history ~ '<span class="text-nowrap"><span class="text-muted text-small">' ~ row.datetime|date('d.m.Y H:i:s') ~ '</span> ' ~ row.supervisor.getShortUserName ~ ' <i class="bi bi-arrow-right"></i> ' %}
+                                            {% if row.responsible is null %}
+                                                {% set history = history ~ '<span class="text-muted text-small">Не выбран</span></span>' %}
+                                            {% else %}
+                                                {% set history = history ~ row.responsible.getShortUserName ~ '</span>' %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        <a role="button" data-bs-html="true" data-bs-toggle="popover" title="История назначения ответственных" data-bs-placement="right" data-bs-content="{{ history }}" style="line-height: 30px!important;"><i class="bi bi-clock-history"></i></a>
+                                    {% endif %}
                                 {% else %}
                                     {% if material.getResponsible != null %}
                                         <span class="text-xsmall">{{ material.getResponsible.getShortUserName }}</span>
@@ -608,4 +620,9 @@
 {# Стили #}
 {% block css %}
     <link href="{{ asset('css/fileinput.css') }}" rel="stylesheet">
+    <style>
+        .popover {
+            max-width: 1000px!important;
+            }
+    </style>
 {% endblock %}

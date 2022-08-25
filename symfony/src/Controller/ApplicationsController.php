@@ -23,6 +23,7 @@ use App\Entity\BillsStatuses;
 use App\Entity\Files;
 use App\Entity\TypesOfEquipment;
 use App\Entity\Materials;
+use App\Entity\ResponsibleLog;
 use App\Repository\ApplicationsRepository;
 use App\Repository\ApplicationsStatusesRepository;
 use App\Repository\BillsRepository;
@@ -33,6 +34,7 @@ use App\Repository\LogisticsMaterialsRepository;
 use App\Repository\MaterialsRepository;
 use App\Repository\OfficesRepository;
 use App\Repository\ProvidersRepository;
+use App\Repository\ResponsibleLogRepository;
 use App\Repository\StatusesOfApplicationsRepository;
 use App\Repository\StatusesOfBillsRepository;
 use App\Repository\TypesOfEquipmentRepository;
@@ -1556,6 +1558,7 @@ class ApplicationsController extends AbstractController
         FilesRepository $filesRepository, 
         LogisticsMaterialsRepository $logisticsMaterialsRepository,
         MaterialsRepository $materialsRepository, 
+        ResponsibleLogRepository $responsibleLogRepository,
         StatusesOfBillsRepository $statusesOfBillsRepository,
         StatusesOfApplicationsRepository $statusesOfApplicationsRepository,
         UsersRepository $usersRepository,
@@ -1709,6 +1712,9 @@ class ApplicationsController extends AbstractController
             $arrMaterials[$i]->dateClose = $dateClose;
             $arrMaterials[$i]->duplicates = [];
             $arrMaterials[$i]->prices = [];
+
+            //Получаем лог изменения статусов ответственных
+            $arrMaterials[$i]->log = $responsibleLogRepository->findBy( array('material' => $arrMaterials[$i]->getId()) );
 
             //Смотрим, есть ли логистическая информация
             $logistics = $logisticsMaterialsRepository->findBy( array('material' => $arrMaterials[$i]->getId()) );
@@ -2129,13 +2135,14 @@ class ApplicationsController extends AbstractController
      */
     public function saveAfterViewForm(
         Request $request, 
-        BillsRepository $billsRepository, 
-        StatusesOfBillsRepository $statusesOfBillsRepository, 
-        MaterialsRepository $materialsRepository, 
-        UsersRepository $usersRepository, 
         ApplicationsStatusesRepository $applicationsStatusesRepository, 
         ApplicationsRepository $applicationsRepository, 
-        StatusesOfApplicationsRepository $statusesOfApplicationsRepository
+        BillsRepository $billsRepository, 
+        MaterialsRepository $materialsRepository, 
+        UsersRepository $usersRepository, 
+        ResponsibleLog $responsibleLog = null,
+        StatusesOfApplicationsRepository $statusesOfApplicationsRepository,
+        StatusesOfBillsRepository $statusesOfBillsRepository
     ): JsonResponse
     {
         $result = [];
@@ -2186,16 +2193,43 @@ class ApplicationsController extends AbstractController
                         //Получаем материал
                         $material = $materialsRepository->findBy( array('id' => $arrMID[$i]) );
                         if (sizeof($material) > 0) {
-                            $material = $material[0];
+                            if (is_array($material)) {$material = array_shift($material);}
                         
                             //Получаем ответственного
-                            $user = $usersRepository->findBy( array('id' => $arrMResponsible[$i]) );
-                            if (sizeof($user) > 0) {
-                                $user = $user[0];
+                            if (!empty($arrMResponsible[$i])) {
+                                $user = $usersRepository->findBy( array('id' => $arrMResponsible[$i]) );
+                                if (sizeof($user) > 0) {
+                                    if (is_array($user)) {$user = array_shift($user);}
 
-                                $material->setResponsible($user);
-                                $this->entityManager->persist($material);
-                                $this->entityManager->flush();
+                                    if ($material->getResponsible() === null || $material->getResponsible()->getId() != $user->getId()) {
+                                        //Если были изменения по ответственным, вносим их
+                                        $material->setResponsible($user);
+                                        $this->entityManager->persist($material);
+                                        $this->entityManager->flush();
+        
+                                        //Добавляем информацию в лог
+                                        $responsibleLog = new ResponsibleLog;
+                                        $responsibleLog->setMaterial($material);
+                                        $responsibleLog->setResponsible($user);
+                                        $responsibleLog->setSupervisor($this->security->getUser());
+                                        $this->entityManager->persist($responsibleLog);
+                                        $this->entityManager->flush();
+                                    }
+                                }
+                            } else {
+                                //Ответственный не назначен
+                                if ($material->getResponsible() !== null) {
+                                    $material->setResponsible(null);
+                                    $this->entityManager->persist($material);
+                                    $this->entityManager->flush();
+
+                                    //Добавляем информацию в лог
+                                    $responsibleLog = new ResponsibleLog;
+                                    $responsibleLog->setMaterial($material);
+                                    $responsibleLog->setSupervisor($this->security->getUser());
+                                    $this->entityManager->persist($responsibleLog);
+                                    $this->entityManager->flush();   
+                                }
                             }
                         }
                     } 

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+  <entity name="annotation\ResponsibleLog" table="responsible_log">
+    <id name="id" type="integer" column="id">
+      <generator strategy="SEQUENCE"/>
+      <sequence-generator sequence-name="responsible_log_id_seq" allocation-size="1" initial-value="1"/>
+    </id>
+    <many-to-one field="material" target-entity="Materials" fetch="LAZY">
+      <join-columns>
+        <join-column name="material" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="responsible" target-entity="Users" fetch="LAZY">
+      <join-columns>
+        <join-column name="responsible" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <many-to-one field="supervisor" target-entity="Users" fetch="LAZY">
+      <join-columns>
+        <join-column name="supervisor" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
+    <field name="datetime" type="datetime" column="datetime" nullable="false">
+      <options>
+        <option name="default">CURRENT_TIMESTAMP</option>
+      </options>
+    </field>
+  </entity>
+</doctrine-mapping>
