@@ -394,7 +394,6 @@ $(document).ready(function() {
         if (!tr.hasClass('text-muted')) {
           if ($('#materialsTable').hasClass('supervisor')) {
             if (filterResponsible == 'Не назначен') {
-              console.log(tr.find('select option:selected').html());
               if (tr.find('select option:selected').html() != 'Выберите') {tr.addClass('d-none');}
             } else {
               if (tr.find('select option:selected').html() != filterResponsible) {tr.addClass('d-none');}
@@ -413,4 +412,112 @@ $(document).ready(function() {
 
     filterModal.hide();
   });
+
+  //Добавление сообщения к комментарию
+  $('#saveMessageBtn').click(function() {
+    //Блокируем форму
+    appForm = $(this).closest('form');
+    freezeForm(appForm);
+
+    var materials = [];
+    $('.material-select:checked').each(function() {
+      materials.push($(this).val());
+    });
+
+    //Отправляем запрос на добавление комментарий
+    $.post('/applications/set-material-message', { materials: JSON.stringify(materials), color: $('input[name="color"]').val(), message: $('input[name="message"]').val() })
+    .done(function( data ) {
+      if ($.isArray(data) && data[0] == 1) {
+        //Все хорошо
+        freezeForm(appForm, false);
+        location.reload();
+      } else {
+        showFormAlert(appForm, data[1]);
+        freezeForm(appForm, false);
+      }
+    });
+  });
+
+  //Расставляем блоки с комментариями
+  function setMessagesPositions() {
+    //Сбрасываем offset
+    $('#materialsTable tbody tr').data('offset', 8);
+
+    $('.material-message').each(function() {
+      var msg = $(this);
+      var mid = msg.data('material');
+  
+      //Ищем материал
+      var material = $('tr.material' + mid);
+      if (material.length > 0) {
+        var _top = material.offset().top;
+        var _offset = material.data('offset');
+        material.data('offset', _offset + 8);
+        var _left = material.offset().left - _offset;
+        var _height = material.height() + 2;
+  
+        msg.css('top', _top + 'px')
+        .css('left', _left + 'px')
+        .css('height', _height + 'px');
+      }
+    });
+  }
+
+  setMessagesPositions();
+
+  //Получаем instance модального окна
+  const filterMessagesModal = new bootstrap.Modal(document.getElementById('filterMessagesModal'));
+
+  //Фильтрация по сообщениям к материалам
+  $('#filterMessagesBtn').click(function() {
+    //Получаем текущее значение
+    var filter = $('#filterMessagesSelect').val();
+
+    $('#materialsTable tbody tr').removeClass('d-none');
+
+    if (filter != 'Выберите') {
+      if (filter != 'Нет заметки') {
+        //Отображаем все материалы которые соответстуют заметке
+        var ids = getMaterialsIDsByMessage(filter);
+
+        $('#materialsTable tbody tr').addClass('d-none');
+        $.each(ids, function(index, value) {
+          $('#materialsTable tbody tr').each(function() {
+            var tr = $(this);
+            if (tr.hasClass('material' + value)) {
+              tr.removeClass('d-none');
+            }
+          });
+        });
+      } else {
+        //Отображаем все материалы кроме тех у которых есть хоть какая то заметка
+        var ids = getMaterialsIDsByMessage();
+        $('#materialsTable tbody tr').each(function() {
+          var tr = $(this);
+          if ($.inArray(tr.data('material'), ids) !== -1) {
+            tr.addClass('d-none');
+          }
+        });
+      }
+    }
+
+    setMessagesPositions();
+    filterMessagesModal.hide();
+  });
+
+  function getMaterialsIDsByMessage(msg = '') {
+    var result = [];
+
+    $('div.material-message').each(function() {
+      if (msg == '') {
+        result.push($(this).data('material'));
+      } else {
+        if ($(this).data('bs-content') == msg) {
+          result.push($(this).data('material'));
+        }
+      }
+    });
+
+    return result;
+  }
 });

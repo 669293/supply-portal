@@ -10,7 +10,7 @@
         <option name="fixed"/>
       </options>
     </field>
-    <field name="color" type="string" column="color" length="6" nullable="false">
+    <field name="color" type="string" column="color" length="7" nullable="false">
       <options>
         <option name="fixed"/>
       </options>

@@ -134,3 +134,11 @@ html.dark .theme-explorer .file-preview-frame:hover {
 html.dark .file-preview {
     border: 1px solid #515151;
 }
+
+html.dark .color-picker .color-picker-color-dot-wrapper {
+    background: #222222;
+}
+
+html.dark .color-picker .color-picker-canvas-wrapper {
+    background: #222222;
+}

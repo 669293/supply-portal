@@ -13,375 +13,392 @@
 
 {# Контент #}
 {% block content %}
-{% set fileId = 0 %}
-<div class="alert {{ statuses.0.status.getClassView }} alert-dismissible fade show" role="alert">
-    {{ statuses.0.status.getDescription }}
-    {% if statuses.0.status.getId == 2 and application.getDateClose != null %}<br />По предварительной информации, будет завершена к {{ application.getDateClose|date('d.m.Y') }}{% endif %}
-</div>
+    {% set fileId = 0 %}
+    <div class="alert {{ statuses.0.status.getClassView }} alert-dismissible fade show" role="alert">
+        {{ statuses.0.status.getDescription }}
+        {% if statuses.0.status.getId == 2 and application.getDateClose != null %}<br />По предварительной информации, будет завершена к {{ application.getDateClose|date('d.m.Y') }}{% endif %}
+    </div>
 
-<form action="/applications/view" method="POST" id="saveAppForm">
-    <input type="hidden" name="token" value="{{ csrf_token('view-application') }}"/>
-    <input type="hidden" name="aid" value="{{ application.getId }}"/>
+    <form action="/applications/view" method="POST" id="saveAppForm">
+        <input type="hidden" name="token" value="{{ csrf_token('view-application') }}"/>
+        <input type="hidden" name="aid" value="{{ application.getId }}"/>
 
-    {# Проверяем может ли пользователь загружать счет #}
-    {% set canloadbill = false %}
-    {% for material in materials %}
-        {% if material.getResponsible != null and app.user.id == material.getResponsible.getId %}{% set canloadbill = true %}{% endif %}
-    {% endfor %}
+        {# Проверяем может ли пользователь загружать счет #}
+        {% set canloadbill = false %}
+        {% for material in materials %}
+            {% if material.getResponsible != null and app.user.id == material.getResponsible.getId %}{% set canloadbill = true %}{% endif %}
+        {% endfor %}
 
-    {% set currentstatus = statuses.0.status.getTitle %}
-    {% if is_granted('ROLE_SUPERVISOR') %}
-        <div class="mb-2 me-0">
-        {% if currentstatus not in ['Отменена', 'Выполнена'] %}
-            <a href="/applications/edit?number={{ application.getId }}" class="btn btn-sm btn-secondary me-2"><i class="bi bi-pencil-square"></i> Редактировать</a>
-        {% endif %}
-        {% if currentstatus == 'Согласовать' %}
-            <button type="button" class="btn btn-sm btn-success me-2" id="playBtn"><i class="bi bi-play"></i> Продолжить</button>
-        {% endif %}
-        {% if currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
-            <button type="button" class="btn btn-sm btn-warning me-2" id="pauseBtn"><i class="bi bi-pause"></i> Согласовать</button>
-        {% endif %}
-        {# {% if currentstatus not in ['Отменена', 'Выполнена'] %}
-            <button type="button" class="btn btn-sm btn-danger me-2" id="cancelBtn"><i class="bi bi-stop"></i> Отменить</button>
-        {% endif %} #}
-        <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="statusBtn" data-bs-toggle="modal" data-bs-target="#statusModal">Изменить статус</button>
-        {% if canloadbill and 'ROLE_EXECUTOR' in roles %}
-            {# Исполнитель, может загружать счета в эту заявку #}
-            <button type="button" onclick="location.href='/applications/bills/upload?application={{ application.getId }}';" class="btn btn-sm btn-outline-success text-nowrap"><i class="bi bi-file-earmark-arrow-up"></i> Загрузить счет</button>
-        {% endif %}
-        </div>
-    {% else %}
-        {% if canloadbill and 'ROLE_EXECUTOR' in roles %}
+        {% set currentstatus = statuses.0.status.getTitle %}
+        {% if is_granted('ROLE_SUPERVISOR') %}
             <div class="mb-2 me-0">
+            {% if currentstatus not in ['Отменена', 'Выполнена'] %}
+                <a href="/applications/edit?number={{ application.getId }}" class="btn btn-sm btn-secondary me-2"><i class="bi bi-pencil-square"></i> Редактировать</a>
+            {% endif %}
+            {% if currentstatus == 'Согласовать' %}
+                <button type="button" class="btn btn-sm btn-success me-2" id="playBtn"><i class="bi bi-play"></i> Продолжить</button>
+            {% endif %}
+            {% if currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
+                <button type="button" class="btn btn-sm btn-warning me-2" id="pauseBtn"><i class="bi bi-pause"></i> Согласовать</button>
+            {% endif %}
+            {# {% if currentstatus not in ['Отменена', 'Выполнена'] %}
+                <button type="button" class="btn btn-sm btn-danger me-2" id="cancelBtn"><i class="bi bi-stop"></i> Отменить</button>
+            {% endif %} #}
+            <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="statusBtn" data-bs-toggle="modal" data-bs-target="#statusModal">Изменить статус</button>
+            {% if canloadbill and 'ROLE_EXECUTOR' in roles %}
                 {# Исполнитель, может загружать счета в эту заявку #}
                 <button type="button" onclick="location.href='/applications/bills/upload?application={{ application.getId }}';" class="btn btn-sm btn-outline-success text-nowrap"><i class="bi bi-file-earmark-arrow-up"></i> Загрузить счет</button>
-            </div>
-        {% endif %}
-        {# {% if is_granted('ROLE_CREATOR') and application.getAuthor.getId == app.user.id %}
-            <div class="mb-2">
-            {% if currentstatus not in ['Отменена', 'Выполнена'] %}
-                <a href="/applications/edit?number={{ application.getId }}" class="btn btn-sm btn-secondary"><i class="bi bi-pencil-square"></i> Редактировать</a>
             {% endif %}
             </div>
-        {% endif %} #}
-    {% endif %}
-
-    <fieldset>
-        <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-4">
-            <table class="table" style="min-width: 900px;">
-            <tbody>
-                {% if application.getNumber != '' %}
-                    <tr>
-                        <td style="width: 200px!important;"><i class="bi bi-info-circle text-muted me-1"></i> <strong>Доп. номер</strong></td>
-                        <td>{{ application.getNumber }}</td>
-                    </tr>
+        {% else %}
+            {% if canloadbill and 'ROLE_EXECUTOR' in roles %}
+                <div class="mb-2 me-0">
+                    {# Исполнитель, может загружать счета в эту заявку #}
+                    <button type="button" onclick="location.href='/applications/bills/upload?application={{ application.getId }}';" class="btn btn-sm btn-outline-success text-nowrap"><i class="bi bi-file-earmark-arrow-up"></i> Загрузить счет</button>
+                </div>
+            {% endif %}
+            {# {% if is_granted('ROLE_CREATOR') and application.getAuthor.getId == app.user.id %}
+                <div class="mb-2">
+                {% if currentstatus not in ['Отменена', 'Выполнена'] %}
+                    <a href="/applications/edit?number={{ application.getId }}" class="btn btn-sm btn-secondary"><i class="bi bi-pencil-square"></i> Редактировать</a>
                 {% endif %}
-                <tr>
-                    <td style="width: 200px!important;"><i class="bi bi-calendar3 text-muted me-1"></i> <strong>Даты</strong></td>
-                    <td>
-                    {% for status in statuses %}
-                        {% if not loop.first %}<br />{% endif %}<span class="text-muted">{{ status.status.getTitle }}:</span> {{ status.datetime|date('d.m.Y') }}{% if status.getComment %} <span class="text-muted">{{ status.getComment }}</span>{% endif %}
-                    {% endfor %}
-                    </td>
-                </tr>
-                <tr>
-                    <td><i class="bi bi-person text-muted me-1"></i> <strong>Отправитель</strong></td>
-                    <td>{{ application.getAuthor.getUsername }}</td>
-                </tr>
-                <tr>
-                    <td><i class="bi bi-people text-muted me-1"></i> <strong>Ответственные</strong></td>
-                    <td>
-                    {% if responsibles|length > 0 %}
-                        {% for responsible in responsibles %}
-                            {% if not loop.first %}<br />{% endif %}{{ responsible.getUsername }}
-                        {% endfor %}
-                    {% else %}
-                        <span class="text-muted">Не назначены</span>
-                    {% endif %}
-                    </td>
-                </tr>
-                <tr>
-                    <td class="text-nowrap"><i class="bi bi-file-earmark-image text-muted me-1"></i> <strong>Вложеные файлы</strong></td>
-                    <td>
-                        {% if files is empty %}
-                            <span class="text-muted">Нет файлов</span>
-                        {% else %}
-                            {% for file in files %}
-                                <div class="btn-group{% if not loop.first %} mt-1{% endif %}" role="group">
-                                    <button type="button" data-id="thumb-attachments-init-{{ fileId }}" class="btn btn-sm {{ file.class }} filePreview text-start"><i class="bi {{ file.icon }}"></i> {{ file.title }}</button>
-                                    <a class="kv-file-download btn btn-sm btn-kv btn-default {{ file.class }}" title="Скачать файл" href="/upload/applications/{{ file.path }}" target="_blank"><i class="bi-download"></i></a>
-                                </div><div class="clearfix"></div>
-                                {% set fileId = fileId + 1 %}
-                            {% endfor %}
-                        {% endif %}
-                    </td>
-                </tr>
-                <tr>
-                    <td><i class="bi bi-file-earmark text-muted me-1"></i> <strong>Счета</strong></td>
-                    <td class="pe-0">
-                    {% if bills is empty %}
-                        <span class="text-muted">Нет счетов</span>
-                    {% else %}
-                        <table class="table table-sm table-bordered mb-0 text-xsmall">
-                            <thead>
-                                <tr>
-                                    <th>Счет</th>
-                                    <th>Сумма</th>
-                                    <th>Статус</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            {% set sumrub, sumeur, sumusd = 0, 0, 0 %}
-                            {% for bill in bills %}
-                                <tr>
-                                    <td>
-                                        <div class="btn-group w-100" role="group">
-                                            <button type="button" data-id="thumb-attachments-init-{{ fileId }}" class="w-100 btn btn-sm {{ bill.status.getClassBtn }} text-truncate filePreview text-start"><i class="bi {{ bill.status.getIcon }}"></i> {{ bill.title }}</button>
-                                            <a class="kv-file-download btn btn-sm btn-kv btn-default {{ bill.status.getClassBtn }}" title="Скачать файл" href="/upload/bills/{{ bill.path }}" target="_blank" style="width: 30px!important;"><i class="bi-download"></i></a>
-                                            <a class="btn btn-sm btn-default btn-outline-primary" title="Информация по счету" href="/applications/bills/in-work/view/?id={{ bill.id }}" style="width: 30px!important;"><i class="bi bi-info-lg"></i></a>
-                                        </div><div class="clearfix"></div>
-                                    </td>
-                                    <td class="align-middle">{{ bill.sum|number_format(2, '.', ' ') }} {{ bill.currency }}</td>
-                                    {% if bill.currency == 'руб.' %}{% set sumrub = sumrub + bill.sum %}{% endif %}
-                                    {% if bill.currency == '$' %}{% set sumusd = sumusd + bill.sum %}{% endif %}
-                                    {% if bill.currency == '€' %}{% set sumeur = sumeur + bill.sum %}{% endif %}
-                                    <td class="align-middle text-nowrap">
-                                        {% if is_granted('ROLE_SUPERVISOR') and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
-                                            <div class="input-group input-group-sm" role="group">
-                                                <input type="hidden" name="bid[]" value="{{ bill.id }}" />
-                                                <select class="form-select form-select-sm" name="bstatus[]">
-                                                {% for status in billsstatuses %}
-                                                    <option value="{{ status.getId }}"{% if status.getId == bill.status.getId %} selected{% endif %}>{{ status.getTitle }}</option>
-                                                {% endfor %}
-                                                </select>
-                                                <button type="button" class="btn btn-sm btn-danger remove-bill-btn" data-id="{{ bill.id }}" data-name="{{ bill.name }}" data-sum="{{ bill.sum|number_format(2, '.', ' ') }} {{ bill.currency }}"><i class="bi bi-x"></i></button>
-                                            </div>
-                                        {% else %}
-                                            {{ bill.status.getTitle }}
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% set fileId = fileId + 1 %}
-                            {% endfor %}
-                                <tr>
-                                    <td class="text-end fw-bold">Итого</td>
-                                    <td colspan="2">
-                                    {% if sumrub > 0 %}{{ sumrub|number_format(2, '.', ' ') }} руб.{% set br = true %}{% endif %}
-                                    {% if sumusd > 0 %}{% if br is defined %}<br />{% endif %}{{ sumusd|number_format(2, '.', ' ') }} ${% set br = true %}{% endif %}
-                                    {% if sumeur > 0 %}{% if br is defined %}<br />{% endif %}{{ sumeur|number_format(2, '.', ' ') }} €{% set br = true %}{% endif %}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    {% endif %}
-                    </td>
-                </tr>
-                {% if application.getComment != '' %}
-                <tr>
-                    <td><i class="bi bi-chat-left-text text-muted me-1"></i> <strong>Комментарий</strong></td>
-                    <td>{{ application.getComment|nl2br }}</td>
-                </tr>
-                {% endif %}
-            </tbody>
-            </table>
-        </div>
+                </div>
+            {% endif %} #}
+        {% endif %}
 
-        <h5 class="mb-3">Содержимое заявки</h5>
-        <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-0">
-            {# Определяем отображать ли столбец с действиями #}
-            {% set showActions = false %}
-            {% for material in materials %}
-                {% if material.getResponsible != null and app.user.id == material.getResponsible.getId %}{% set showActions = true %}{% endif %}
-            {% endfor %}
-            <table class="table table-sm table-bordered table-striped table-hover mb-0{% if is_granted('ROLE_SUPERVISOR') %} supervisor{% endif %}" style="min-width: 900px;" id="materialsTable">
-                <thead>
-                    <tr>
-                        {% if (is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR')) and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
-                            <th class="py-2 align-middle text-center" scope="col" style="width: 50px;"><input class="form-check-input material-select-all" type="checkbox" name="" value="" /></th>
-                        {% endif %}
-                        <th class="py-2 align-middle text-center text-small" scope="col" style="width: 50px;">№</th>
-                        <th class="py-2 align-middle text-small" scope="col">Наименование</th>
-                        <th class="py-2 align-middle text-small" scope="col">Дата поставки</th>
-                        <th class="py-2 align-middle text-center text-nowrap text-small" scope="col" style="width: 120px;">Ед.изм.</th>
-                        <th class="py-2 align-middle text-center text-small" scope="col" style="width: 100px;">Обработано / Кол-во</th>
-                        <th class="py-2 align-middle text-nowrap text-small" scope="col">Логистика</th>
-                        <th class="py-2 align-middle text-nowrap text-small" scope="col">Вид техники</th>
-                        <th class="py-2 align-middle text-nowrap text-small" scope="col">Уточнение</th>
-                        <th class="text-center align-middle text-small" style="width: 120px;">Срочность</th>
-                        <th class="align-middle text-nowrap text-small">Ответственный <a role="button" class="text-primary" data-bs-toggle="modal" data-bs-target="#filterModal" id="toggleFilterModal"><i class="bi bi-funnel"></i></a></th>
-                        {% if is_granted('ROLE_EXECUTOR') and currentstatus not in ['Отменена', 'Выполнена'] and showActions %}
-                            <th class="align-middle text-small">Действия</th>
-                        {% endif %}
-                    </tr>
-                </thead>
+        <fieldset>
+            <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-4">
+                <table class="table" style="min-width: 900px;">
                 <tbody>
-                {% for material in materials %}
-                    {% if material.getIsDeleted %}
-                        <tr class="text-muted">
-                            {% if (is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR')) and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
-                                <td class="align-middle text-center"><input class="form-check-input" type="checkbox" name="" value="" disabled /></td>
-                            {% endif %}
-                            <td class="align-middle text-center text-xsmall text-decoration-line-through">{{ material.getNum }}</td>
-                            <td class="align-middle text-decoration-line-through text-xsmall" style="max-width: 250px;">{{ material.getTitle }}</td>
-                            <td class="align-middle text-decoration-line-through text-xsmall">{{ material.dateClose|raw }}</td>
-                            <td class="align-middle text-center text-decoration-line-through text-xsmall">{{material.getUnit.getTitle}}</td>
-                            <td class="align-middle text-center text-decoration-line-through text-xsmall">{{ material.getAmount }}</td>
-                            <td class="align-middle text-center text-decoration-line-through"><i class="bi bi-slash text-muted"></i></td>
-                            <td class="align-middle text-decoration-line-through text-xsmall">{% if material.getTypeOfEquipment != null %}{{ material.getTypeOfEquipment.getTitle }}{% endif %}</td>
-                            <td class="align-middle text-decoration-line-through text-xsmall">{{ material.getComment }}</td>
-                            <td class="text-center align-middle text-xsmall">
-                            {% if material.getUrgency %}
-                                <i class="bi bi-exclamation-triangle text-muted" data-bs-toggle="tooltip" data-bs-placement="right" title="Срочная позиция"></i> <span class="text-muted">Срочно</span>
-                            {% endif %}
-                            </td>
-                            <td class="align-middle text-decoration-line-through text-xsmall">{% if material.getResponsible != null %}{{ material.getResponsible.getShortUserName }}{% else %}Не назначен{% endif %}</td>
-                            {% if is_granted('ROLE_EXECUTOR') and currentstatus not in ['Отменена', 'Выполнена'] and showActions %}<td></td>{% endif %}
+                    {% if application.getNumber != '' %}
+                        <tr>
+                            <td style="width: 200px!important;"><i class="bi bi-info-circle text-muted me-1"></i> <strong>Доп. номер</strong></td>
+                            <td>{{ application.getNumber }}</td>
                         </tr>
-                    {% else %}
-                        {% set isDone = false %}
-                        {% if material.done == material.getAmount %}{% set isDone = true %}{% endif %}
-                        <tr class="material{{ material.getId }}{% if '.' in material.getNum %} table-primary{% endif %}{% if material.getUrgency %} table-warning{% endif %}{% if 'АВИА' in material.getComment %} table-danger{% endif %}">
-                            {% if (is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR')) and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
-                                <td class="align-middle text-center"><input class="form-check-input material-select" type="checkbox" name="" value="" /></td>
+                    {% endif %}
+                    <tr>
+                        <td style="width: 200px!important;"><i class="bi bi-calendar3 text-muted me-1"></i> <strong>Даты</strong></td>
+                        <td>
+                        {% for status in statuses %}
+                            {% if not loop.first %}<br />{% endif %}<span class="text-muted">{{ status.status.getTitle }}:</span> {{ status.datetime|date('d.m.Y') }}{% if status.getComment %} <span class="text-muted">{{ status.getComment }}</span>{% endif %}
+                        {% endfor %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><i class="bi bi-person text-muted me-1"></i> <strong>Отправитель</strong></td>
+                        <td>{{ application.getAuthor.getUsername }}</td>
+                    </tr>
+                    <tr>
+                        <td><i class="bi bi-people text-muted me-1"></i> <strong>Ответственные</strong></td>
+                        <td>
+                        {% if responsibles|length > 0 %}
+                            {% for responsible in responsibles %}
+                                {% if not loop.first %}<br />{% endif %}{{ responsible.getUsername }}
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted">Не назначены</span>
+                        {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-nowrap"><i class="bi bi-file-earmark-image text-muted me-1"></i> <strong>Вложеные файлы</strong></td>
+                        <td>
+                            {% if files is empty %}
+                                <span class="text-muted">Нет файлов</span>
+                            {% else %}
+                                {% for file in files %}
+                                    <div class="btn-group{% if not loop.first %} mt-1{% endif %}" role="group">
+                                        <button type="button" data-id="thumb-attachments-init-{{ fileId }}" class="btn btn-sm {{ file.class }} filePreview text-start"><i class="bi {{ file.icon }}"></i> {{ file.title }}</button>
+                                        <a class="kv-file-download btn btn-sm btn-kv btn-default {{ file.class }}" title="Скачать файл" href="/upload/applications/{{ file.path }}" target="_blank"><i class="bi-download"></i></a>
+                                    </div><div class="clearfix"></div>
+                                    {% set fileId = fileId + 1 %}
+                                {% endfor %}
                             {% endif %}
-                            <td class="align-middle text-center text-xsmall">{{ material.getNum }}</td>
-                            <td class="align-middle title-col" style="max-width: 250px;">
-                                {% if isDone or material.getCash %}
-                                    <span class="text-xsmall text-success">{{ material.getTitle }}</span><i class="bi bi-check text-success"></i>
-                                {% else %}
-                                    {% if material.getImpossible %}
-                                        <span class="text-xsmall text-danger">{{ material.getTitle }}</span><i class="bi bi-x text-danger"></i>
-                                    {% else %}
-                                        <span class="text-xsmall">{{ material.getTitle }}</span>
-                                    {% endif %}
-                                {% endif %}
-                                {% if material.duplicates|length > 0 %}
-                                    {% set duplicatestext = '' %}
-                                    {% for duplicate in material.duplicates %}
-                                        {% if not loop.first %}{% set duplicatestext = duplicatestext ~ '<br />' %}{% endif %}
-                                        {% set duplicatestext = duplicatestext ~ '<a href="/applications/view?number=' ~ duplicate.id ~ '" target="_blank">Заявка №' ~ duplicate.id ~ '</a> от ' ~ duplicate.date_create|date('d.m.Y') %}
-                                    {% endfor %}
-                                    <a role="button" class="text-danger" data-bs-html="true" data-bs-toggle="popover" title="Возможен дубликат" data-bs-content="{{ duplicatestext }}"><i class="bi bi-info-circle"></i></a>
-                                {% endif %}
-                                {% if material.prices|length > 0 %}
-                                    {% set pricestext = '' %}
-                                    {% for bill in material.prices %}
-                                        {% if not loop.first %}{% set pricestext = pricestext ~ '<br />' %}{% endif %}
-                                        {% set pricestext = pricestext ~ '<a href="/applications/bills/in-work/view?id=' ~ bill.id ~ '" target="_blank">Счет №' ~ bill.num ~ '</a> от ' ~ bill.datetime|date('d.m.Y') %}
-                                    {% endfor %}
-                                    <a role="button" class="text-success" data-bs-html="true" data-bs-toggle="popover" title="Возможные счета по данной позиции" data-bs-content="{{ pricestext }}"><i class="bi bi-bar-chart-fill"></i></a>
-                                {% endif %}
-                                {% if material.getNote != '' %}
-                                    <a role="button" class="text-primary material-note" data-bs-html="true" data-bs-toggle="popover" title="Комментарий к позиции" data-bs-content="{{ material.getNote }}"><i class="bi bi-chat-text"></i></a>
-                                {% endif %}
-                            </td>
-                            <td class="align-middle text-xsmall text-nowrap">{{ material.dateClose|raw }}</td>
-                            <td class="align-middle text-center text-xsmall">{{ material.getUnit.getTitle }}</td>
-                            <td class="align-middle text-center text-xsmall">{{ material.done }} / {{ material.getAmount }}</td>
-                            <td class="align-middle text-center">
-                                {% if material.logistics %}
-                                    <a href="/applications/logistics/view/?material={{ material.id }}&application={{ application.getId }}"><i class="bi bi-box-seam"></i></a>
-                                {% else %}
-                                    {% if material.bills %}
-                                        {% for bill in material.bills %}
-                                            <a title="Информация по счету" href="/applications/bills/in-work/view/?id={{ bill.id }}"><i class="bi bi-plus-circle"></i></a>
-                                        {% endfor %}
-                                    {% else %}
-                                        <i class="bi bi-slash text-muted"></i>
-                                    {% endif %}        
-                                {% endif %}
-                            </td>
-                            <td class="align-middle text-xsmall">{% if material.getTypeOfEquipment != null %}{{ material.getTypeOfEquipment.getTitle }}{% endif %}</td>
-                            <td class="align-middle text-xsmall">{{ material.getComment }}</td>
-                            <td class="text-center align-middle text-xsmall">
-                            {% if material.getUrgency %}
-                                <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="Срочная позиция"></i> <span class="text-danger">Срочно</span>
-                            {% endif %}
-                            </td>
-                            <td class="text-center align-middle text-nowrap">
-                                {% if is_granted('ROLE_SUPERVISOR') and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
-                                    <input type="hidden" name="mid[]" value="{{ material.id }}" />
-                                    <select class="form-select form-select-sm" name="mresponsible[]"{% if material.log|length > 0 %} style="width: 80%!important; float: left;"{% endif %}>
-                                        <option value=""{% if material.getResponsible == null %} selected{% endif %}>Выберите</option>
-                                        {% for user in users %}
-                                            <option value="{{ user.getId }}"{% if material.getResponsible != null and user.getId == material.getResponsible.getId %} selected{% endif %}>{{ user.getShortUserName }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    {# Лог назначения ответственных #}
-                                    {% if material.log|length > 0 %}
-                                        {% set history = '' %}
-                                        {% for row in material.log %}
-                                            {% if not loop.first %}{% set history = history ~ '<br />' %}{% endif %}
-                                            {% set history = history ~ '<span class="text-nowrap"><span class="text-muted text-small">' ~ row.datetime|date('d.m.Y H:i:s') ~ '</span> ' ~ row.supervisor.getShortUserName ~ ' <i class="bi bi-arrow-right"></i> ' %}
-                                            {% if row.responsible is null %}
-                                                {% set history = history ~ '<span class="text-muted text-small">Не выбран</span></span>' %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><i class="bi bi-file-earmark text-muted me-1"></i> <strong>Счета</strong></td>
+                        <td class="pe-0">
+                        {% if bills is empty %}
+                            <span class="text-muted">Нет счетов</span>
+                        {% else %}
+                            <table class="table table-sm table-bordered mb-0 text-xsmall">
+                                <thead>
+                                    <tr>
+                                        <th>Счет</th>
+                                        <th>Сумма</th>
+                                        <th>Статус</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {% set sumrub, sumeur, sumusd = 0, 0, 0 %}
+                                {% for bill in bills %}
+                                    <tr>
+                                        <td>
+                                            <div class="btn-group w-100" role="group">
+                                                <button type="button" data-id="thumb-attachments-init-{{ fileId }}" class="w-100 btn btn-sm {{ bill.status.getClassBtn }} text-truncate filePreview text-start"><i class="bi {{ bill.status.getIcon }}"></i> {{ bill.title }}</button>
+                                                <a class="kv-file-download btn btn-sm btn-kv btn-default {{ bill.status.getClassBtn }}" title="Скачать файл" href="/upload/bills/{{ bill.path }}" target="_blank" style="width: 30px!important;"><i class="bi-download"></i></a>
+                                                <a class="btn btn-sm btn-default btn-outline-primary" title="Информация по счету" href="/applications/bills/in-work/view/?id={{ bill.id }}" style="width: 30px!important;"><i class="bi bi-info-lg"></i></a>
+                                            </div><div class="clearfix"></div>
+                                        </td>
+                                        <td class="align-middle">{{ bill.sum|number_format(2, '.', ' ') }} {{ bill.currency }}</td>
+                                        {% if bill.currency == 'руб.' %}{% set sumrub = sumrub + bill.sum %}{% endif %}
+                                        {% if bill.currency == '$' %}{% set sumusd = sumusd + bill.sum %}{% endif %}
+                                        {% if bill.currency == '€' %}{% set sumeur = sumeur + bill.sum %}{% endif %}
+                                        <td class="align-middle text-nowrap">
+                                            {% if is_granted('ROLE_SUPERVISOR') and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
+                                                <div class="input-group input-group-sm" role="group">
+                                                    <input type="hidden" name="bid[]" value="{{ bill.id }}" />
+                                                    <select class="form-select form-select-sm" name="bstatus[]">
+                                                    {% for status in billsstatuses %}
+                                                        <option value="{{ status.getId }}"{% if status.getId == bill.status.getId %} selected{% endif %}>{{ status.getTitle }}</option>
+                                                    {% endfor %}
+                                                    </select>
+                                                    <button type="button" class="btn btn-sm btn-danger remove-bill-btn" data-id="{{ bill.id }}" data-name="{{ bill.name }}" data-sum="{{ bill.sum|number_format(2, '.', ' ') }} {{ bill.currency }}"><i class="bi bi-x"></i></button>
+                                                </div>
                                             {% else %}
-                                                {% set history = history ~ row.responsible.getShortUserName ~ '</span>' %}
+                                                {{ bill.status.getTitle }}
                                             {% endif %}
-                                        {% endfor %}
-                                        <a role="button" data-bs-html="true" data-bs-toggle="popover" title="История назначения ответственных" data-bs-placement="right" data-bs-content="{{ history }}" style="line-height: 30px!important;"><i class="bi bi-clock-history"></i></a>
-                                    {% endif %}
-                                {% else %}
-                                    {% if material.getResponsible != null %}
-                                        <span class="text-xsmall">{{ material.getResponsible.getShortUserName }}</span>
-                                    {% else %}
-                                        <span class="text-xsmall text-muted">Не назначен</span>
-                                    {% endif %}
-                                {% endif %}
-                            </td>
+                                        </td>
+                                    </tr>
+                                    {% set fileId = fileId + 1 %}
+                                {% endfor %}
+                                    <tr>
+                                        <td class="text-end fw-bold">Итого</td>
+                                        <td colspan="2">
+                                        {% if sumrub > 0 %}{{ sumrub|number_format(2, '.', ' ') }} руб.{% set br = true %}{% endif %}
+                                        {% if sumusd > 0 %}{% if br is defined %}<br />{% endif %}{{ sumusd|number_format(2, '.', ' ') }} ${% set br = true %}{% endif %}
+                                        {% if sumeur > 0 %}{% if br is defined %}<br />{% endif %}{{ sumeur|number_format(2, '.', ' ') }} €{% set br = true %}{% endif %}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        {% endif %}
+                        </td>
+                    </tr>
+                    {% if application.getComment != '' %}
+                    <tr>
+                        <td><i class="bi bi-chat-left-text text-muted me-1"></i> <strong>Комментарий</strong></td>
+                        <td>{{ application.getComment|nl2br }}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+                </table>
+            </div>
+
+            <h5 class="mb-3">Содержимое заявки{% if messages|length > 0 %} <a role="button" class="text-primary" data-bs-toggle="modal" data-bs-target="#filterMessagesModal" id="toggleFilterMessagesModal"><i class="bi bi-funnel"></i></a>{% endif %}</h5>
+            <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-0">
+                {# Определяем отображать ли столбец с действиями #}
+                {% set showActions = false %}
+                {% for material in materials %}
+                    {% if material.getResponsible != null and app.user.id == material.getResponsible.getId %}{% set showActions = true %}{% endif %}
+                {% endfor %}
+                <table class="table table-sm table-bordered table-striped table-hover mb-0{% if is_granted('ROLE_SUPERVISOR') %} supervisor{% endif %}" style="min-width: 900px;" id="materialsTable">
+                    <thead>
+                        <tr>
+                            {% if (is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR')) and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
+                                <th class="py-2 align-middle text-center" scope="col" style="width: 50px;"><input class="form-check-input material-select-all" type="checkbox" name="" value="" /></th>
+                            {% endif %}
+                            <th class="py-2 align-middle text-center text-small" scope="col" style="width: 50px;">№</th>
+                            <th class="py-2 align-middle text-small" scope="col">Наименование</th>
+                            <th class="py-2 align-middle text-small" scope="col">Дата поставки</th>
+                            <th class="py-2 align-middle text-center text-nowrap text-small" scope="col" style="width: 120px;">Ед.изм.</th>
+                            <th class="py-2 align-middle text-center text-small" scope="col" style="width: 100px;">Обработано / Кол-во</th>
+                            <th class="py-2 align-middle text-nowrap text-small" scope="col">Логистика</th>
+                            <th class="py-2 align-middle text-nowrap text-small" scope="col">Вид техники</th>
+                            <th class="py-2 align-middle text-nowrap text-small" scope="col">Уточнение</th>
+                            <th class="text-center align-middle text-small" style="width: 120px;">Срочность</th>
+                            <th class="align-middle text-nowrap text-small">Ответственный <a role="button" class="text-primary" data-bs-toggle="modal" data-bs-target="#filterModal" id="toggleFilterModal"><i class="bi bi-funnel"></i></a></th>
                             {% if is_granted('ROLE_EXECUTOR') and currentstatus not in ['Отменена', 'Выполнена'] and showActions %}
-                                <td class="text-center align-middle text-nowrap">
-                                {% if material.getResponsible != null and app.user.id == material.getResponsible.getId %}
-                                    <a role="button" data-bs-toggle="modal" data-bs-target="#commentModal" class="text-primary me-1 add-comment-btn" data-id="{{ material.getId }}" title="Добавить комментарий к позиции"><i class="bi bi-chat-dots"></i></a>
-                                    {% if material.getCash == false and material.getImpossible == false and not isDone %}
-                                        <a role="button" class="text-success me-1 set-material-cash" title="Отметить полученным за наличные" data-id="{{ material.getId }}"><i class="bi bi-cash-coin"></i></a>
-                                        <a role="button" class="text-danger set-material-impossible" title="Невозможно поставить позицию" data-id="{{ material.getId }}"><i class="bi bi-slash-circle"></i></a>
-                                    {% endif %}
-                                    {# Разделение позиции #}
-                                    {# Если она еще не разделена #}
-                                    {% if '.' not in material.getNum %}
-                                        <a role="button" class="split-material" title="Разбить позицию / Заменить на аналог" data-id="{{ material.getId }}" data-bs-toggle="modal" data-bs-target="#splitModal" data-bs-id="{{ material.getId }}" data-bs-num="{{ material.getNum }}" data-bs-title="{{ material.getTitle }}" data-bs-count="{{ material.getAmount }}" data-bs-unit="{{ material.getUnit.getTitle }}"><i class="bi bi-chevron-bar-expand"></i></a>
-                                    {% endif %}
+                                <th class="align-middle text-small">Действия</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for material in materials %}
+                        {% if material.getIsDeleted %}
+                            <tr class="text-muted">
+                                {% if (is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR')) and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
+                                    <td class="align-middle text-center"><input class="form-check-input" type="checkbox" name="" value="" disabled /></td>
+                                {% endif %}
+                                <td class="align-middle text-center text-xsmall text-decoration-line-through">{{ material.getNum }}</td>
+                                <td class="align-middle text-decoration-line-through text-xsmall" style="max-width: 250px;">{{ material.getTitle }}</td>
+                                <td class="align-middle text-decoration-line-through text-xsmall">{{ material.dateClose|raw }}</td>
+                                <td class="align-middle text-center text-decoration-line-through text-xsmall">{{material.getUnit.getTitle}}</td>
+                                <td class="align-middle text-center text-decoration-line-through text-xsmall">{{ material.getAmount }}</td>
+                                <td class="align-middle text-center text-decoration-line-through"><i class="bi bi-slash text-muted"></i></td>
+                                <td class="align-middle text-decoration-line-through text-xsmall">{% if material.getTypeOfEquipment != null %}{{ material.getTypeOfEquipment.getTitle }}{% endif %}</td>
+                                <td class="align-middle text-decoration-line-through text-xsmall">{{ material.getComment }}</td>
+                                <td class="text-center align-middle text-xsmall">
+                                {% if material.getUrgency %}
+                                    <i class="bi bi-exclamation-triangle text-muted" data-bs-toggle="tooltip" data-bs-placement="right" title="Срочная позиция"></i> <span class="text-muted">Срочно</span>
                                 {% endif %}
                                 </td>
-                            {% endif %}
-                        </tr>
+                                <td class="align-middle text-decoration-line-through text-xsmall">{% if material.getResponsible != null %}{{ material.getResponsible.getShortUserName }}{% else %}Не назначен{% endif %}</td>
+                                {% if is_granted('ROLE_EXECUTOR') and currentstatus not in ['Отменена', 'Выполнена'] and showActions %}<td></td>{% endif %}
+                            </tr>
+                        {% else %}
+                            {% set isDone = false %}
+                            {% if material.done == material.getAmount %}{% set isDone = true %}{% endif %}
+                            <tr data-offset="8" data-material="{{ material.getId }}" class="material{{ material.getId }}{% if '.' in material.getNum %} table-primary{% endif %}{% if material.getUrgency %} table-warning{% endif %}"> <!-- {% if 'АВИА' in material.getComment %} table-danger{% endif %} -->
+                                {% if (is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR')) and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
+                                    <td class="align-middle text-center"><input class="form-check-input material-select" type="checkbox" name="" value="{{ material.getId }}" /></td>
+                                {% endif %}
+                                <td class="align-middle text-center text-xsmall">{{ material.getNum }}</td>
+                                <td class="align-middle title-col" style="max-width: 250px;">
+                                    {% if isDone or material.getCash %}
+                                        <span class="text-xsmall text-success">{{ material.getTitle }}</span><i class="bi bi-check text-success"></i>
+                                    {% else %}
+                                        {% if material.getImpossible %}
+                                            <span class="text-xsmall text-danger">{{ material.getTitle }}</span><i class="bi bi-x text-danger"></i>
+                                        {% else %}
+                                            <span class="text-xsmall">{{ material.getTitle }}</span>
+                                        {% endif %}
+                                    {% endif %}
+                                    {% if material.duplicates|length > 0 %}
+                                        {% set duplicatestext = '' %}
+                                        {% for duplicate in material.duplicates %}
+                                            {% if not loop.first %}{% set duplicatestext = duplicatestext ~ '<br />' %}{% endif %}
+                                            {% set duplicatestext = duplicatestext ~ '<a href="/applications/view?number=' ~ duplicate.id ~ '" target="_blank">Заявка №' ~ duplicate.id ~ '</a> от ' ~ duplicate.date_create|date('d.m.Y') %}
+                                        {% endfor %}
+                                        <a role="button" class="text-danger" data-bs-html="true" data-bs-toggle="popover" title="Возможен дубликат" data-bs-content="{{ duplicatestext }}"><i class="bi bi-info-circle"></i></a>
+                                    {% endif %}
+                                    {% if material.prices|length > 0 %}
+                                        {% set pricestext = '' %}
+                                        {% for bill in material.prices %}
+                                            {% if not loop.first %}{% set pricestext = pricestext ~ '<br />' %}{% endif %}
+                                            {% set pricestext = pricestext ~ '<a href="/applications/bills/in-work/view?id=' ~ bill.id ~ '" target="_blank">Счет №' ~ bill.num ~ '</a> от ' ~ bill.datetime|date('d.m.Y') %}
+                                        {% endfor %}
+                                        <a role="button" class="text-success" data-bs-html="true" data-bs-toggle="popover" title="Возможные счета по данной позиции" data-bs-content="{{ pricestext }}"><i class="bi bi-bar-chart-fill"></i></a>
+                                    {% endif %}
+                                    {% if material.getNote != '' %}
+                                        <a role="button" class="text-primary material-note" data-bs-html="true" data-bs-toggle="popover" title="Комментарий к позиции" data-bs-content="{{ material.getNote }}"><i class="bi bi-chat-text"></i></a>
+                                    {% endif %}
+                                </td>
+                                <td class="align-middle text-xsmall text-nowrap">{{ material.dateClose|raw }}</td>
+                                <td class="align-middle text-center text-xsmall">{{ material.getUnit.getTitle }}</td>
+                                <td class="align-middle text-center text-xsmall">{{ material.done }} / {{ material.getAmount }}</td>
+                                <td class="align-middle text-center">
+                                    {% if material.logistics %}
+                                        <a href="/applications/logistics/view/?material={{ material.id }}&application={{ application.getId }}"><i class="bi bi-box-seam"></i></a>
+                                    {% else %}
+                                        {% if material.bills %}
+                                            {% for bill in material.bills %}
+                                                <a title="Информация по счету" href="/applications/bills/in-work/view/?id={{ bill.id }}"><i class="bi bi-plus-circle"></i></a>
+                                            {% endfor %}
+                                        {% else %}
+                                            <i class="bi bi-slash text-muted"></i>
+                                        {% endif %}        
+                                    {% endif %}
+                                </td>
+                                <td class="align-middle text-xsmall">{% if material.getTypeOfEquipment != null %}{{ material.getTypeOfEquipment.getTitle }}{% endif %}</td>
+                                <td class="align-middle text-xsmall">{{ material.getComment }}</td>
+                                <td class="text-center align-middle text-xsmall">
+                                {% if material.getUrgency %}
+                                    <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="Срочная позиция"></i> <span class="text-danger">Срочно</span>
+                                {% endif %}
+                                </td>
+                                <td class="text-center align-middle text-nowrap">
+                                    {% if is_granted('ROLE_SUPERVISOR') and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
+                                        <input type="hidden" name="mid[]" value="{{ material.id }}" />
+                                        <select class="form-select form-select-sm" name="mresponsible[]"{% if material.log|length > 0 %} style="width: 80%!important; float: left;"{% endif %}>
+                                            <option value=""{% if material.getResponsible == null %} selected{% endif %}>Выберите</option>
+                                            {% for user in users %}
+                                                <option value="{{ user.getId }}"{% if material.getResponsible != null and user.getId == material.getResponsible.getId %} selected{% endif %}>{{ user.getShortUserName }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        {# Лог назначения ответственных #}
+                                        {% if material.log|length > 0 %}
+                                            {% set history = '' %}
+                                            {% for row in material.log %}
+                                                {% if not loop.first %}{% set history = history ~ '<br />' %}{% endif %}
+                                                {% set history = history ~ '<span class="text-nowrap"><span class="text-muted text-small">' ~ row.datetime|date('d.m.Y H:i:s') ~ '</span> ' ~ row.supervisor.getShortUserName ~ ' <i class="bi bi-arrow-right"></i> ' %}
+                                                {% if row.responsible is null %}
+                                                    {% set history = history ~ '<span class="text-muted text-small">Не выбран</span></span>' %}
+                                                {% else %}
+                                                    {% set history = history ~ row.responsible.getShortUserName ~ '</span>' %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            <a role="button" data-bs-html="true" data-bs-toggle="popover" title="История назначения ответственных" data-bs-placement="right" data-bs-content="{{ history }}" style="line-height: 30px!important;"><i class="bi bi-clock-history"></i></a>
+                                        {% endif %}
+                                    {% else %}
+                                        {% if material.getResponsible != null %}
+                                            <span class="text-xsmall">{{ material.getResponsible.getShortUserName }}</span>
+                                        {% else %}
+                                            <span class="text-xsmall text-muted">Не назначен</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                {% if is_granted('ROLE_EXECUTOR') and currentstatus not in ['Отменена', 'Выполнена'] and showActions %}
+                                    <td class="text-center align-middle text-nowrap">
+                                    {% if material.getResponsible != null and app.user.id == material.getResponsible.getId %}
+                                        <a role="button" data-bs-toggle="modal" data-bs-target="#commentModal" class="text-primary me-1 add-comment-btn" data-id="{{ material.getId }}" title="Добавить комментарий к позиции"><i class="bi bi-chat-dots"></i></a>
+                                        {% if material.getCash == false and material.getImpossible == false and not isDone %}
+                                            <a role="button" class="text-success me-1 set-material-cash" title="Отметить полученным за наличные" data-id="{{ material.getId }}"><i class="bi bi-cash-coin"></i></a>
+                                            <a role="button" class="text-danger set-material-impossible" title="Невозможно поставить позицию" data-id="{{ material.getId }}"><i class="bi bi-slash-circle"></i></a>
+                                        {% endif %}
+                                        {# Разделение позиции #}
+                                        {# Если она еще не разделена #}
+                                        {% if '.' not in material.getNum %}
+                                            <a role="button" class="split-material" title="Разбить позицию / Заменить на аналог" data-id="{{ material.getId }}" data-bs-toggle="modal" data-bs-target="#splitModal" data-bs-id="{{ material.getId }}" data-bs-num="{{ material.getNum }}" data-bs-title="{{ material.getTitle }}" data-bs-count="{{ material.getAmount }}" data-bs-unit="{{ material.getUnit.getTitle }}"><i class="bi bi-chevron-bar-expand"></i></a>
+                                        {% endif %}
+                                    {% endif %}
+                                    </td>
+                                {% endif %}
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if (is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR')) and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
+                <div id="setResponsible" style="display: none;">
+                    {% if is_granted('ROLE_SUPERVISOR') %}
+                        <label class="text-small mt-4" for="setResponsible">Назначить ответственного для выбранных элементов</label>
+                        <div class="input-group input-group-sm">
+                            <select class="form-select" id="setResponsible">
+                                <option value="" selected>Выберите</option>
+                                {% for user in users %}
+                                    <option value="{{ user.getId }}">{{ user.getShortUserName }}</option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn btn-outline-secondary" type="button" id="setBtn">Применить</button>
+                        </div>
                     {% endif %}
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
+
+                    {% if is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR') %}
+                        {# Добавление комментария #}
+                        <label class="text-small mt-4" for="message">Добавить заметку</label>
+                        <div class="input-group input-group-sm" id="addMessageContainer">
+                            <input type="color" class="form-control form-control-sm form-control-color" id="colorInput" value="#ff0000" title="Выберите цвет" name="color" />
+                            <input type="text" class="form-control" placeholder="Заметка" aria-label="Заметка" id="message" name="message" />
+                            <button class="btn btn-outline-secondary" type="button" id="saveMessageBtn">Сохранить</button>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </fieldset>
+        <div class="clearfix"></div>
 
         {% if is_granted('ROLE_SUPERVISOR') and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
-            <div id="setResponsible" style="display: none;">
-                <label class="text-small mt-4" for="setResponsible">Назначить ответственного для выбранных элементов</label>
-                <div class="input-group input-group-sm">
-                    <select class="form-select" id="setResponsible">
-                        <option selected disabled>Выберите</option>
-                        {% for user in users %}
-                            <option value="{{ user.getId }}">{{ user.getShortUserName }}</option>
-                        {% endfor %}
-                    </select>
-                    <button class="btn btn-outline-secondary" type="button" id="setBtn">Применить</button>
-                </div>
-            </div>
+            <button type="button" class="btn btn-outline-primary mb-5 me-2 mt-4" id="sendBtn">Сохранить</button>
         {% endif %}
-    </fieldset>
-    <div class="clearfix"></div>
+        <button type="button" class="btn btn-outline-secondary mb-5 me-2 mt-4" onclick="location.href='/applications/';">Закрыть</button>
+        <a role="button" class="btn btn-outline-secondary mb-5 me-2 mt-4" href="/applications/print?number={{ application.getId }}" target="_blank">Распечатать для согласования</a>
+        <a role="button" class="btn btn-outline-secondary mb-5 me-2 mt-4" href="/applications/export-to-excel?number={{ application.getId }}" target="_blank">Экспортировать в Excel</a>
+        <div class="spinner-border text-primary d-none mt-4" role="status"><span class="visually-hidden">Обработка...</span></div>
+    </form>
 
-    {% if is_granted('ROLE_SUPERVISOR') and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
-        <button type="button" class="btn btn-outline-primary mb-5 me-2 mt-4" id="sendBtn">Сохранить</button>
-    {% endif %}
-    <button type="button" class="btn btn-outline-secondary mb-5 me-2 mt-4" onclick="location.href='/applications/';">Закрыть</button>
-    <a role="button" class="btn btn-outline-secondary mb-5 me-2 mt-4" href="/applications/print?number={{ application.getId }}" target="_blank">Распечатать для согласования</a>
-    <a role="button" class="btn btn-outline-secondary mb-5 me-2 mt-4" href="/applications/export-to-excel?number={{ application.getId }}" target="_blank">Экспортировать в Excel</a>
-    <div class="spinner-border text-primary d-none mt-4" role="status"><span class="visually-hidden">Обработка...</span></div>
-</form>
+    {# Скрытый fileinput для инициализации предпросмотра #}
+    <div class="d-none">
+        <input id="attachments" type="file" name="" multiple="multiple" />
+    </div>
 
-{# Скрытый fileinput для инициализации предпросмотра #}
-<div class="d-none">
-    <input id="attachments" type="file" name="" multiple="multiple" />
-</div>
+    {# Сообщения к материалам #}
+    {% for message in messages %}
+        <div class="material-message" data-material="{{ message.getMaterial.getId }}" style="background: {{ message.getColor }}; height: 1px; left: -100px; position: absolute; top: -100px; width: 8px;" data-bs-toggle="popover" title="{{ message.getUser.getShortUserName }}" data-bs-content="{{ message.getComment }}"></div>
+    {% endfor %}
 {% endblock %}
 
 {# Модальные окна #}
@@ -443,6 +460,41 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
                     <button type="button" class="btn btn-primary" id="filterBtn">Сохранить</button>
+                    <div class="spinner-border text-primary d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Фильтрация заявок по сообщению #}
+    <div class="modal fade" id="filterMessagesModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Фильтр по заметкам</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-floating">
+                        <select class="form-select" id="filterMessagesSelect">
+                            <option selected>Выберите</option>
+                            <option>Нет заметки</option>
+                            {% set uniqueMessages = [] %}
+                            {% for message in messages %}
+                                {% if message.getComment not in uniqueMessages %}
+                                    {% set uniqueMessages = uniqueMessages|merge([message.getComment]) %}
+                                {% endif %}
+                            {% endfor %}
+                            {% for message in uniqueMessages %}
+                                <option>{{ message }}</option>
+                            {% endfor %}
+                        </select>
+                        <label for="filterSelect">Статус</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                    <button type="button" class="btn btn-primary" id="filterMessagesBtn">Сохранить</button>
                     <div class="spinner-border text-primary d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
                 </div>
             </div>

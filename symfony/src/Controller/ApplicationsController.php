@@ -23,6 +23,7 @@ use App\Entity\BillsStatuses;
 use App\Entity\Files;
 use App\Entity\TypesOfEquipment;
 use App\Entity\Materials;
+use App\Entity\MaterialsComments;
 use App\Entity\ResponsibleLog;
 use App\Repository\ApplicationsRepository;
 use App\Repository\ApplicationsStatusesRepository;
@@ -32,6 +33,7 @@ use App\Repository\BillsStatusesRepository;
 use App\Repository\FilesRepository;
 use App\Repository\LogisticsMaterialsRepository;
 use App\Repository\MaterialsRepository;
+use App\Repository\MaterialsCommentsRepository;
 use App\Repository\OfficesRepository;
 use App\Repository\ProvidersRepository;
 use App\Repository\ResponsibleLogRepository;
@@ -1557,6 +1559,7 @@ class ApplicationsController extends AbstractController
         BillsStatusesRepository $billsStatusesRepository,
         FilesRepository $filesRepository, 
         LogisticsMaterialsRepository $logisticsMaterialsRepository,
+        MaterialsCommentsRepository $materialsCommentsRepository,
         MaterialsRepository $materialsRepository, 
         ResponsibleLogRepository $responsibleLogRepository,
         StatusesOfBillsRepository $statusesOfBillsRepository,
@@ -1695,6 +1698,7 @@ class ApplicationsController extends AbstractController
         $arrStatusesOfApplications = $statusesOfApplicationsRepository->findBy(array(), array('id' => 'ASC'));
 
         //Список материалов
+        $messages = []; //Сообщения к материалам
         $arrMaterials = $materialsRepository->findBy( array('application' => $objApplication->getId()), array('num' => 'ASC') );
         for ($i=0; $i<sizeof($arrMaterials); $i++) {
             //Дополняем массив материалов информацией о том, выставлены ли по ним счета
@@ -1781,6 +1785,10 @@ class ApplicationsController extends AbstractController
             foreach($billsTmp as $bill) {
                 $arrMaterials[$i]->bills[] = $bill->getBill();
             }
+
+            //Сообщения к материалам
+            $materialMessages = $materialsCommentsRepository->findBy(array('material' => $arrMaterials[$i]->getId()));
+            $messages = array_merge($messages, $materialMessages);
         }
 
         //Список пользователей
@@ -1808,7 +1816,8 @@ class ApplicationsController extends AbstractController
             'applicationsstatuses' => $arrStatusesOfApplications,
             'materials' => $arrMaterials,
             'users' => $users,
-            'units' => $unitsRepository->findAll()
+            'units' => $unitsRepository->findAll(),
+            'messages' => $messages
         ]);
     }
 
@@ -3225,6 +3234,62 @@ HERE;
             'providers' => $providers,
             'inns' => $inn
         ]);
+    }
+
+    /**
+     * Добавление сообщения к материалу
+     * @Route("/applications/set-material-message", methods={"POST"}))
+     * @Security("is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR')")
+     */
+    public function setMaterialMesage(
+        Request $request, 
+        MaterialsRepository $materialsRepository, 
+        MaterialsCommentsRepository $materialsCommentsRepository,
+        FilesRepository $filesRepository): JsonResponse
+    {
+        $result = [];
+
+        $materials = json_decode($request->request->get('materials'));
+        $color = $request->request->get('color');
+        $message = $request->request->get('message');
+
+        try {
+            if (!empty($message)) {
+                //Добавляем сообщение
+                foreach ($materials as $materialId) {
+                    $materialsComments = new MaterialsComments;
+                    $objMaterial = $materialsRepository->findBy( array('id' => $materialId) );
+                    if (sizeof($objMaterial) > 0) {$objMaterial = array_shift($objMaterial);}
+                    $materialsComments->setMaterial($objMaterial);
+                    $materialsComments->setColor($color);
+                    $materialsComments->setComment(trim($message));
+                    $materialsComments->setUser($this->security->getUser());
+
+                    $this->entityManager->persist($materialsComments);
+                    $this->entityManager->flush();
+                }
+            } else {
+                //Удаляем сообщение
+                foreach ($materials as $materialId) {
+                    $materialsComments = new MaterialsComments;
+                    $objMaterialsComments = $materialsCommentsRepository->findBy( array('material' => $materialId, 'user' => $this->security->getUser()->getId()) );
+                    if (sizeof($objMaterialsComments) > 0) {$objMaterialsComments = array_shift($objMaterialsComments);}
+                    $this->entityManager->remove($objMaterialsComments);
+                    $this->entityManager->flush();
+                }
+            }
+
+            $result[] = 1;
+            $result[] = '';            
+        } catch (Exception $e) {
+            $this->entityManager->getConnection()->rollBack();
+
+            $result[] = 0;
+            $result[] = $e;
+            //throw $e;
+        }
+
+        return new JsonResponse($result);
     }
 }
 

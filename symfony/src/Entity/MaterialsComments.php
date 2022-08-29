@@ -42,7 +42,7 @@ class MaterialsComments
     /**
      * @var string
      *
-     * @ORM\Column(name="color", type="string", length=6, nullable=false)
+     * @ORM\Column(name="color", type="string", length=7, nullable=false)
      */
     private $color;
 
@@ -51,7 +51,7 @@ class MaterialsComments
      *
      * @ORM\ManyToOne(targetEntity="Users")
      * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="user", referencedColumnName="id")
+     *   @ORM\JoinColumn(name="""user""", referencedColumnName="id")
      * })
      */
     private $user;
