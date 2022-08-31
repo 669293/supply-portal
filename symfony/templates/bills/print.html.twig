@@ -83,6 +83,7 @@
                                 </td>
                                 <td class="align-middle text-xsmall text-nowrap">
                                     {% for application in bill.applications %}
+                                        {% if not loop.first %}<div class="clearfix"></div>{% endif %}
                                         <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-primary{% if not loop.first %} mt-2{% endif %}" title="Просмотр заявки" href="/applications/view?number={{ application.id }}" target="_blank">№{{ application.getId }} от {{ application.getDateCreate|date('d.m.Y') }}</a>
                                     {% endfor %}
                                 </td>

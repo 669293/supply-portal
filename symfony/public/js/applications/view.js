@@ -46,7 +46,7 @@ $(document).ready(function() {
 
   //Выделение всех позиций в заявке
   $('body').on('change', '.material-select-all', function() {
-    $(this).closest('table').find('.material-select').prop('checked', $(this).prop('checked'));
+    $(this).closest('table').find('.material-select:visible').prop('checked', $(this).prop('checked'));
     $(this).closest('table').find('.material-select:last').trigger('change');
   });
 

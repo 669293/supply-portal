@@ -63,7 +63,18 @@ class ApplicationsController extends AbstractController
         $stmt = $this->entityManager->getConnection()->prepare($sql);
         $stmt->execute();
         $bills_ = $stmt->fetchAllAssociative();
-        return sizeof($bills_);
+
+        $count = 0;
+
+        foreach ($bills_ as $bill) {
+            $sql = "SELECT q.id FROM (SELECT DISTINCT a.id, (SELECT aps.status FROM applications_statuses aps WHERE aps.application = a.id ORDER BY id DESC OFFSET 0 LIMIT 1) AS status FROM applications a, bills_materials bm, materials m WHERE bm.bill = ".$bill['id']." AND bm.material = m.id AND m.application = a.id) q WHERE q.status NOT IN (3,4,5);";
+            $stmt = $this->entityManager->getConnection()->prepare($sql);
+            $stmt->execute();
+            $applications_ = $stmt->fetchAllAssociative();
+            $count += sizeof($applications_); unset($applications_);
+        }
+
+        return $count;
     }
 
     /**

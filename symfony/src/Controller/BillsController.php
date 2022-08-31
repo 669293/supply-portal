@@ -440,8 +440,8 @@ class BillsController extends AbstractController
         // $mpdf->debug = true;
 
         //Получаем объект статуса "Передан на оплату"
-        $nextStatus = $statusesOfBillsRepository->findBy(array('id' => 2));
-        if (is_array($nextStatus)) {$nextStatus = array_shift($nextStatus);}
+        // $nextStatus = $statusesOfBillsRepository->findBy(array('id' => 2));
+        // if (is_array($nextStatus)) {$nextStatus = array_shift($nextStatus);}
 
         foreach ($bills as $billId) {
             //Получаем счет
@@ -511,24 +511,24 @@ class BillsController extends AbstractController
             }
 
             //Получаем текущий статус
-            $status = $billsStatusesRepository->createQueryBuilder('bs')
-            ->select('IDENTITY(bs.status) AS status')
-            ->where('bs.bill = :bill')
-            ->setParameter('bill', $billId)
-            ->orderBy('bs.datetime', 'DESC')
-            ->setMaxResults(1)
-            ->getQuery()
-            ->getResult();
-            if (is_array($status)) {$status = array_shift($status);}
+            // $status = $billsStatusesRepository->createQueryBuilder('bs')
+            // ->select('IDENTITY(bs.status) AS status')
+            // ->where('bs.bill = :bill')
+            // ->setParameter('bill', $billId)
+            // ->orderBy('bs.datetime', 'DESC')
+            // ->setMaxResults(1)
+            // ->getQuery()
+            // ->getResult();
+            // if (is_array($status)) {$status = array_shift($status);}
 
-            if ($status['status'] == 1) {
-                //Добавляем статус "Передан на оплату к счету"
-                $billStatus = new BillsStatuses();
-                $billStatus->setBill($bill);
-                $billStatus->setStatus($nextStatus);
-                $this->entityManager->persist($billStatus);
-                $this->entityManager->flush();
-            }
+            // if ($status['status'] == 1) {
+            //     //Добавляем статус "Передан на оплату к счету"
+            //     $billStatus = new BillsStatuses();
+            //     $billStatus->setBill($bill);
+            //     $billStatus->setStatus($nextStatus);
+            //     $this->entityManager->persist($billStatus);
+            //     $this->entityManager->flush();
+            // }
         }
 
         if (sizeof($bills) > 1) {
