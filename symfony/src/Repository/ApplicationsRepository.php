@@ -37,6 +37,8 @@ class ApplicationsRepository extends ServiceEntityRepository
      */
     public function getList($filter)
     {
+        if ($filter->isFiltered) {$filter->resultsPerPage = 0; $filter->page = 1;}
+        
         $query = $this->createQueryBuilder('a');
 
         //Фильтр по отправителю

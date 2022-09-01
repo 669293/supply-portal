@@ -153,7 +153,7 @@
 {# Контент #}
 {% block content %}
   {% if applications|length > 0 %}
-    <div class="table-responsive">
+    <div class="table-responsive w-100">
       <table class="table table-hover table-bordered table-striped text-xsmall mb-2">
         <thead>
           <tr>
@@ -340,12 +340,12 @@
                             <select class="form-select" id="authorSelect" name="filterAuthor">
                                 {% if (filter is defined) and (filter.author != null) %}
                                     <option value="-1">Выберите</option>
-                                    {% for user in users %}
+                                    {% for user in usersSenders %}
                                         <option value="{{ user.getId }}"{% if filter.author.getId == user.getId %} selected="selected"{% endif %}>{{ user.getUsername }}</option>
                                     {% endfor %}
                                 {% else %}
                                     <option value="-1" selected="selected" disabled="disabled">Выберите</option>
-                                    {% for user in users %}
+                                    {% for user in usersSenders %}
                                         <option value="{{ user.getId }}">{{ user.getUsername }}</option>
                                     {% endfor %}
                                 {% endif %}
@@ -358,12 +358,12 @@
                             <select class="form-select" id="responsibleSelect" name="filterResponsible">
                                 {% if (filter is defined) and (filter.responsible != null) %}
                                     <option value="-1">Выберите</option>
-                                    {% for user in users %}
+                                    {% for user in usersResponsibles %}
                                         <option value="{{ user.getId }}"{% if filter.responsible.getId == user.getId %} selected="selected"{% endif %}>{{ user.getUsername }}</option>
                                     {% endfor %}
                                 {% else %}
                                     <option value="-1" selected="selected" disabled="disabled">Выберите</option>
-                                    {% for user in users %}
+                                    {% for user in usersResponsibles %}
                                         <option value="{{ user.getId }}">{{ user.getUsername }}</option>
                                     {% endfor %}
                                 {% endif %}

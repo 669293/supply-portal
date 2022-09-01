@@ -592,14 +592,32 @@ class ApplicationsController extends AbstractController
         $breadcrumbs[0]->href = '/applications';
         $breadcrumbs[0]->title = 'Активные заявки';
 
+        //Получаем отправителей и ответственных
+        $users = $usersRepository->findBy(
+            array('active' => true),
+            array('username' => 'ASC', 'id' => 'ASC')
+        );
+
+        $usersSenders = [];
+        $usersResponsibles = [];
+        foreach ($users as $user) {
+            if (in_array('ROLE_CREATOR', $user->getRoles())) {
+                $usersSenders[] = $user;
+            }
+
+            if (in_array('ROLE_EXECUTOR', $user->getRoles())) {
+                $usersResponsibles[] = $user;
+            }
+        }
+
+        unset($users);
+
         $params = [
             'title' => 'Активные заявки',
             'breadcrumbs' => $breadcrumbs,
             'applications' => $applications,
-            'users' => $usersRepository->findBy(
-                    array('active' => true),
-                    array('username' => 'ASC', 'id' => 'ASC')
-                ),
+            'usersResponsibles' => $usersResponsibles,
+            'usersSenders' => $usersSenders,
             'offices' => $officesRepository->findAll(),
             'statuses' => $statusesOfApplicationsRepository->getStatusesForActiveFilter(),
             'filter' => $filter,
@@ -2654,14 +2672,32 @@ class ApplicationsController extends AbstractController
         $breadcrumbs[1]->href = '/applications/done';
         $breadcrumbs[1]->title = 'Выполненные заявки';
 
+        //Получаем отправителей и ответственных
+        $users = $usersRepository->findBy(
+            array('active' => true),
+            array('username' => 'ASC', 'id' => 'ASC')
+        );
+
+        $usersSenders = [];
+        $usersResponsibles = [];
+        foreach ($users as $user) {
+            if (in_array('ROLE_CREATOR', $user->getRoles())) {
+                $usersSenders[] = $user;
+            }
+
+            if (in_array('ROLE_EXECUTOR', $user->getRoles())) {
+                $usersResponsibles[] = $user;
+            }
+        }
+
+        unset($users);
+
         $params = [
             'title' => 'Выполненные заявки',
             'breadcrumbs' => $breadcrumbs,
             'applications' => $applications,
-            'users' => $usersRepository->findBy(
-                    array('active' => true),
-                    array('username' => 'ASC', 'id' => 'ASC')
-                ),
+            'usersResponsibles' => $usersResponsibles,
+            'usersSenders' => $usersSenders,
             'offices' => $officesRepository->findAll(),
             'statuses' => $statusesOfApplicationsRepository->getStatusesForDoneFilter(),
             'filter' => $filter,
