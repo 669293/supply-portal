@@ -125,6 +125,13 @@ class Materials
      */
     private $cash = false;
 
+    /**
+     * @var bool
+     *
+     * @ORM\Column(name="requested", type="boolean", nullable=false)
+     */
+    private $requested = false;
+
     public function __construct(
         $title = null,
         $amount = null,
@@ -137,7 +144,8 @@ class Materials
         $num = null,
         $isDeleted = null,
         $impossible = null,
-        $cash = null
+        $cash = null,
+        $requested = null
         )
     {
         if ($title !== null) {$this->title = $title;}
@@ -150,6 +158,7 @@ class Materials
         if ($application !== null) {$this->application = $application;}
         if ($num !== null) {$this->num = $num;}
         if ($isDeleted !== null) {$this->isDeleted = $isDeleted;}
+        if ($requested !== null) {$this->requested = $requested;}
     }
 
     public function getId(): ?int
@@ -309,6 +318,18 @@ class Materials
     public function setCash(bool $cash): self
     {
         $this->cash = $cash;
+
+        return $this;
+    }
+
+    public function getRequested(): ?bool
+    {
+        return $this->requested;
+    }
+
+    public function setRequested(bool $requested): self
+    {
+        $this->requested = $requested;
 
         return $this;
     }

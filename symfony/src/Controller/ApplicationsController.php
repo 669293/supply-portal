@@ -375,6 +375,8 @@ class ApplicationsController extends AbstractController
 
         $materialsList = [];
 
+        $this->entityManager->getConnection()->beginTransaction(); //Начинаем транзакцию
+
         for ($i=0; $i<sizeof($materials); $i++) {
             $objMaterial = $materialsRepository->findBy( array('id' => $materials[$i]) );
             if (sizeof($objMaterial) > 0) {$objMaterial = $objMaterial[0];}
@@ -385,7 +387,13 @@ class ApplicationsController extends AbstractController
             $tmp->application = $applications[$i];
             $materialsList[] = $tmp;
             unset($tmp);
+
+            $objMaterial->setRequested(true);
+            $this->entityManager->persist($objMaterial);
+            $this->entityManager->flush();
         }
+
+        $this->entityManager->getConnection()->commit();
 
         return $this->render('applications/request.html.twig', [
             'materials' => $materialsList

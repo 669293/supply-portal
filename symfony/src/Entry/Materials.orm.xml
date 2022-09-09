@@ -56,6 +56,11 @@
         <option name="default"/>
       </options>
     </field>
+    <field name="requested" type="boolean" column="requested" nullable="false">
+      <options>
+        <option name="default"/>
+      </options>
+    </field>
     <many-to-one field="application" target-entity="Applications" fetch="LAZY">
       <join-columns>
         <join-column name="application" referenced-column-name="id"/>

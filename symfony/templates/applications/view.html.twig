@@ -242,7 +242,7 @@
                             {% if material.done == material.getAmount %}{% set isDone = true %}{% endif %}
                             <tr data-offset="8" data-material="{{ material.getId }}" class="material{{ material.getId }}{% if '.' in material.getNum %} table-primary{% endif %}{% if material.getUrgency %} table-warning{% endif %}"> <!-- {% if 'АВИА' in material.getComment %} table-danger{% endif %} -->
                                 {% if (is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR')) and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
-                                    <td class="align-middle text-center"><input class="form-check-input material-select" type="checkbox" name="" value="{{ material.getId }}" /></td>
+                                    <td class="align-middle text-center"><input class="form-check-input material-select{% if material.getRequested %} is-valid{% endif %}" type="checkbox" name="" value="{{ material.getId }}" /></td>
                                 {% endif %}
                                 <td class="align-middle text-center text-xsmall">{{ material.getNum }}</td>
                                 <td class="align-middle title-col" style="max-width: 250px;">
