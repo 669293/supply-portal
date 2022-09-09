@@ -149,6 +149,8 @@ $('body').on('keypress', 'input.numbersOnly', function(event) {
 });
 
 //Переключение темной темы
-document.querySelector("#darkmode-button").onclick = function(e){
-  darkmode.toggleDarkMode();
+if ($('#darkmode-button').length > 0) {
+  document.querySelector('#darkmode-button').onclick = function(e){
+    darkmode.toggleDarkMode();
+  }
 }

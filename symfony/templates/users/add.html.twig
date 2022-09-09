@@ -53,34 +53,14 @@
                 Права доступа
             </div>
             <div class="card-body">
-                <div class="mb-3 form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="userRole1" name="userRole[]" value="ROLE_ADMIN" />
-                    <label class="form-check-label us-none" for="userRole1">Администратор</label>
-                </div>
-                <div class="mb-3 form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="userRole2" name="userRole[]" value="ROLE_SUPERVISOR" />
-                    <label class="form-check-label us-none" for="userRole2">Назначение исполнителей</label>
-                </div>
-                <div class="mb-3 form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="userRole3" name="userRole[]" value="ROLE_CREATOR" />
-                    <label class="form-check-label us-none" for="userRole3">Создание заявок</label>
-                </div>
-                <div class="mb-3 form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="userRole4" name="userRole[]" value="ROLE_EXECUTOR" />
-                    <label class="form-check-label us-none" for="userRole4">Исполнение заявок</label>
-                </div>
-                <div class="mb-3 form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="userRole5" name="userRole[]" value="ROLE_LOGISTICS" />
-                    <label class="form-check-label us-none" for="userRole5">Добавление логистической информации</label>
-                </div>
-                <div class="mb-3 form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="userRole6" name="userRole[]" value="ROLE_BUH" />
-                    <label class="form-check-label us-none" for="userRole6">Бухгалтерия</label>
-                </div>
-                <div class="mb-0 form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="userRole7" name="userRole[]" value="ROLE_WATCHER" />
-                    <label class="form-check-label us-none" for="userRole6">Наблюдатель</label>
-                </div>
+                {% if roles is defined %}
+                    {% for key, value in allroles %}
+                        <div class="mb-3 form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="userRole{{ loop.index }}" name="userRole[]" value="{{ key }}" />
+                            <label class="form-check-label us-none" for="userRole{{ loop.index }}">{{ value[0] }}</label>
+                        </div>
+                    {% endfor %}
+                {% endif %}
             </div>
         </div>
     </fieldset>

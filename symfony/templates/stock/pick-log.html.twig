@@ -1,0 +1,156 @@
+{# templates/stock/pick.html.twig #}
+
+{% extends 'default_empty.html.twig' %}
+
+{# Заголовки #}
+{% block title %}{{ title }}{% endblock %}
+{% block caption %}{{ title }}{% endblock %}
+
+{# Модальные окна #}
+{% block modal %}
+    <form method="POST" action="/applications/logistics/add-info" id="recieveForm">
+        <input type="hidden" name="token" value="{{ csrf_token('log-add') }}"/>
+        <input type="hidden" name="photos" value=""/>
+        <div class="modal fade in" id="pickForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="staticBackdropLabel">Выбор приходов</h5>
+                    </div>
+                    <div class="modal-body">
+                        <div class="accordion">
+                            {% if logistics|length == 0 %}Нет не отправленных материалов{% endif %}
+                            {% for row in logistics %}
+                                <div class="accordion-item{% if loop.last %} mb-3{% endif %}">
+                                    <h2 class="accordion-header" id="heading{{ row.logistic.getId }}">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ row.logistic.getId }}" aria-expanded="false" aria-controls="collapse{{ row.logistic.getId }}">
+                                            <div class="d-flex w-100">
+                                                <div>Получено от 
+                                                    {% if row.logistic.bill.provider is defined %}
+                                                        {{ row.logistic.bill.provider.getTitle }}
+                                                    {% else %}
+                                                        ИНН: {{ row.logistic.bill.getInn }}
+                                                    {% endif %}
+                                                    <br /><span class="text-muted text-small">Дата: {{ row.logistic.getDate|date('d.m.Y') }}</span>
+                                                </div>
+                                                <div class="d-none d-sm-block ms-auto mt-2 text-end">
+                                                    <span class="text-muted me-3 text-small">Количество позиций: {{ row.materials|length }}</span><br />
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </h2>
+                                    <div id="collapse{{ row.logistic.getId }}" data-id="{{ row.logistic.getId }}" class="accordion-collapse collapse" aria-labelledby="heading{{ row.logistic.getId }}">
+                                        <div class="accordion-body">
+                                            <div class="container-fluid w-100 overflow-scroll px-0">
+                                                <a class="btn btn-link text-decoration-none p-0 m-1 mb-3" target="_blank" href="/applications/bills/in-work/view?id={{ row.logistic.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>
+                                                <table class="table table-sm mb-0 table-hover table-striped table-bordered" style="min-width: 900px;">
+                                                    <thead>
+                                                        <tr>
+                                                            <th class="py-2 align-middle text-center text-xsmall" scope="col" style="width: 50px;">№</th>
+                                                            <th class="py-2 align-middle text-center" scope="col" style="width: 50px;"><input type="checkbox" name="" value="" class="form-check-input material-select-all" /></th>
+                                                            <th class="py-2 align-middle text-xsmall text-nowrap" scope="col" style="width: 150px;">К отгрузке</th>
+                                                            <th class="py-2 align-middle text-xsmall" scope="col">Наименование</th>
+                                                            <th class="py-2 align-middle text-nowrap text-xsmall" scope="col">Заявка</th>
+                                                            <th class="py-2 align-middle text-nowrap text-xsmall" scope="col">Вид техники</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for arr in row.materials %}
+                                                        {% set checked = '' %}
+                                                        {% if arr.amount - arr.sent == 0 %}{% set checked = ' checked' %}{% endif %}
+                                                        <tr>
+                                                            <td class="align-middle text-center text-xsmall">{{ loop.index }}</td>
+                                                            <td class="py-2 align-middle text-center" scope="col">
+                                                                <input type="checkbox" name="material[]" value="{{ arr.material.getId }}" class="form-check-input{% if checked != '' %} is-valid freeze-ignore{% else %} material-select{% endif %}" {% if checked != '' %} checked disabled{% endif %} />
+                                                                <input type="hidden" class="log-input" name="logistic[]" value="{{ row.logistic.getId }}" />
+                                                            </td>
+                                                            <td class="align-middle text-center"><input type="number" name="" value="{{ arr.amount - arr.sent }}" class="amount-input form-control form-control-sm" min="1" max="{{ arr.amount - arr.sent }}" {% if checked != '' %} disabled{% endif %} /></td>
+                                                            <td class="align-middle text-xsmall">{{ arr.material.getTitle }}{% if arr.material.getUrgency %} <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="Срочная позиция"></i> <span class="text-danger">Срочно</span>{% endif %}</td>
+                                                            <td class="align-middle text-xsmall text-nowrap"><a href="/applications/view?number={{ arr.material.getApplication.getId }}">#{{ arr.material.getApplication.getId }}</a> <i class="bi bi-arrow-right"></i> {{ arr.material.getNum }} поз.</td>
+                                                            <td class="align-middle text-xsmall">{% if arr.material.getTypeOfEquipment != null %}{{ arr.material.getTypeOfEquipment.getTitle() }}{% endif %}</td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-target="#finishForm" data-bs-toggle="modal" data-bs-dismiss="modal" id="nextBtn" disabled>Далее <i class="bi bi-chevron-right"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade in" id="finishForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel_" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="staticBackdropLabel_">Фотографии и дополнительная информация</h5>
+                    </div>
+                    <div class="modal-body">
+                        <fieldset>
+                            <div class="form-floating mb-3 mt-4">
+                                <input type="date" class="form-control is-valid" id="dateShip" placeholder=" " value="{{ 'now'|date('Y-m-d') }}" name="dateShip" />
+                                <label for="dateShip">Дата операции</label>
+                            </div>
+                            <div class="form-floating mb-3 mt-4">
+                                <input type="text" class="form-control" id="way" name="way" placeholder="Способ отправки" />
+                                <label for="way">Способ отправки</label>
+                                <div class="invalid-feedback d-none"></div>
+                            </div>
+                            <div class="form-floating mb-3 mt-4">
+                                <input type="text" class="form-control" id="track" name="track" placeholder="Номер для отслеживания" />
+                                <label for="track">Номер для отслеживания</label>
+                                <div class="invalid-feedback d-none"></div>
+                            </div>
+                            <div class="form-floating mb-3 mt-4">
+                                <select class="form-control" id="userOfficeShip" name="userOfficeShip" placeholder="Структурное подразделение, в адрес которого произведена отгрузка">
+                                    {% for office in offices %}
+                                        <option value="{{ office.getId }}" {% if app.user.getOffice.getId == office.getId %} selected{% endif %}>{{ office.getTitle }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label for="userOfficeShip">Структурное подразделение, в адрес которого произведена отгрузка</label>
+                            </div>
+
+                            <div id="photosInput">
+                                <h5 class="mb-3 mt-4">Фотографии и документы касательно отгрузки</h5>
+                                <div class="mb-4">
+                                    <div class="file-loading">
+                                        <input id="photos" type="file" name="photos[]" multiple="multiple" />
+                                    </div>
+                                    <div class="clearfix"></div>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('pick') }}" />
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-target="#pickForm" data-bs-toggle="modal" data-bs-dismiss="modal"><i class="bi bi-chevron-left"></i> Назад</button>
+                        <button type="button" class="btn btn-primary" id="sendBtn" disabled>Готово</button>
+                        <div class="spinner-border text-primary ms-2 d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+{% endblock %}
+
+{# Скрипты #}
+{% block scripts %}
+    <script src="{{ asset('js/fileinput.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/fileinput.ru.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/stock/pick-log.js') }}" type="text/javascript"></script>
+
+    {% if scripts is defined %}
+{{ scripts|raw }}
+    {% endif %}
+{% endblock %}
+
+{# Стили #}
+{% block css %}
+    <link href="{{ asset('css/fileinput.css') }}" rel="stylesheet">
+{% endblock %}

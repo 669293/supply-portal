@@ -197,7 +197,8 @@ $(document).ready(function() {
       data: formData
     }).done(function(data) {
       if ($.isArray(data) && data[0] == 1) {
-        $.redirectPost('/applications', {'msg': 'Изменения успешно внесены', 'bg-color': 'bg-success', 'text-color': 'text-white'});
+        // $.redirectPost('/applications', {'msg': 'Изменения успешно внесены', 'bg-color': 'bg-success', 'text-color': 'text-white'});
+        location.href = '/applications/logistics/view?id=' + $('input[name="parent"]').val();
       } else {
         showFormAlert(logForm, data[1]);
         freezeForm(logForm, false);

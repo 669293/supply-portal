@@ -37,6 +37,7 @@ class UsersManageController extends AbstractController
             'ROLE_EXECUTOR' => ['Исполнение заявок', 'bg-primary'],
             'ROLE_LOGISTICS' => ['Добавление логистической информации', 'bg-warning text-dark'],
             'ROLE_BUH' => ['Бухгалтерия', 'bg-warning text-dark'],
+            'ROLE_STOCK' => ['Склад', 'bg-warning text-dark'],
             'ROLE_WATCHER' => ['Наблюдатель', 'bg-success']
         ];
     }
@@ -173,7 +174,8 @@ class UsersManageController extends AbstractController
         return $this->render('users/add.html.twig', [
             'title' => 'Добавление пользователя',
             'breadcrumbs' => $breadcrumbs,
-            'offices' => $officesRepository->findAll()
+            'offices' => $officesRepository->findAll(),
+            'allroles' => $this->roles_list
         ]);
     }
 
@@ -267,7 +269,8 @@ class UsersManageController extends AbstractController
             'title' => 'Редактирование пользователя',
             'breadcrumbs' => $breadcrumbs,
             'user' => $user[0],
-            'offices' => $officesRepository->findAll()
+            'offices' => $officesRepository->findAll(),
+            'allroles' => $this->roles_list
         ]);
     }
 

@@ -135,13 +135,24 @@ class ApplicationsController extends AbstractController
                     res.aid AS aid,
                     res.mid AS mid,
                     res.amount AS amount,
-                    res.bills AS bills
+                    res.bills AS bills,
+                    res.sid AS status
                 FROM
                     (SELECT 
                         m.application AS aid, 
                         m.id AS mid, 
                         m.amount AS amount, 
-                        SUM(bm.amount) AS bills 
+                        SUM(bm.amount) AS bills,
+                        (SELECT
+                            aps.status
+                        FROM
+                            applications_statuses aps
+                        WHERE
+                            aps.application = m.application
+                        ORDER BY
+                            datetime DESC
+                        OFFSET 0 LIMIT 1
+                        ) as sid
                     FROM materials m 
                     LEFT JOIN bills_materials bm ON bm.material=m.id
                     WHERE 
@@ -152,8 +163,9 @@ class ApplicationsController extends AbstractController
                     GROUP BY m.application, m.id, m.amount 
                     ORDER BY m.application ASC, m.num ASC) res
                 WHERE 
-                    res.amount <> res.bills OR 
-                    res.bills IS NULL;
+                    res.sid NOT IN (3,5) AND
+                    (res.amount <> res.bills OR 
+                    res.bills IS NULL);
             ';
             $stmt = $this->entityManager->getConnection()->prepare($sql);
             $stmt->execute();

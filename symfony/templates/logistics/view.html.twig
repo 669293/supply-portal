@@ -35,12 +35,13 @@
             {% endif %}
             <p class="{% if 'ROLE_LOGISTICS' in roles %}mb-1{% else %}mb-3{% endif %} text-muted text-nowrap">{{ tree.logistics.getDate|date('d.m.Y') }} {% if tree.logistics.getWay != '' %}{{ tree.logistics.getWay }}{% if tree.logistics.getTrack != '' %} <i class="bi bi-arrow-right"></i> {{ tree.logistics.getTrack }}{% endif %}{% endif %}</p>
 
+            {% if tree.logistics.getBill %}<a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.logistics.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>{% endif %}
             {% if 'ROLE_LOGISTICS' in roles %}
                 {% if tree.logistics.getOffice.getId == app.user.getOffice.getId and tree.avalibleMaterials %}
-                    <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3" href="/applications/logistics/add-info/?parent={{ tree.logistics.getId }}"><i class="bi bi-pencil"></i> Дополнить информацию на основании {% if tree.logistics.getType == 0 %}данного поступления{% else %}данной отгрузки{% endif %}</a>
+                    <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/logistics/add-info/?parent={{ tree.logistics.getId }}"><i class="bi bi-pencil"></i> Дополнить информацию на основании {% if tree.logistics.getType == 0 %}данного поступления{% else %}данной отгрузки{% endif %}</a>
                 {% endif %}
                 {% if app.user.getId == tree.logistics.getUser.getId and tree.children|length == 0 %}
-                    <button class="btn btn-sm btn-outline-danger text-start mb-3 remove-logistics-btn" data-id="{{ tree.logistics.getId }}"><i class="bi bi-trash"></i> Удалить {% if tree.logistics.getType == 0 %}данное поступление{% else %}данную отгрузку{% endif %}</button>
+                    <button class="btn btn-sm btn-outline-danger text-start mb-3 me-2 remove-logistics-btn" data-id="{{ tree.logistics.getId }}"><i class="bi bi-trash"></i> Удалить {% if tree.logistics.getType == 0 %}данное поступление{% else %}данную отгрузку{% endif %}</button>
                 {% endif %}
             {% endif %}
             
@@ -133,12 +134,13 @@
                     {% endif %}
                     <p class="{% if 'ROLE_LOGISTICS' in roles %}mb-1{% else %}mb-3{% endif %} text-muted text-nowrap">{{ tree.logistics.getDate|date('d.m.Y') }} {% if tree.logistics.getWay != '' %}{{ tree.logistics.getWay }}{% if tree.logistics.getTrack != '' %} <i class="bi bi-arrow-right"></i> {{ tree.logistics.getTrack }}{% endif %}{% endif %}</p>
 
+                    {% if tree.logistics.getBill %}<a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.logistics.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>{% endif %}
                     {% if 'ROLE_LOGISTICS' in roles %}
                         {% if tree.logistics.getOffice.getId == app.user.getOffice.getId and tree.avalibleMaterials %}
-                            <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3" href="/applications/logistics/add-info/?parent={{ tree.logistics.getId }}"><i class="bi bi-pencil"></i> Дополнить информацию на основании {% if tree.logistics.getType == 0 %}данного поступления{% else %}данной отгрузки{% endif %}</a>
+                            <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/logistics/add-info/?parent={{ tree.logistics.getId }}"><i class="bi bi-pencil"></i> Дополнить информацию на основании {% if tree.logistics.getType == 0 %}данного поступления{% else %}данной отгрузки{% endif %}</a>
                         {% endif %}
                         {% if app.user.getId == tree.logistics.getUser.getId and tree.children|length == 0 %}
-                            <button class="btn btn-sm btn-outline-danger text-start mb-3 remove-logistics-btn" data-id="{{ tree.logistics.getId }}"><i class="bi bi-trash"></i> Удалить {% if tree.logistics.getType == 0 %}данное поступление{% else %}данную отгрузку{% endif %}</button>
+                            <button class="btn btn-sm btn-outline-danger text-start mb-3 me-2 remove-logistics-btn" data-id="{{ tree.logistics.getId }}"><i class="bi bi-trash"></i> Удалить {% if tree.logistics.getType == 0 %}данное поступление{% else %}данную отгрузку{% endif %}</button>
                         {% endif %}
                     {% endif %}
                     
@@ -236,12 +238,13 @@
         {% endif %}
         <p class="{% if 'ROLE_LOGISTICS' in roles %}mb-1{% else %}mb-3{% endif %} text-muted text-nowrap">{{ tree.logistics.getDate|date('d.m.Y') }} {% if tree.logistics.getWay != '' %}{{ tree.logistics.getWay }}{% if tree.logistics.getTrack != '' %} <i class="bi bi-arrow-right"></i> {{ tree.logistics.getTrack }}{% endif %}{% endif %}</p>
 
+        {% if tree.logistics.getBill %}<a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.logistics.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>{% endif %}
         {% if 'ROLE_LOGISTICS' in roles %}
             {% if tree.logistics.getOffice.getId == app.user.getOffice.getId and tree.avalibleMaterials %}
-                <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3" href="/applications/logistics/add-info/?parent={{ tree.logistics.getId }}"><i class="bi bi-pencil"></i> Дополнить информацию на основании {% if tree.logistics.getType == 0 %}данного поступления{% else %}данной отгрузки{% endif %}</a>
+                <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/logistics/add-info/?parent={{ tree.logistics.getId }}"><i class="bi bi-pencil"></i> Дополнить информацию на основании {% if tree.logistics.getType == 0 %}данного поступления{% else %}данной отгрузки{% endif %}</a>
             {% endif %}
             {% if app.user.getId == tree.logistics.getUser.getId and tree.children|length == 0 %}
-                <button class="btn btn-sm btn-outline-danger text-start mb-3 remove-logistics-btn" data-id="{{ tree.logistics.getId }}"><i class="bi bi-trash"></i> Удалить {% if tree.logistics.getType == 0 %}данное поступление{% else %}данную отгрузку{% endif %}</button>
+                <button class="btn btn-sm btn-outline-danger text-start mb-3 me-2 remove-logistics-btn" data-id="{{ tree.logistics.getId }}"><i class="bi bi-trash"></i> Удалить {% if tree.logistics.getType == 0 %}данное поступление{% else %}данную отгрузку{% endif %}</button>
             {% endif %}
         {% endif %}
         
@@ -441,7 +444,8 @@
                     $.post('/applications/logistics/delete-info', {id: id})
                     .done(function(data) {
                         //Все хорошо
-                        location.href = '/applications';
+                        //location.href = '/applications';
+                        location.reload();
                     }).fail(function() {
                     addToast('Произошла ошибка.<br />Попробуйте обновить страницу.', 'bg-danger', 'text-white');
                     showToasts();

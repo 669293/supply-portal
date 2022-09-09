@@ -14,9 +14,11 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Doctrine\ORM\EntityManagerInterface;
-use App\Entity\Photos;
 use App\Entity\Logistics;
 use App\Entity\LogisticsMaterials;
+use App\Entity\Materials;
+use App\Entity\Offices;
+use App\Entity\Photos;
 use App\Repository\ApplicationsRepository;
 use App\Repository\BillsRepository;
 use App\Repository\BillsMaterialsRepository;
@@ -231,6 +233,8 @@ class LogisticsController extends AbstractController
                     break;
                 }
             }
+
+
             if (!$exist) {
                 $tmp_ = new \stdClass;
                 $tmp_->id = $material->getMaterial()->getId();
@@ -243,15 +247,18 @@ class LogisticsController extends AbstractController
 
         //Отнимаем количество материалов в данной отгрузке
         $avalibleMaterials = false; if (sizeof($materialsMeta) == 0) {$avalibleMaterials = true;}
-        foreach ($materialsMeta as $materialMeta) {
-            for ($i=0; $i<sizeof($materials); $i++) {
-                if ($materials[$i]->getMaterial()->getId() == $materialMeta->id) {
-                    $materialMeta->amount -= $materials[$i]->getAmount();
-                    if ($materialMeta->amount > 0) {
-                        $avalibleMaterials = true;
-                    }
-                    break;
+        foreach ($materials as $material) {
+            $amount = (float)$material->getAmount();
+
+            foreach ($materialsMeta as $materialMeta) {
+                if ($material->getMaterial()->getId() == $materialMeta->id) {
+                    $amount -= (float)$materialMeta->amount;
                 }
+            }
+
+            if ($amount > 0) {
+                $avalibleMaterials = true;
+                break;
             }
         }
 
@@ -596,166 +603,69 @@ class LogisticsController extends AbstractController
 
         $submittedToken = $request->request->get('token');
 
-        if ($this->isCsrfTokenValid('log-add', $submittedToken)) {
-            $materials = $request->request->get('material');
-            $amounts = $request->request->get('amount');
-            $type = $request->request->get('type');
-            $parent = $request->request->get('parent'); if (!is_numeric($parent)) {$parent = null;}
-    
-            $this->entityManager->getConnection()->beginTransaction(); //Начинаем транзакцию
-
+        if ($this->isCsrfTokenValid('log-add', $submittedToken)) {   
             try {
-                if ($materials !== null) {
-                    $objMaterials = [];
-                    for ($i=0; $i<sizeof($materials); $i++) {
-                        //Получаем строку в BillsMaterials
-                        $objMaterial = $materialsRepository->findBy(array('id' => $materials[$i]));
-                        if (is_array($objMaterial)) {$objMaterial = array_shift($objMaterial);}
-                        $objMaterials[] = $objMaterial;
-                        unset($objMaterial);
-                    }
+                $this->entityManager->getConnection()->beginTransaction(); //Начинаем транзакцию
 
-                    //Для уточнения количества материалов получаем список дочерних отгрузок
-                    $children = $logisticsRepository->findBy( array('parent' => $parent) );
-                    $childIds = []; foreach ($children as $child) {$childIds[] = $child->getId();} unset($children);
+                $materials = $request->request->get('material');
+                $amounts = $request->request->get('amount');
 
-                    $arrMaterials = $logisticsMaterialsRepository->createQueryBuilder('lm')
-                    ->where('lm.logistic IN (:ids)')
-                    ->setParameter('ids', $childIds)
-                    ->getQuery()
-                    ->getResult();
+                // $params['dateReciept'] = $request->request->get('dateReciept');
+                $params['dateShip'] = $request->request->get('dateShip');
+                $params['userOfficeShip'] = $request->request->get('userOfficeShip');
+                $params['way'] = $request->request->get('way');
+                $params['track'] = $request->request->get('track');
+                $params['photos'] = $request->request->get('photos');
+            
+                //Проверяем по параметрам откуда был вызов, из формы просмотра счета или из формы выбора материалов при приходе
+                if ($request->request->get('type') === null) {
+                    //Вызов из формы выбора материалов при перемещении
+                    //Ожидаем массив id логистической информации
+                    $resultArray = [];
+                    $logisticsIds = $request->request->get('logistic');
 
-                    $materialsMeta = [];
-                    foreach ($arrMaterials as $material) {
-                        //Смотрим, есть ли такой материал в массиве
+                    foreach ($logisticsIds as $logisticId) {
                         $exist = false;
-                        for ($i=0; $i<sizeof($materialsMeta); $i++) {
-                            if ($materialsMeta[$i]->id == $material->getMaterial()->getId()) {
-                                $materialsMeta[$i]->amount += $material->getAmount();
-                                $exist = true;
-                                break;
-                            }
-                        }
-                        if (!$exist) {
-                            $tmp = new \stdClass;
-                            $tmp->id = $material->getMaterial()->getId();
-                            $tmp->amount = $material->getAmount();
-                            $materialsMeta[] = $tmp;
-                            unset($tmp);
-                        }
-                    }
-                    unset($arrMaterials);
+                        foreach ($resultArray as $row) {if ($row['logisticId'] == $logisticId) {$exist = true; break;}}
 
-                    //Дополняем массив текущими материалами
-                    for ($j=0; $j<sizeof($materials); $j++) {
-                        //Смотрим, есть ли такой материал в массиве
-                        $exist = false;
-                        for ($i=0; $i<sizeof($materialsMeta); $i++) {
-                            if ($materialsMeta[$i]->id == $materials[$j]) {
-                                $materialsMeta[$i]->amount += $amounts[$j];
-                                $exist = true;
-                                break;
-                            }
-                        }
                         if (!$exist) {
-                            $tmp = new \stdClass;
-                            $tmp->id = $materials[$j];
-                            $tmp->amount = $amounts[$j];
-                            $materialsMeta[] = $tmp;
-                            unset($tmp);
-                        }
-                    }
+                            //Добавляем
+                            $tmp = [];
+                            $tmp['logisticId'] = $logisticId;
+                            $tmp['materials'] = [];
+                            $tmp['amounts'] = [];
 
-                    /*
-                     * Итого в массиве $materialsMeta информация о всех подчиненных материалах, включая текущую отгрузку
-                     * Чтобы понять "закрыта" ли отгрузка, получаем исзодные материалы по ней и сравниваем
-                     */
-                    $canSetDone = true;
-                    $logisticsMaterials = $logisticsMaterialsRepository->findBy( array('logistic' => $parent) );
-                    foreach ($logisticsMaterials as $logisticsMaterial) {
-                        foreach ($materialsMeta as $materialMeta) {
-                            if ($materialMeta->id = $logisticsMaterial->getMaterial()->getId()) {
-                                if ($logisticsMaterial->getAmount() > $materialMeta->amount) {
-                                    $canSetDone = false;
+                            for ($i=0; $i < sizeof($logisticsIds); $i++) {
+                                if ($logisticsIds[$i] == $logisticId) {
+                                    $tmp['materials'][] = $materials[$i];
+                                    $tmp['amounts'][] = $amounts[$i];
                                 }
-
-                                break;
                             }
+
+                            $resultArray[] = $tmp; unset($tmp);
                         }
                     }
 
-                    if ($canSetDone) {
-                        //Отмечаем отгрузку как "закрытую"
-                        $logistics = $logisticsRepository->findBy( array('id' => $parent) );
-                        if (is_array($logistics)) {$logistics = array_shift($logistics);}
-                        $logistics->setDone(true);
-                        $this->entityManager->persist($logistics);
-                        $this->entityManager->flush();
+                    $type = 1; //Отправка
+                    $logistics = []; //Возвращаемое значение при успешном выполнении
+                    foreach ($resultArray as $logistic) {
+                        $logistics[] = $this->sendMaterials($logistic['materials'], $logistic['amounts'], $type, $logistic['logisticId'], $params);
                     }
+                    $logistics = json_encode($logistics);
+                } else {
+                    //Вызов из формы добавление логистики
+                    $type = $request->request->get('type');
+                    $parent = $request->request->get('parent'); if (!is_numeric($parent)) {$parent = null;}
 
-                    //Получаем информацию об отгрузку/получению
-                    if ($type !== null && is_numeric($type)) {
-                        $objLogistics = new Logistics;
+                    $this->sendMaterials($materials, $amounts, $type, $parent, $params);
 
-                        if ($type == 0) {
-                            //Получение
-                            $dateOp = new \DateTime();
-                            $dateOp->setTimestamp(strtotime($request->request->get('dateReciept').' 00:00:01')); //Дата операции
-                            $objOffice = $this->security->getUser()->getOffice(); //Объект - локация пользователя
-
-                            $objLogistics->setDate($dateOp);
-                            $objLogistics->setType(0); //Получение
-                            $objLogistics->setOffice($objOffice);
-                        } else {
-                            //Отгрузка
-                            $dateOp = new \DateTime();
-                            $dateOp->setTimestamp(strtotime($request->request->get('dateShip').' 00:00:01')); //Дата операции
-                            $objOffice = $officesRepository->findBy( array('id' => $request->request->get('userOfficeShip')) );
-                            if (is_array($objOffice)) {$objOffice = array_shift($objOffice);}
-                            $way = $request->request->get('way'); //Сопсоб отправки
-                            $track = $request->request->get('track'); //Номер для отслеживания
-
-                            $objLogistics->setDate($dateOp);
-                            $objLogistics->setType(1); //Отгрузка
-                            $objLogistics->setOffice($objOffice);
-                            $objLogistics->setWay($way);
-                            $objLogistics->setTrack($track);
-                        }
-
-                        $objLogistics->setUser($this->security->getUser());
-                        $objLogistics->setParent($parent);
-                        $this->entityManager->persist($objLogistics);
-
-                        $this->entityManager->flush();
-
-                        //Добавляем связи в LogisticsMaterials
-                        for ($i=0; $i<sizeof($objMaterials); $i++) {
-                            $objLogisticsMaterials = new LogisticsMaterials;
-                            $objLogisticsMaterials->setMaterial($objMaterials[$i]);
-                            $objLogisticsMaterials->setLogistics($objLogistics);
-                            $objLogisticsMaterials->setAmount((float)$amounts[$i]);
-                            $this->entityManager->persist($objLogisticsMaterials);
-                        }
-                        $this->entityManager->flush();
-
-                        //Добавляем фотографии
-                        $arrPhotos = json_decode($request->request->get('photos'));
-                        if ($arrPhotos !== null ) {
-                            foreach ($arrPhotos as $photo) {
-                                $objPhoto = $photosRepository->findBy( array('id' => $photo) );
-                                if (is_array($objPhoto)) {$objPhoto = array_shift($objPhoto);}
-                                $objPhoto->setLogistics($objLogistics);
-                                $this->entityManager->persist($objPhoto);
-                            }
-                        }
-                        $this->entityManager->flush();
-                    }
+                    $logistics = ''; //Возвращаемое значение при успешном выполнении
                 }
-
+                
                 $this->entityManager->getConnection()->commit();
 
                 $result[] = 1;
-                $result[] = '';
+                $result[] = $logistics;
             } catch (Exception $e) {
                 $this->entityManager->getConnection()->rollBack();
 
@@ -772,6 +682,167 @@ class LogisticsController extends AbstractController
             $result[] = 'Недействительный токен CSRF.';
             return new JsonResponse($result);
         }
+    }
+
+    /**
+     * Отгрузка материалов
+     */
+    private function sendMaterials($materials, $amounts, $type, $parent, $params) {
+        //Получаем необходимые репозитории
+        $logisticsRepository = $this->entityManager->getRepository(Logistics::class);
+        $logisticsMaterialsRepository = $this->entityManager->getRepository(LogisticsMaterials::class);
+        $materialsRepository = $this->entityManager->getRepository(Materials::class);
+        $officesRepository = $this->entityManager->getRepository(Offices::class);
+        $photosRepository = $this->entityManager->getRepository(Photos::class);
+
+        if ($materials !== null) {
+            $objMaterials = [];
+            for ($i=0; $i<sizeof($materials); $i++) {
+                //Получаем строку в BillsMaterials
+                $objMaterial = $materialsRepository->findBy(array('id' => $materials[$i]));
+                if (is_array($objMaterial)) {$objMaterial = array_shift($objMaterial);}
+                $objMaterials[] = $objMaterial;
+                unset($objMaterial);
+            }
+
+            //Для уточнения количества материалов получаем список дочерних отгрузок
+            $children = $logisticsRepository->findBy( array('parent' => $parent) );
+            $childIds = []; foreach ($children as $child) {$childIds[] = $child->getId();} unset($children);
+
+            $arrMaterials = $logisticsMaterialsRepository->createQueryBuilder('lm')
+            ->where('lm.logistic IN (:ids)')
+            ->setParameter('ids', $childIds)
+            ->getQuery()
+            ->getResult();
+
+            $materialsMeta = [];
+            foreach ($arrMaterials as $material) {
+                //Смотрим, есть ли такой материал в массиве
+                $exist = false;
+                for ($i=0; $i<sizeof($materialsMeta); $i++) {
+                    if ($materialsMeta[$i]->id == $material->getMaterial()->getId()) {
+                        $materialsMeta[$i]->amount += $material->getAmount();
+                        $exist = true;
+                        break;
+                    }
+                }
+                if (!$exist) {
+                    $tmp = new \stdClass;
+                    $tmp->id = $material->getMaterial()->getId();
+                    $tmp->amount = $material->getAmount();
+                    $materialsMeta[] = $tmp;
+                    unset($tmp);
+                }
+            }
+            unset($arrMaterials);
+
+            //Дополняем массив текущими материалами
+            for ($j=0; $j<sizeof($materials); $j++) {
+                //Смотрим, есть ли такой материал в массиве
+                $exist = false;
+                for ($i=0; $i<sizeof($materialsMeta); $i++) {
+                    if ($materialsMeta[$i]->id == $materials[$j]) {
+                        $materialsMeta[$i]->amount += $amounts[$j];
+                        $exist = true;
+                        break;
+                    }
+                }
+                if (!$exist) {
+                    $tmp = new \stdClass;
+                    $tmp->id = $materials[$j];
+                    $tmp->amount = $amounts[$j];
+                    $materialsMeta[] = $tmp;
+                    unset($tmp);
+                }
+            }
+
+            /*
+             * Итого в массиве $materialsMeta информация о всех подчиненных материалах, включая текущую отгрузку
+             * Чтобы понять "закрыта" ли отгрузка, получаем исзодные материалы по ней и сравниваем
+             */
+            $canSetDone = true;
+            $logisticsMaterials = $logisticsMaterialsRepository->findBy( array('logistic' => $parent) );
+            foreach ($logisticsMaterials as $logisticsMaterial) {
+                foreach ($materialsMeta as $materialMeta) {
+                    if ($materialMeta->id = $logisticsMaterial->getMaterial()->getId()) {
+                        if ($logisticsMaterial->getAmount() > $materialMeta->amount) {
+                            $canSetDone = false;
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+            if ($canSetDone) {
+                //Отмечаем отгрузку как "закрытую"
+                $logistics = $logisticsRepository->findBy( array('id' => $parent) );
+                if (is_array($logistics)) {$logistics = array_shift($logistics);}
+                $logistics->setDone(true);
+                $this->entityManager->persist($logistics);
+                $this->entityManager->flush();
+            }
+
+            //Получаем информацию об отгрузке/получению
+            if ($type !== null && is_numeric($type)) {
+                $objLogistics = new Logistics;
+
+                if ($type == 0) {
+                    //Получение
+                    $dateOp = new \DateTime();
+                    $dateOp->setTimestamp(strtotime($params['dateReciept'].' 00:00:01')); //Дата операции
+                    $objOffice = $this->security->getUser()->getOffice(); //Объект - локация пользователя
+
+                    $objLogistics->setDate($dateOp);
+                    $objLogistics->setType(0); //Получение
+                    $objLogistics->setOffice($objOffice);
+                } else {
+                    //Отгрузка
+                    $dateOp = new \DateTime();
+                    $dateOp->setTimestamp(strtotime($params['dateShip'].' 00:00:01')); //Дата операции
+                    $objOffice = $officesRepository->findBy( array('id' => $params['userOfficeShip']) );
+                    if (is_array($objOffice)) {$objOffice = array_shift($objOffice);}
+                    $way = $params['way']; //Сопсоб отправки
+                    $track = $params['track']; //Номер для отслеживания
+
+                    $objLogistics->setDate($dateOp);
+                    $objLogistics->setType(1); //Отгрузка
+                    $objLogistics->setOffice($objOffice);
+                    $objLogistics->setWay($way);
+                    $objLogistics->setTrack($track);
+                }
+
+                $objLogistics->setUser($this->security->getUser());
+                $objLogistics->setParent($parent);
+                $this->entityManager->persist($objLogistics);
+
+                $this->entityManager->flush();
+
+                //Добавляем связи в LogisticsMaterials
+                for ($i=0; $i<sizeof($objMaterials); $i++) {
+                    $objLogisticsMaterials = new LogisticsMaterials;
+                    $objLogisticsMaterials->setMaterial($objMaterials[$i]);
+                    $objLogisticsMaterials->setLogistics($objLogistics);
+                    $objLogisticsMaterials->setAmount((float)$amounts[$i]);
+                    $this->entityManager->persist($objLogisticsMaterials);
+                }
+                $this->entityManager->flush();
+
+                //Добавляем фотографии
+                $arrPhotos = json_decode($params['photos']);
+                if ($arrPhotos !== null ) {
+                    foreach ($arrPhotos as $photo) {
+                        $objPhoto = $photosRepository->findBy( array('id' => $photo) );
+                        if (is_array($objPhoto)) {$objPhoto = array_shift($objPhoto);}
+                        $objPhoto->setLogistics($objLogistics);
+                        $this->entityManager->persist($objPhoto);
+                    }
+                }
+                $this->entityManager->flush();
+            }
+        }
+
+        return $objLogistics->getId();
     }
 
     /**

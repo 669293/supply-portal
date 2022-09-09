@@ -1,0 +1,31 @@
+{# templates/default_empty.html.twig #}
+
+<!doctype html>
+<html lang="en" class="h-100">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700,900|Russo+One|Scada:400,400i,700&amp;subset=cyrillic,cyrillic-ext,latin-ext" rel="stylesheet">
+    <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/bootstrap-icons.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/bootstrap-nightshade.min.css') }}" rel="stylesheet">
+{% block css %}
+{% endblock %}
+    <link href="{{ asset('css/style.css') }}" rel="stylesheet">
+    <title>{% block title %}Портал снабжения{% endblock %}</title>
+  </head>
+  <body class="d-flex flex-column h-100">
+{% block content %}
+{% endblock %}
+{% block modal %}
+{% endblock %}
+    <script type="text/javascript" src="{{ asset('js/popper.min.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('js/jquery.min.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('js/fragments/_default.js') }}"></script>
+    <script type="text/javascript" src="{{ asset('js/darkmode.min.js') }}"></script>
+
+{% block scripts %}
+{% endblock %}
+  </body>
+</html>

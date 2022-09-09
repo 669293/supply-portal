@@ -24,7 +24,12 @@ use App\Entity\BillsStatuses;
 use App\Entity\Documents;
 use App\Entity\Logistics;
 use App\Entity\LogisticsMaterials;
+use App\Entity\Materials;
+use App\Entity\Offices;
+use App\Entity\Photos;
 use App\Entity\Providers;
+use App\Entity\StatusesOfApplications;
+use App\Entity\StatusesOfBills;
 use App\Repository\ApplicationsRepository;
 use App\Repository\BillsRepository;
 use App\Repository\BillsMaterialsRepository;
@@ -831,7 +836,7 @@ class BillsController extends AbstractController
 
     /**
      * Просмотр активных счетов
-     * @Route("/applications/bills/in-work/view", methods={"GET"}))
+     * @Route("/applications/bills/in-work/view", methods={"GET"})
      * @IsGranted("ROLE_USER")
      */
     public function recieveBillForm(
@@ -1111,227 +1116,79 @@ class BillsController extends AbstractController
         $submittedToken = $request->request->get('token');
 
         if ($this->isCsrfTokenValid('view-bill', $submittedToken)) {
-            $materials = $request->request->get('material');
-            $amounts = $request->request->get('amount');
-            $billId = $request->request->get('bid');
-
-            if ($billId === null || ($materials !== null && $amounts !== null && sizeof($materials) != sizeof($amounts))) {
-                $result[] = 0;
-                $result[] = 'Ошибка во входных данных.';
-                return new JsonResponse($result);
-            }
-    
-            $this->entityManager->getConnection()->beginTransaction(); //Начинаем транзакцию
-
             try {
-                //Получаем счет
-                $objBill = $billsRepository->findBy(array('id' => $billId));
-                if (is_array($objBill)) {$objBill = array_shift($objBill);}
+                $this->entityManager->getConnection()->beginTransaction(); //Начинаем транзакцию
 
-                if ($materials !== null) {
-                    $objMaterials = [];
+                //Получаем общие переменные
+                $materials = $request->request->get('material');
+                $amounts = $request->request->get('amount');
 
-                    for ($i=0; $i<sizeof($materials); $i++) {
-                        //Получаем строку в BillsMaterials
-                        $billMaterial = $billsMaterialsRepository->findBy(array('id' => $materials[$i]));
-                        if (is_array($billMaterial)) {$billMaterial = array_shift($billMaterial);}
+                $params['docinfo'] = $request->request->get('docinfo'); //Дополнительная информация
+                $params['sum'] = $request->request->get('sum'); //Сумма
+                $params['dateReciept'] = $request->request->get('dateReciept'); //Дата операции
+                $params['dateShip'] = $request->request->get('dateShip'); //Дата операции
+                $params['userOfficeShip'] = $request->request->get('userOfficeShip'); //Подразделение куда производится отправка
+                $params['way'] = $request->request->get('way'); //Сопсоб отправки
+                $params['track'] = $request->request->get('track'); //Номер для отслеживания
+                $params['photos'] = $request->request->get('photos'); //Фотографии
+                $params['files'] = $request->request->get('files'); //Документы
 
-                        $objMaterials[] = $billMaterial->getMaterial();
+                //Проверяем по параметрам откуда был вызов, из формы просмотра счета или из формы выбора материалов при приходе
+                if ($request->request->get('bid') === null) {
+                    //Вызов из формы выбора материалов при приходе
+                    //Ожидаем массив id счетов
+                    $resultArray = [];
+                    $materials = $request->request->get('material');
+                    $amounts = $request->request->get('amount');
 
-                        $billMaterial->setRecieved((float)$billMaterial->getRecieved() + (float)$amounts[$i]);
+                    $billsIds = $request->request->get('bill');
+                    foreach ($billsIds as $billId) {
+                        $exist = false;
+                        foreach ($resultArray as $row) {if ($row['billId'] == $billId) {$exist = true; break;}}
 
-                        $this->entityManager->persist($billMaterial);
-                        $this->entityManager->flush();
+                        if (!$exist) {
+                            //Добавляем
+                            $tmp = [];
+                            $tmp['billId'] = $billId;
+                            $tmp['materials'] = [];
+                            $tmp['amounts'] = [];
 
-                        unset($billMaterial);
-                    }
-
-                    //Добавляем статус "Получен" или "Частично получен" к счету
-
-                    //Проверяем, есть ли в счете незакрытые позиции
-                    $notReadyMaterials = $billsMaterialsRepository->createQueryBuilder('bm')
-                    ->select('bm.id')
-                    ->where('bm.bill = :bill')
-                    ->andWhere('bm.amount <> bm.recieved')
-                    ->setParameter('bill', $billId)
-                    ->join('App\Entity\Materials', 'm', 'WITH' ,'bm.material=m.id')
-                    ->groupBy('bm.id, m.isDeleted, m.cash, m.impossible')
-                    ->having('m.isDeleted = FALSE AND m.cash = FALSE AND m.impossible = FALSE')
-                    ->getQuery()
-                    ->getResult();
-
-                    $statusId = 6; //Частично получен
-                    if (sizeof($notReadyMaterials) == 0) {$statusId = 5;} //Получен
-                    $objStatus = $statusesOfBillsRepository->findby(array('id' => $statusId));
-                    if (is_array($objStatus)) {$objStatus = array_shift($objStatus);}
-
-                    //Добавляем статус к счету
-                    $billStatus = new BillsStatuses;
-                    $billStatus->setBill($objBill);
-                    $billStatus->setStatus($objStatus);
-                    $this->entityManager->persist($billStatus);
-                    $this->entityManager->flush();
-
-                    //Проверяем, можем ли поставить заявке статус "Выполнена"
-                    //Получаем список заявок
-                    $billMaterials = $billsMaterialsRepository->findBy(array('bill' => $billId));
-                    $applications = [];
-                    foreach ($billMaterials as $billMaterial) {
-                        $exists = false;
-                        for ($i=0; $i<sizeof($applications); $i++) {
-                            if ($applications[$i]->getId() == $billMaterial->getMaterial()->getApplication()->getId()) {
-                                $exists = true; break;
-                            }
-                        }
-
-                        if (!$exists) {
-                            $applications[] = $billMaterial->getMaterial()->getApplication();
-                        }
-                    }
-            
-                    foreach ($applications as $application) {
-                        //Работаем с конкретной заявкой
-                        //Получаем материалы в заявке
-                        $applicationMaterials = $materialsRepository->createQueryBuilder('m')
-                        ->where('m.application = :application')
-                        ->andWhere('m.isDeleted = FALSE')
-                        ->andWhere('m.cash = FALSE')
-                        ->andWhere('m.impossible = FALSE')
-                        ->setParameter('application', $application->getId())
-                        ->getQuery()
-                        ->getResult();
-
-                        $mIds = [];
-                        foreach ($applicationMaterials as $material) {$mIds[] = $material->getId();}
-        
-                        $closed = true;
-
-                        //Получаем список счетов
-                        $bills = [];
-                        foreach ($mIds as $material) {
-                            $arrBillsMaterials = $billsMaterialsRepository->findBy(array('material' => $material));
-
-                            if (sizeof($arrBillsMaterials) == 0) {
-                                $closed = false; break;
+                            for ($i=0; $i < sizeof($billsIds); $i++) {
+                                if ($billsIds[$i] == $billId) {
+                                    $tmp['materials'][] = $materials[$i];
+                                    $tmp['amounts'][] = $amounts[$i];
+                                }
                             }
 
-                            foreach ($arrBillsMaterials as $billMaterial) {
-                                $bills[] = $billMaterial->getBill()->getId();
-                            }
-                        }
-                        $bills = array_unique($bills);
-
-                        foreach ($bills as $bill) {
-                            if ($billsStatusesRepository->findBy(array('bill' => $bill), array('datetime' => 'DESC'))[0]->getStatus()->getId() != 5) { //Получен
-                                $closed = false; break;
-                            }
-                        }
-
-                        if ($closed) {
-                            //Можем закрывать заявку
-
-                            //Обновляем дату закрытия
-                            $dateClose = new \DateTime();
-                            $application->setDateClose($dateClose);
-                            $this->entityManager->persist($application);
-                            $this->entityManager->flush();
-
-                            //Получаем статус
-                            $objStatus = $statusesOfApplicationsRepository->findBy( array('id' => 3) );
-                            if (is_array($objStatus)) {$objStatus = array_shift($objStatus);}
-
-                            //Добавляем статус в базу
-                            $applicationStatus = new ApplicationsStatuses;
-                            $applicationStatus->setApplication($application);
-                            $applicationStatus->setStatus($objStatus);
-
-                            $this->entityManager->persist($applicationStatus);
-                            $this->entityManager->flush();
+                            $resultArray[] = $tmp; unset($tmp);
                         }
                     }
 
-                    //Получаем информацию об отгрузке/получению
+                    $type = 0; //Получение
+                    $logistics = []; //Возвращаемое значение при успешном выполнении
+                    foreach ($resultArray as $bill) {
+                        $logistics[] = $this->recieveMaterials($type, $bill['billId'], $bill['materials'], $bill['amounts'], $params);
+                    }
+                    $logistics = json_encode($logistics);
+                } else {
+                    //Вызов из формы просмотра счета
+                    $billId = $request->request->get('bid');
                     $type = $request->request->get('type');
-                    if ($type !== null && is_numeric($type)) {
-                        $objLogistics = new Logistics;
 
-                        //Добавляем информацию о счете
-                        $objLogistics->setBill($objBill);
-
-                        //Если нужно, добавляем информацию о документе и сумме
-                        if (!empty($request->request->get('docinfo'))) {$objLogistics->setDocInfo(trim($request->request->get('docinfo')));}
-                        if (!empty($request->request->get('sum'))) {$objLogistics->setSum(trim($request->request->get('sum')));}
-
-                        if ($type == 0) {
-                            //Получение
-                            $dateOp = new \DateTime();
-                            $dateOp->setTimestamp(strtotime($request->request->get('dateReciept').' 00:00:01')); //Дата операции
-                            $objOffice = $this->security->getUser()->getOffice(); //Объект - локация пользователя
-
-                            $objLogistics->setDate($dateOp);
-                            $objLogistics->setType(0); //Получение
-                            $objLogistics->setOffice($objOffice);
-                            $objLogistics->setUser($this->security->getUser());
-                            $this->entityManager->persist($objLogistics);
-                        } else {
-                            //Отгрузка
-                            $dateOp = new \DateTime();
-                            $dateOp->setTimestamp(strtotime($request->request->get('dateShip').' 00:00:01')); //Дата операции
-                            $objOffice = $officesRepository->findBy( array('id' => $request->request->get('userOfficeShip')) );
-                            if (is_array($objOffice)) {$objOffice = array_shift($objOffice);}
-                            $way = $request->request->get('way'); //Сопсоб отправки
-                            $track = $request->request->get('track'); //Номер для отслеживания
-
-                            $objLogistics->setDate($dateOp);
-                            $objLogistics->setType(1); //Отгрузка
-                            $objLogistics->setOffice($objOffice);
-                            $objLogistics->setWay($way);
-                            $objLogistics->setTrack($track);
-                            $objLogistics->setUser($this->security->getUser());
-                            $this->entityManager->persist($objLogistics);
-                        }
-                        $this->entityManager->flush();
-
-                        //Добавляем связи в LogisticsMaterials
-                        for ($i=0; $i<sizeof($objMaterials); $i++) {
-                            $objLogisticsMaterials = new LogisticsMaterials;
-                            $objLogisticsMaterials->setMaterial($objMaterials[$i]);
-                            $objLogisticsMaterials->setLogistics($objLogistics);
-                            $objLogisticsMaterials->setAmount((float)$amounts[$i]);
-                            $this->entityManager->persist($objLogisticsMaterials);
-                        }
-                        $this->entityManager->flush();
-
-                        //Добавляем фотографии
-                        $arrPhotos = json_decode($request->request->get('photos'));
-                        if ($arrPhotos !== null ) {
-                            foreach ($arrPhotos as $photo) {
-                                $objPhoto = $photosRepository->findBy( array('id' => $photo) );
-                                if (is_array($objPhoto)) {$objPhoto = array_shift($objPhoto);}
-                                $objPhoto->setLogistics($objLogistics);
-                                $this->entityManager->persist($objPhoto);
-                            }
-                        }
-                        $this->entityManager->flush();
+                    if ($billId === null || ($materials !== null && $amounts !== null && sizeof($materials) != sizeof($amounts))) {
+                        $result[] = 0;
+                        $result[] = 'Ошибка во входных данных.';
+                        return new JsonResponse($result);
                     }
-                }
 
-                //Добавляем файлы
-                $arrFiles = json_decode($request->request->get('files'));
-                if ($arrFiles !== null ) {
-                    foreach ($arrFiles as $file) {
-                        $objDocument = $documentsRepository->findBy( array('id' => $file) );
-                        if (is_array($objDocument)) {$objDocument = array_shift($objDocument);}
-                        $objDocument->setBill($objBill);
-                        $this->entityManager->persist($objDocument);
-                    }
+                    $logistics = ''; //Возвращаемое значение при успешном выполнении
+                    $this->recieveMaterials($type, $billId, $materials, $amounts, $params);
                 }
-                $this->entityManager->flush();
-
+    
                 $this->entityManager->getConnection()->commit();
 
                 $result[] = 1;
-                $result[] = '';
+                $result[] = $logistics;
             } catch (Exception $e) {
                 $this->entityManager->getConnection()->rollBack();
 
@@ -1348,6 +1205,227 @@ class BillsController extends AbstractController
             $result[] = 'Недействительный токен CSRF.';
             return new JsonResponse($result);
         }
+    }
+
+    /**
+     * Отгрузка/получение материалов
+     */
+    private function recieveMaterials($type, $billId, $materials, $amounts, $params) {
+        //Получаем необходимые репозитории
+        $billsRepository = $this->entityManager->getRepository(Bills::class);
+        $billsMaterialsRepository = $this->entityManager->getRepository(BillsMaterials::class);
+        $statusesOfBillsRepository = $this->entityManager->getRepository(StatusesOfBills::class);
+        $materialsRepository = $this->entityManager->getRepository(Materials::class);
+        $billsStatusesRepository = $this->entityManager->getRepository(BillsStatuses::class);
+        $officesRepository = $this->entityManager->getRepository(Offices::class);
+        $statusesOfApplicationsRepository = $this->entityManager->getRepository(StatusesOfApplications::class);
+        $photosRepository = $this->entityManager->getRepository(Photos::class);
+        $documentsRepository = $this->entityManager->getRepository(Documents::class);
+
+        //Получаем счет
+        $objBill = $billsRepository->findBy(array('id' => $billId));
+        if (is_array($objBill)) {$objBill = array_shift($objBill);}
+
+        if ($materials !== null) {
+            $objMaterials = [];
+
+            for ($i=0; $i<sizeof($materials); $i++) {
+                //Получаем строку в BillsMaterials
+                $billMaterial = $billsMaterialsRepository->findBy(array('id' => $materials[$i]));
+                if (is_array($billMaterial)) {$billMaterial = array_shift($billMaterial);}
+
+                $objMaterials[] = $billMaterial->getMaterial();
+
+                $billMaterial->setRecieved((float)$billMaterial->getRecieved() + (float)$amounts[$i]);
+
+                $this->entityManager->persist($billMaterial);
+                $this->entityManager->flush();
+
+                unset($billMaterial);
+            }
+
+            //Добавляем статус "Получен" или "Частично получен" к счету
+
+            //Проверяем, есть ли в счете незакрытые позиции
+            $notReadyMaterials = $billsMaterialsRepository->createQueryBuilder('bm')
+            ->select('bm.id')
+            ->where('bm.bill = :bill')
+            ->andWhere('bm.amount <> bm.recieved')
+            ->setParameter('bill', $billId)
+            ->join('App\Entity\Materials', 'm', 'WITH' ,'bm.material=m.id')
+            ->groupBy('bm.id, m.isDeleted, m.cash, m.impossible')
+            ->having('m.isDeleted = FALSE AND m.cash = FALSE AND m.impossible = FALSE')
+            ->getQuery()
+            ->getResult();
+
+            $statusId = 6; //Частично получен
+            if (sizeof($notReadyMaterials) == 0) {$statusId = 5;} //Получен
+            $objStatus = $statusesOfBillsRepository->findby(array('id' => $statusId));
+            if (is_array($objStatus)) {$objStatus = array_shift($objStatus);}
+
+            //Добавляем статус к счету
+            $billStatus = new BillsStatuses;
+            $billStatus->setBill($objBill);
+            $billStatus->setStatus($objStatus);
+            $this->entityManager->persist($billStatus);
+            $this->entityManager->flush();
+
+            //Проверяем, можем ли поставить заявке статус "Выполнена"
+            //Получаем список заявок
+            $billMaterials = $billsMaterialsRepository->findBy(array('bill' => $billId));
+            $applications = [];
+            foreach ($billMaterials as $billMaterial) {
+                $exists = false;
+                for ($i=0; $i<sizeof($applications); $i++) {
+                    if ($applications[$i]->getId() == $billMaterial->getMaterial()->getApplication()->getId()) {
+                        $exists = true; break;
+                    }
+                }
+
+                if (!$exists) {
+                    $applications[] = $billMaterial->getMaterial()->getApplication();
+                }
+            }
+
+            foreach ($applications as $application) {
+                //Работаем с конкретной заявкой
+                //Получаем материалы в заявке
+                $applicationMaterials = $materialsRepository->createQueryBuilder('m')
+                ->where('m.application = :application')
+                ->andWhere('m.isDeleted = FALSE')
+                ->andWhere('m.cash = FALSE')
+                ->andWhere('m.impossible = FALSE')
+                ->setParameter('application', $application->getId())
+                ->getQuery()
+                ->getResult();
+
+                $mIds = [];
+                foreach ($applicationMaterials as $material) {$mIds[] = $material->getId();}
+
+                $closed = true;
+
+                //Получаем список счетов
+                $bills = [];
+                foreach ($mIds as $material) {
+                    $arrBillsMaterials = $billsMaterialsRepository->findBy(array('material' => $material));
+
+                    if (sizeof($arrBillsMaterials) == 0) {
+                        $closed = false; break;
+                    }
+
+                    foreach ($arrBillsMaterials as $billMaterial) {
+                        $bills[] = $billMaterial->getBill()->getId();
+                    }
+                }
+                $bills = array_unique($bills);
+
+                foreach ($bills as $bill) {
+                    if ($billsStatusesRepository->findBy(array('bill' => $bill), array('datetime' => 'DESC'))[0]->getStatus()->getId() != 5) { //Получен
+                        $closed = false; break;
+                    }
+                }
+
+                if ($closed) {
+                    //Можем закрывать заявку
+
+                    //Обновляем дату закрытия
+                    $dateClose = new \DateTime();
+                    $application->setDateClose($dateClose);
+                    $this->entityManager->persist($application);
+                    $this->entityManager->flush();
+
+                    //Получаем статус
+                    $objStatus = $statusesOfApplicationsRepository->findBy( array('id' => 3) );
+                    if (is_array($objStatus)) {$objStatus = array_shift($objStatus);}
+
+                    //Добавляем статус в базу
+                    $applicationStatus = new ApplicationsStatuses;
+                    $applicationStatus->setApplication($application);
+                    $applicationStatus->setStatus($objStatus);
+
+                    $this->entityManager->persist($applicationStatus);
+                    $this->entityManager->flush();
+                }
+            }
+
+            //Получаем информацию об отгрузке/получению
+            if ($type !== null && is_numeric($type)) {
+                $objLogistics = new Logistics;
+
+                //Добавляем информацию о счете
+                $objLogistics->setBill($objBill);
+
+                //Если нужно, добавляем информацию о документе и сумме
+                if (!empty($params['docinfo'])) {$objLogistics->setDocInfo(trim($params['docinfo']));}
+                if (!empty($params['sum'])) {$objLogistics->setSum(trim($params['sum']));}
+
+                if ($type == 0) {
+                    //Получение
+                    $dateOp = new \DateTime();
+                    $dateOp->setTimestamp(strtotime($params['dateReciept'].' 00:00:01')); //Дата операции
+                    $objOffice = $this->security->getUser()->getOffice(); //Объект - локация пользователя
+
+                    $objLogistics->setDate($dateOp);
+                    $objLogistics->setType(0); //Получение
+                    $objLogistics->setOffice($objOffice);
+                    $objLogistics->setUser($this->security->getUser());
+                    $this->entityManager->persist($objLogistics);
+                } else {
+                    //Отгрузка
+                    $dateOp = new \DateTime();
+                    $dateOp->setTimestamp(strtotime($params['dateShip'].' 00:00:01')); //Дата операции
+                    $objOffice = $officesRepository->findBy( array('id' => $params['userOfficeShip']) );
+                    if (is_array($objOffice)) {$objOffice = array_shift($objOffice);}
+                    $way = $params['way']; //Сопсоб отправки
+                    $track = $params['track']; //Номер для отслеживания
+
+                    $objLogistics->setDate($dateOp);
+                    $objLogistics->setType(1); //Отгрузка
+                    $objLogistics->setOffice($objOffice);
+                    $objLogistics->setWay($way);
+                    $objLogistics->setTrack($track);
+                    $objLogistics->setUser($this->security->getUser());
+                    $this->entityManager->persist($objLogistics);
+                }
+                $this->entityManager->flush();
+
+                //Добавляем связи в LogisticsMaterials
+                for ($i=0; $i<sizeof($objMaterials); $i++) {
+                    $objLogisticsMaterials = new LogisticsMaterials;
+                    $objLogisticsMaterials->setMaterial($objMaterials[$i]);
+                    $objLogisticsMaterials->setLogistics($objLogistics);
+                    $objLogisticsMaterials->setAmount((float)$amounts[$i]);
+                    $this->entityManager->persist($objLogisticsMaterials);
+                }
+                $this->entityManager->flush();
+
+                //Добавляем фотографии
+                $arrPhotos = json_decode($params['photos']);
+                if ($arrPhotos !== null ) {
+                    foreach ($arrPhotos as $photo) {
+                        $objPhoto = $photosRepository->findBy( array('id' => $photo) );
+                        if (is_array($objPhoto)) {$objPhoto = array_shift($objPhoto);}
+                        $objPhoto->setLogistics($objLogistics);
+                        $this->entityManager->persist($objPhoto);
+                    }
+                }
+                $this->entityManager->flush();
+            }
+        }
+
+        //Добавляем файлы
+        $arrFiles = json_decode($params['files']);
+        if ($arrFiles !== null ) {
+            foreach ($arrFiles as $file) {
+                $objDocument = $documentsRepository->findBy( array('id' => $file) );
+                if (is_array($objDocument)) {$objDocument = array_shift($objDocument);}
+                $objDocument->setBill($objBill);
+                $this->entityManager->persist($objDocument);
+            }
+        }
+        $this->entityManager->flush();
+
+        return $objLogistics->getId();
     }
 
     /**
