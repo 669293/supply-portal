@@ -156,7 +156,7 @@ $(document).ready(function() {
           data: formData
       }).done(function(data) {
           if ($.isArray(data) && data[0] == 1) {
-alert(data[1]);
+            location.href = 'http://vitim.1gb.ru/journal/add/pm/1/' + JSON.stringify(data[1]);
             freezeForm(frm, false);
           } else {
               showFormAlert(frm, data[1]);

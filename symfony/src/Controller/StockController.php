@@ -103,6 +103,13 @@ class StockController extends AbstractController
         OfficesRepository $officesRepository
     ): Response
     {
+        $returnID = $request->query->get('id'); //Возвращаемое значение
+        if ($returnID === null) {
+            return new RedirectResponse('/applications');
+        } else {
+            $returnID = (int)$returnID;
+        }
+
         $logisticsIDs = $request->query->get('logistic');
         if ($logisticsIDs === null) {
             return new RedirectResponse('/applications');
@@ -195,6 +202,7 @@ class StockController extends AbstractController
         $params['title'] = 'Выбор получения материалов';
         $params['logistics'] = $arrLogistics;
         $params['offices'] = $officesRepository->findAll();
+        $params['returnid'] = $returnID;
 
         return $this->render('stock/pick-log.html.twig', $params);
     }
