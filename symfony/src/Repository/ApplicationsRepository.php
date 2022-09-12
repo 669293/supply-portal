@@ -9,6 +9,7 @@ use App\Entity\BillsMaterials;
 use App\Entity\BillsStatuses;
 use App\Entity\Files;
 use App\Entity\Materials;
+use App\Entity\TypesOfEquipment;
 use App\Entity\Users;
 use App\Entity\StatusesOfApplications;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;

@@ -23,12 +23,12 @@ class TypesOfEquipmentRepository extends ServiceEntityRepository
     // /**
     //  * @return TypesOfEquipment[] Returns an array of TypesOfEquipment objects
     //  */
-    public function findLike($value)
+    public function findLike($value, $orderBy = 't.title', $orderDirection = 'ASC')
     {
         return $this->createQueryBuilder('t')
             ->andWhere('LOWER(t.title) LIKE LOWER(:val)')
             ->setParameter('val', '%'.$value.'%')
-            ->orderBy('t.title', 'ASC')
+            ->orderBy($orderBy, $orderDirection)
             ->setMaxResults(10)
             ->distinct()
             ->getQuery()

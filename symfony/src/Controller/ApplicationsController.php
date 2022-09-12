@@ -1509,13 +1509,6 @@ class ApplicationsController extends AbstractController
                 //Добавляем статус
                 if ($request->request->get('yearApplication')) {$application->setIsYear(true);} else {$application->setIsYear(false);}
 
-                //Начинаем запись, пишем данные в таблицу applications
-                $application->setTitle($request->request->get('titleApp'));
-                $application->setComment($request->request->get('commentApp'));
-                $application->setNumber($request->request->get('additionalNumApp'));
-                $this->entityManager->persist($application);
-                $this->entityManager->flush();
-
                 //Сохраняем материалы в заявке               
                 for ($i = 0; $i < sizeof($arrId); $i++) {
                     $material = $materialsRepository->findBy( array('id' => $arrId[$i]) );
@@ -1539,6 +1532,8 @@ class ApplicationsController extends AbstractController
                     unset($material);
                 }
 
+                $materialsAdded = false;
+
                 //Добавляем материалы к заявке
                 for ($i = 0; $i < sizeof($arrTitles); $i++) {
                     if (!empty($arrTitles[$i])) {
@@ -1558,8 +1553,22 @@ class ApplicationsController extends AbstractController
                         $this->entityManager->persist($material);
                         $this->entityManager->flush();
                         unset($material);
+
+                        $materialsAdded = true;
                     }
                 }
+
+                //Начинаем запись, пишем данные в таблицу applications
+                $application->setTitle($request->request->get('titleApp'));
+                $application->setComment($request->request->get('commentApp'));
+                $application->setNumber($request->request->get('additionalNumApp'));
+
+                if ($materialsAdded) {
+                    $application->setIsBillsLoaded(false);
+                }
+
+                $this->entityManager->persist($application);
+                $this->entityManager->flush();
 
                 //Добавляем файлы
                 $arrFiles = json_decode($request->request->get('files'));
@@ -2350,7 +2359,12 @@ class ApplicationsController extends AbstractController
      * @Route("/applications/search", methods={"GET"}))
      * @IsGranted("ROLE_USER")
      */
-    public function search(Request $request, ApplicationsRepository $applicationsRepository, MaterialsRepository $materialsRepository): Response
+    public function search(
+        Request $request, 
+        ApplicationsRepository $applicationsRepository, 
+        MaterialsRepository $materialsRepository,
+        TypesOfEquipmentRepository $typesOfEquipmentRepository
+    ): Response
     {
         //Получаем роли текущего пользователя
         $roles = $this->security->getUser()->getRoles();
@@ -2374,6 +2388,7 @@ class ApplicationsController extends AbstractController
                 $result->materials = [];
                 $result->comment = '';
                 $result->number = '';
+                $result->equipment = '';
                 $results[] = $result;
                 unset($result);
             }
@@ -2400,6 +2415,7 @@ class ApplicationsController extends AbstractController
                     $result->materials = [];
                     $result->comment = $application->getComment();
                     $result->number = '';
+                    $result->equipment = '';
                     $results[] = $result;
                     unset($result);
                 }
@@ -2427,12 +2443,49 @@ class ApplicationsController extends AbstractController
                     $result->materials = [];
                     $result->comment = '';
                     $result->number = $application->getNumber();
+                    $result->equipment = '';
                     $results[] = $result;
                     unset($result);
                 }
             }
 
             unset($applications);
+
+            //Выполняем поиск по виду техники
+            $toes = $typesOfEquipmentRepository->findLike($q);
+
+            if (sizeof($toes) > 0) {
+                foreach ($toes as $toe) {
+                    // Получаем список материалов
+                    $materials = $materialsRepository->findBy(array('typeOfEquipment' => $toe->getId()));
+                    
+                    foreach ($materials as $material) {
+                        $exists = false;
+                        for ($i=0; $i<sizeof($results); $i++) {
+                            if ($results[$i]->application->getId() == $material->getApplication()->getId()) {
+                                $exists = true;
+                                //Заявка уже существует в результатах, добавляем в нее материал
+                                array_push($results[$i]->materials, $material);
+                                $results[$i]->equipment = $toe->getTitle();
+                            }
+                        }
+    
+                        if (!$exists) {
+                            //Добавляем заявку в результаты
+                            $result = new \stdClass;
+                            $result->application = $material->getApplication();
+                            $result->materials = [$material];
+                            $result->comment = '';
+                            $result->number = '';
+                            $result->equipment = $toe->getTitle();
+                            $results[] = $result;
+                            unset($result);
+                        }
+                    }
+                }
+            }
+
+            unset($materials, $toes);
 
             //Выполняем поиск по материалам
             $materials = $materialsRepository->findLike($q, 'm.id', 'DESC');
@@ -2455,6 +2508,7 @@ class ApplicationsController extends AbstractController
                         $result->materials = [$material];
                         $result->comment = '';
                         $result->number = '';
+                        $result->equipment = '';
                         $results[] = $result;
                         unset($result);
                     }
