@@ -44,8 +44,8 @@ class StockController extends AbstractController
         ProvidersRepository $providersRepository
     ): Response
     {
-        //Получаем список счетов в работе от текущего пользователя
-        $sql = "SELECT res.bid AS id FROM (SELECT bs.bill AS bid, (SELECT bs2.status FROM bills_statuses bs2 WHERE bs2.id = MAX(bs.id)) FROM bills_statuses bs GROUP BY bs.bill) res, bills b WHERE res.bid = b.id AND b.user = ".(int)$this->security->getUser()->getId()." AND res.status <> 5 ORDER BY b.inn;"; 
+        // Получаем список счетов в работе подразделения текущего пользователя
+        $sql = "SELECT res.bid AS id FROM (SELECT bs.bill AS bid, (SELECT bs2.status FROM bills_statuses bs2 WHERE bs2.id = MAX(bs.id)) FROM bills_statuses bs GROUP BY bs.bill) res, bills b WHERE res.bid = b.id AND b.user IN (SELECT u.id FROM users u WHERE u.office = (SELECT office FROM users WHERE id = ".(int)$this->security->getUser()->getId().")) AND res.status <> 5 ORDER BY b.inn;";
         $stmt = $this->entityManager->getConnection()->prepare($sql);
         $stmt->execute();
         $bills_ = $stmt->fetchAllAssociative();
