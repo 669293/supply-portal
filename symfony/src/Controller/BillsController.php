@@ -761,6 +761,7 @@ class BillsController extends AbstractController
      * Вспомогательная функция для построения дерева логистики
      */
     private function putInTree($element, &$tree) {
+
         if ($element->parent !== null) {
             for ($i=0; $i<sizeof($tree); $i++) {
                 if ($tree[$i]->element->logistics->getId() == $element->parent->getId()) {
@@ -1037,11 +1038,15 @@ class BillsController extends AbstractController
         //Получаем массив для дерева
         $logTree = [];
         $logStack = $arrLogistics;
+
+        $n = 0; // Защита от переполнения
         while (sizeof($logStack) > 0) {
+            $n++;
             $element = array_shift($logStack);
             if (!$this->putInTree($element, $logTree)) {
                 array_push($logStack, $element);
             }
+            if ($n > 1000) {break;}
         }
 
         //Получаем значение rowspan
@@ -1425,7 +1430,11 @@ class BillsController extends AbstractController
         }
         $this->entityManager->flush();
 
-        return $objLogistics->getId();
+        if (isset($objLogistics)) {
+            return $objLogistics->getId();
+        } else {
+            return true;
+        }
     }
 
     /**

@@ -17,7 +17,7 @@
               <ul class="navbar-nav me-auto mb-2 mb-md-0">
                 <li class="nav-item me-0 me-md-2">
                   <div class="btn-group mt-2 w-100 w-md-auto" role="group">
-                    <div class="btn-group" role="group">
+                    <div class="btn-group w-100" role="group">
                       <button id="applicationsBtnGroup" type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Заявки</button>
                       <ul class="dropdown-menu dropdown-menu-start" aria-labelledby="applicationsBtnGroup" style="position: absolute!important;">
                       {% if 'ROLE_CREATOR' in roles %}
@@ -130,28 +130,6 @@
     {# {% if printcount == 0 and supervisor|length == 0 and expired|length == 0 and inwork|length == 0 and notordered|length == 0 %}<p>Все хорошо, счета распечатаны, ответственные назначены, заявки в работе.</p>{% endif %} #}
   {% endif %}
 
-  {# Ответственный #}
-  {% if 'ROLE_SUPERVISOR' in roles %}
-    {% if printcount > 0 %}
-      <p>Обратите внимание, есть <a href="/applications/bills/print" class="text-danger">не распечатанные счета</a>.</p>
-    {% endif %}
-    {% if supervisor|length > 0 %}
-      <div class="mb-3">
-        <p>Заявки, требующие назначения ответственных:</p>
-        {% for row in supervisor %}
-          <div class="card mt-2">
-            <div class="card-body">
-              <blockquote class="blockquote mb-0 text-small">
-                <p class="mb-0">{{ row.application.getTitle }} <a href="/applications/view?number={{ row.application.getId }}">#{{ row.application.getId }}</a>{% if row.application.getNumber != '' %} <span class="text-muted text-small">({{ row.application.getNumber }})</span>{% endif %}{% if row.applicationUrgency %} <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="" data-bs-original-title="В заявке есть срочные позиции" aria-label="В заявке есть срочные позиции"></i>{% endif %} <span class="text-muted text-xsmall">от {{ row.application.getDateCreate|date('d.m.Y') }}</span></p>
-                <p class="mt-1 text-small text-muted">Отправитель: {{ row.application.getAuthor.getUsername }}</p>
-              </blockquote>
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-    {% endif %}
-  {% endif %}
-
   {# Исполнитель #}
   {% if 'ROLE_EXECUTOR' in roles %}
     {# Необработанные заявки #}
@@ -213,6 +191,7 @@
         <button class="btn btn-sm btn-outline-secondary" type="button" id="requestBtn"><i class="bi bi-table"></i> Сформировать запрос</button>
       </div>
     </form>
+
     {# Просроченные счета #}
     {% if expired|length > 0 %}
       <p>Просроченные счета:</p>
@@ -274,7 +253,7 @@
     {% endif %}
 
     {# Активные заявки #}
-    <p>Активные заявки:</p>
+    {# <p>Активные заявки:</p>
     {% if active|length > 0 %}
       <div class="table-responsive">
         <table class="table table-hover table-bordered table-striped text-xsmall mb-2">
@@ -319,6 +298,28 @@
             {% endfor %}
           </tbody>
         </table>
+      </div>
+    {% endif %} #}
+  {% endif %}
+
+  {# Ответственный #}
+  {% if 'ROLE_SUPERVISOR' in roles %}
+    {% if printcount > 0 %}
+      <p>Обратите внимание, есть <a href="/applications/bills/print" class="text-danger">не распечатанные счета</a>.</p>
+    {% endif %}
+    {% if supervisor|length > 0 %}
+      <div class="mb-3">
+        <p>Заявки, требующие назначения ответственных:</p>
+        {% for row in supervisor %}
+          <div class="card mt-2">
+            <div class="card-body">
+              <blockquote class="blockquote mb-0 text-small">
+                <p class="mb-0">{{ row.application.getTitle }} <a href="/applications/view?number={{ row.application.getId }}">#{{ row.application.getId }}</a>{% if row.application.getNumber != '' %} <span class="text-muted text-small">({{ row.application.getNumber }})</span>{% endif %}{% if row.applicationUrgency %} <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="" data-bs-original-title="В заявке есть срочные позиции" aria-label="В заявке есть срочные позиции"></i>{% endif %} <span class="text-muted text-xsmall">от {{ row.application.getDateCreate|date('d.m.Y') }}</span></p>
+                <p class="mt-1 text-small text-muted">Отправитель: {{ row.application.getAuthor.getUsername }}</p>
+              </blockquote>
+            </div>
+          </div>
+        {% endfor %}
       </div>
     {% endif %}
   {% endif %}

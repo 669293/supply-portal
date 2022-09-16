@@ -174,10 +174,20 @@
             billSumInput.addEventListener('input', function() {
                 checkBullSum(billSumInput);
             });
+
+            var innInput = document.getElementById('innInput');
+            innInput.addEventListener('input', function() {
+                checkInn(innInput);
+            });
         }
 
         function checkBullSum(input) {
             var newValue = input.value.replace(/,/g, '.').replace(/[^\.\d]/g, '');
+            if (input.value != newValue) {input.value = newValue;}
+        }
+
+        function checkInn(input) {
+            var newValue = input.value.replace(/[^\.\d]/g, '');
             if (input.value != newValue) {input.value = newValue;}
         }
 

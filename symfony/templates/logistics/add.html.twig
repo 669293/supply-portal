@@ -36,9 +36,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                {% set avalible = true %}
+                {% set avalible = false %}
                 {% for logmaterial in logmaterials %}
-                    {% if logmaterial.amount == 0 %}{% set avalible = false %}{% endif %}
+                    {% if logmaterial.amount > 0 %}{% set avalible = true %}{% endif %}
                     <tr class="">
                         <td class="align-middle text-center text-xsmall">{{ loop.index }}</td>
                         <td class="align-middle text-center"><input class="form-check-input material-select{% if logmaterial.amount == 0 %} is-valid{% endif %}" type="checkbox" name="material[]" value="{{ logmaterial.material.getId }}"{% if logmaterial.amount == 0 %} checked disabled{% endif %} /></td>

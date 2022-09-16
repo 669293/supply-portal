@@ -31,24 +31,24 @@
 
         {% set currentstatus = statuses.0.status.getTitle %}
         {% if is_granted('ROLE_SUPERVISOR') %}
-            <div class="mb-2 me-0">
+            <div class="me-0">
             {% if currentstatus not in ['Отменена', 'Выполнена'] %}
-                <a href="/applications/edit?number={{ application.getId }}" class="btn btn-sm btn-secondary me-2"><i class="bi bi-pencil-square"></i> Редактировать</a>
+                <a href="/applications/edit?number={{ application.getId }}" class="btn btn-sm btn-secondary me-2 mb-2"><i class="bi bi-pencil-square"></i> Редактировать</a>
             {% endif %}
             {% if currentstatus == 'Согласовать' %}
-                <button type="button" class="btn btn-sm btn-success me-2" id="playBtn"><i class="bi bi-play"></i> Продолжить</button>
+                <button type="button" class="btn btn-sm btn-success me-2 mb-2" id="playBtn"><i class="bi bi-play"></i> Продолжить</button>
             {% endif %}
             {% if currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
-                <button type="button" class="btn btn-sm btn-warning me-2" id="pauseBtn"><i class="bi bi-pause"></i> Согласовать</button>
+                <button type="button" class="btn btn-sm btn-warning me-2 mb-2" id="pauseBtn"><i class="bi bi-pause"></i> Согласовать</button>
             {% endif %}
             {# {% if currentstatus not in ['Отменена', 'Выполнена'] %}
                 <button type="button" class="btn btn-sm btn-danger me-2" id="cancelBtn"><i class="bi bi-stop"></i> Отменить</button>
             {% endif %} #}
-            <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="statusBtn" data-bs-toggle="modal" data-bs-target="#statusModal">Изменить статус</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary me-2 mb-2" id="statusBtn" data-bs-toggle="modal" data-bs-target="#statusModal">Изменить статус</button>
             {% if canloadbill and 'ROLE_EXECUTOR' in roles %}
                 {# Исполнитель, может загружать счета в эту заявку #}
                 {% if not application.getIsBillsLoaded %}
-                    <button type="button" onclick="location.href='/applications/bills/upload?application={{ application.getId }}';" class="btn btn-sm btn-outline-success text-nowrap"><i class="bi bi-file-earmark-arrow-up"></i> Загрузить счет</button>
+                    <button type="button" onclick="location.href='/applications/bills/upload?application={{ application.getId }}';" class="btn btn-sm btn-outline-success text-nowrap mb-2"><i class="bi bi-file-earmark-arrow-up"></i> Загрузить счет</button>
                 {% endif %}
             {% endif %}
             </div>
@@ -57,7 +57,7 @@
                 <div class="mb-2 me-0">
                     {# Исполнитель, может загружать счета в эту заявку #}
                     {% if not application.getIsBillsLoaded %}
-                        <button type="button" onclick="location.href='/applications/bills/upload?application={{ application.getId }}';" class="btn btn-sm btn-outline-success text-nowrap"><i class="bi bi-file-earmark-arrow-up"></i> Загрузить счет</button>
+                        <button type="button" onclick="location.href='/applications/bills/upload?application={{ application.getId }}';" class="btn btn-sm btn-outline-success text-nowrap mb-2"><i class="bi bi-file-earmark-arrow-up"></i> Загрузить счет</button>
                     {% endif %}
                 </div>
             {% endif %}
@@ -140,12 +140,12 @@
                                     <tr>
                                         <td>
                                             <div class="btn-group w-100" role="group">
-                                                <button type="button" data-id="thumb-attachments-init-{{ fileId }}" class="w-100 btn btn-sm {{ bill.status.getClassBtn }} text-truncate filePreview text-start"><i class="bi {{ bill.status.getIcon }}"></i> {{ bill.title }}</button>
+                                                <button type="button" data-id="thumb-attachments-init-{{ fileId }}" class="w-100 btn btn-sm {{ bill.status.getClassBtn }} text-truncate filePreview text-start"><i class="bi {{ bill.status.getIcon }}"></i> {{ bill.title|length > 50 ? bill.title|slice(0, 50) ~ '...' : bill.title }}</button>
                                                 <a class="kv-file-download btn btn-sm btn-kv btn-default {{ bill.status.getClassBtn }}" title="Скачать файл" href="/upload/bills/{{ bill.path }}" target="_blank" style="width: 30px!important;"><i class="bi-download"></i></a>
                                                 <a class="btn btn-sm btn-default btn-outline-primary" title="Информация по счету" href="/applications/bills/in-work/view/?id={{ bill.id }}" style="width: 30px!important;"><i class="bi bi-info-lg"></i></a>
                                             </div><div class="clearfix"></div>
                                         </td>
-                                        <td class="align-middle">{{ bill.sum|number_format(2, '.', ' ') }} {{ bill.currency }}</td>
+                                        <td class="align-middle text-nowrap">{{ bill.sum|number_format(2, '.', ' ') }} {{ bill.currency }}</td>
                                         {% if bill.currency == 'руб.' %}{% set sumrub = sumrub + bill.sum %}{% endif %}
                                         {% if bill.currency == '$' %}{% set sumusd = sumusd + bill.sum %}{% endif %}
                                         {% if bill.currency == '€' %}{% set sumeur = sumeur + bill.sum %}{% endif %}
@@ -385,13 +385,15 @@
         </fieldset>
         <div class="clearfix"></div>
 
-        {% if is_granted('ROLE_SUPERVISOR') and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
-            <button type="button" class="btn btn-outline-primary mb-5 me-2 mt-4" id="sendBtn">Сохранить</button>
-        {% endif %}
-        <button type="button" class="btn btn-outline-secondary mb-5 me-2 mt-4" onclick="location.href='/applications/';">Закрыть</button>
-        <a role="button" class="btn btn-outline-secondary mb-5 me-2 mt-4" href="/applications/print?number={{ application.getId }}" target="_blank">Распечатать для согласования</a>
-        <a role="button" class="btn btn-outline-secondary mb-5 me-2 mt-4" href="/applications/export-to-excel?number={{ application.getId }}" target="_blank">Экспортировать в Excel</a>
-        <div class="spinner-border text-primary d-none mt-4" role="status"><span class="visually-hidden">Обработка...</span></div>
+        <div class="mb-3 mt-4">
+            {% if is_granted('ROLE_SUPERVISOR') and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
+                <button type="button" class="btn btn-outline-primary mb-2 me-2" id="sendBtn">Сохранить</button>
+            {% endif %}
+            <button type="button" class="btn btn-outline-secondary mb-2 me-2" onclick="location.href='/applications/';">Закрыть</button>
+            <a role="button" class="btn btn-outline-secondary mb-2 me-2" href="/applications/print?number={{ application.getId }}" target="_blank">Распечатать для согласования</a>
+            <a role="button" class="btn btn-outline-secondary mb-2 me-2" href="/applications/export-to-excel?number={{ application.getId }}" target="_blank">Экспортировать в Excel</a>
+            <div class="spinner-border text-primary d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
+        </div>
     </form>
 
     {# Скрытый fileinput для инициализации предпросмотра #}

@@ -59,22 +59,12 @@ class ApplicationsController extends AbstractController
      */
     public function getPrintBillsCount(): int
     {
-        $sql = "SELECT res.bid AS id FROM (SELECT bs.bill AS bid, (SELECT bs2.status FROM bills_statuses bs2 WHERE bs2.id = MAX(bs.id)) FROM bills_statuses bs GROUP BY bs.bill) res WHERE res.status = 1;";
+        $sql = "SELECT res_.id AS id FROM (SELECT DISTINCT res.bid AS id, (SELECT aps.status FROM applications_statuses aps WHERE aps.application = a.id ORDER BY id DESC OFFSET 0 LIMIT 1) AS status FROM (SELECT bs.bill AS bid, (SELECT bs2.status FROM bills_statuses bs2 WHERE bs2.id = MAX(bs.id)) FROM bills_statuses bs GROUP BY bs.bill) res, applications a, bills_materials bm, materials m WHERE bm.bill = res.bid AND bm.material = m.id AND m.application = a.id AND res.status = 1) res_ WHERE res_.status NOT IN (3,4,5);";
         $stmt = $this->entityManager->getConnection()->prepare($sql);
         $stmt->execute();
         $bills_ = $stmt->fetchAllAssociative();
 
-        $count = 0;
-
-        foreach ($bills_ as $bill) {
-            $sql = "SELECT q.id FROM (SELECT DISTINCT a.id, (SELECT aps.status FROM applications_statuses aps WHERE aps.application = a.id ORDER BY id DESC OFFSET 0 LIMIT 1) AS status FROM applications a, bills_materials bm, materials m WHERE bm.bill = ".$bill['id']." AND bm.material = m.id AND m.application = a.id) q WHERE q.status NOT IN (3,4,5);";
-            $stmt = $this->entityManager->getConnection()->prepare($sql);
-            $stmt->execute();
-            $applications_ = $stmt->fetchAllAssociative();
-            $count += sizeof($applications_); unset($applications_);
-        }
-
-        return $count;
+        return sizeof($bills_);
     }
 
     /**
@@ -253,11 +243,11 @@ class ApplicationsController extends AbstractController
             }
 
             //Получаем список активных заявок
-            $filter = new Filter;
-            $filter->responsible = $this->security->getUser(); //Текущий пользователь
-            $filter->done = FALSE; //Активные заявки
+            // $filter = new Filter;
+            // $filter->responsible = $this->security->getUser(); //Текущий пользователь
+            // $filter->done = FALSE; //Активные заявки
 
-            $activeApplications = $applicationsRepository->getList($filter);
+            // $activeApplications = $applicationsRepository->getList($filter);
         }
 
         //Если пользователь исполняет роль заказчика
@@ -354,7 +344,7 @@ class ApplicationsController extends AbstractController
             'inwork' => $materialsInWork,
             'notordered' => $notOrderedYet,
             'expired' => $expiredBills,
-            'active' => $activeApplications,
+            // 'active' => $activeApplications,
             'printcount' => $this->getPrintBillsCount()
         ]);
     }
@@ -1380,7 +1370,7 @@ class ApplicationsController extends AbstractController
     /**
      * Сохранение заявки (принимает данные из формы)
      * @Route("/applications/edit", methods={"POST"}))
-     * @IsGranted("ROLE_CREATOR")
+     * @Security("is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_CREATOR')")
      */
     public function saveApplicationForm(Request $request, ApplicationsRepository $applicationsRepository, MaterialsRepository $materialsRepository, TypesOfEquipmentRepository $typesOfEquipmentRepository, UnitsRepository $unitsRepository, UsersRepository $usersRepository, StatusesOfApplicationsRepository $statusesOfApplicationsRepository, FilesRepository $filesRepository): JsonResponse
     {
