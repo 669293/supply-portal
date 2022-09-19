@@ -52,4 +52,11 @@ $(document).ready(function() {
     });
     $(this).closest('form').submit();
   });
+
+  $('#only_hurry').change(function() {
+    $('.accordion-item').removeClass('d-none');
+    if ($(this).is(':checked')) {
+      $('.accordion-item').not('.accordion-hurry').addClass('d-none');
+    }
+  });
 });

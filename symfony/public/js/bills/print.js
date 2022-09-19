@@ -49,4 +49,40 @@ $(document).ready(function() {
   $('#sendBtn').click(function() {
     $('#printBillsForm').submit();
   });
+
+  //Скрытие/отображение панели управления несколькими строками
+  $('.bill-select').change(function() {
+    if ($('.bill-select:checked').length > 0) {
+      $('#setStatusBlock').show('fast');
+    } else {
+      $('#setStatusBlock').hide('fast');
+    }
+  });
+
+  //Изменение статуса нескольких заявок
+  $('#setBtn').click(function() {
+    if ($('#setStatus').val() != '') {
+      //Блокируем форму
+      appForm = $(this).closest('form');
+      freezeForm(appForm);
+
+      var bills = [];
+      $('.bill-select:checked').each(function() {
+        bills.push($(this).val());
+      });
+
+      //Отправляем запрос на добавление комментарий
+      $.post('/applications/bills/set-bill-status', { bills: JSON.stringify(bills), status: $('#setStatus').val(), token: $('input[name="token"]').val() })
+      .done(function( data ) {
+        if ($.isArray(data) && data[0] == 1) {
+          //Все хорошо
+          freezeForm(appForm, false);
+          location.reload();
+        } else {
+          showFormAlert(appForm, data[1]);
+          freezeForm(appForm, false);
+        }
+      });
+    }
+  });
 });

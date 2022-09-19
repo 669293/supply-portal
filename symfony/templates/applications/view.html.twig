@@ -359,9 +359,9 @@
             {% if (is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR')) and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
                 <div id="setResponsible" style="display: none;">
                     {% if is_granted('ROLE_SUPERVISOR') %}
-                        <label class="text-small mt-4" for="setResponsible">Назначить ответственного для выбранных элементов</label>
+                        <label class="text-small mt-4" for="setResponsible_">Назначить ответственного для выбранных элементов</label>
                         <div class="input-group input-group-sm">
-                            <select class="form-select" id="setResponsible">
+                            <select class="form-select" id="setResponsible_">
                                 <option value="" selected>Выберите</option>
                                 {% for user in users %}
                                     <option value="{{ user.getId }}">{{ user.getShortUserName }}</option>

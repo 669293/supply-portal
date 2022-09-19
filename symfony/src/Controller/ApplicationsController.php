@@ -844,7 +844,14 @@ class ApplicationsController extends AbstractController
      * @Route("/applications/add", methods={"POST"}))
      * @IsGranted("ROLE_CREATOR")
      */
-    public function addNewApplicationForm(Request $request, TypesOfEquipmentRepository $typesOfEquipmentRepository, UnitsRepository $unitsRepository, UsersRepository $usersRepository, StatusesOfApplicationsRepository $statusesOfApplicationsRepository, FilesRepository $filesRepository): JsonResponse
+    public function addNewApplicationForm(
+        Request $request, 
+        FilesRepository $filesRepository,
+        TypesOfEquipmentRepository $typesOfEquipmentRepository, 
+        UnitsRepository $unitsRepository, 
+        UsersRepository $usersRepository, 
+        StatusesOfApplicationsRepository $statusesOfApplicationsRepository
+    ): JsonResponse
     {
         $result = [];
 

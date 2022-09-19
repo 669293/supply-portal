@@ -18,4 +18,9 @@ class StatusesOfBillsRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, StatusesOfBills::class);
     }
+
+    public function findAll()
+    {
+        return $this->findBy(array(), array('id' => 'ASC'));
+    }
 }

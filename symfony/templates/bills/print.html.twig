@@ -7,45 +7,45 @@
 
 {# Панель навигации вверху #}
 {% block nav %}
-        <nav class="navbar navbar-expand-md navbar-light">
-          <div class="container-fluid px-0 mb-1">
-            <button class="navbar-toggler collapsed w-100 mt-1" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Показать меню"><i class="bi bi-list"></i></button>
-            <div class="navbar-collapse collapse" id="navbarCollapse">
-              <ul class="navbar-nav me-auto mb-2 mb-md-0">
-                <li class="nav-item me-0 me-md-2">
-                    <div class="btn-group mt-2 w-100 w-md-auto" role="group">
-                        <a class="btn btn-sm btn-outline-primary" title="История печати счетов" href="/applications/bills/history">История печати счетов</a>
-                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#filterModal"><i class="bi bi-funnel"></i></button>
-                    </div>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </nav>
+    <nav class="navbar navbar-expand-md navbar-light">
+        <div class="container-fluid px-0 mb-1">
+        <button class="navbar-toggler collapsed w-100 mt-1" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Показать меню"><i class="bi bi-list"></i></button>
+        <div class="navbar-collapse collapse" id="navbarCollapse">
+            <ul class="navbar-nav me-auto mb-2 mb-md-0">
+            <li class="nav-item me-0 me-md-2">
+                <div class="btn-group mt-2 w-100 w-md-auto" role="group">
+                    <a class="btn btn-sm btn-outline-primary" title="История печати счетов" href="/applications/bills/history">История печати счетов</a>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#filterModal"><i class="bi bi-funnel"></i></button>
+                </div>
+            </li>
+            </ul>
+        </div>
+        </div>
+    </nav>
 {% endblock %}
 
 {# Хлебные крошки #}
 {% block breadcrumbs %}
-        <nav aria-label="breadcrumb" class="mt-2 d-block">
-          <ol class="breadcrumb text-xsmall mb-3">
-            <li class="breadcrumb-item" aria-current="page"><a href="/"><i class="bi bi-three-dots"></i></a></li>
-            {% if breadcrumbs is defined %}
-                {% for breadcrumb in breadcrumbs %}
-                    {% if loop.last %}
-                        <li class="breadcrumb-item active" aria-current="page">{{ breadcrumb.title }}</li>
-                    {% else %}
-                        <li class="breadcrumb-item" aria-current="page"><a href="{{ breadcrumb.href }}">{{ breadcrumb.title }}</a></li>
-                    {% endif %}
-                {% endfor %}
-            {% endif %}
-          </ol>
-        </nav>
+    <nav aria-label="breadcrumb" class="mt-2 d-block">
+        <ol class="breadcrumb text-xsmall mb-3">
+        <li class="breadcrumb-item" aria-current="page"><a href="/"><i class="bi bi-three-dots"></i></a></li>
+        {% if breadcrumbs is defined %}
+            {% for breadcrumb in breadcrumbs %}
+                {% if loop.last %}
+                    <li class="breadcrumb-item active" aria-current="page">{{ breadcrumb.title }}</li>
+                {% else %}
+                    <li class="breadcrumb-item" aria-current="page"><a href="{{ breadcrumb.href }}">{{ breadcrumb.title }}</a></li>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+        </ol>
+    </nav>
 {% endblock %}
 
 {# Контент #}
 {% block content %}
     {% if bills|length > 0 %}
-        <form action="/applications/bills/download" method="POST" id="printBillsForm">
+        <form action="/applications/bills/download" method="POST" id="printBillsForm" target="_blank">
             <fieldset>
                 <input type="hidden" name="token" value="{{ csrf_token('download-bills') }}"/>
                 <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-1 pb-3">
@@ -53,7 +53,7 @@
                         <thead>
                             <tr>
                                 <th class="py-2 align-middle text-center text-small" scope="col" style="width: 40px;">№</th>
-                                <th class="py-2 align-middle text-center" scope="col" style="width: 40px;"><input type="checkbox" name="" value="" class="form-check-input bill-select-all" checked /></th>
+                                <th class="py-2 align-middle text-center" scope="col" style="width: 40px;"><input type="checkbox" name="" value="" class="form-check-input bill-select-all" /></th>
                                 <th class="py-2 align-middle text-small" scope="col">Заявка</th>
                                 <th class="py-2 align-middle text-small" scope="col">Отправитель<br />Ответственный</th>
                                 <th class="py-2 align-middle text-small" scope="col">Сумма<br />Срочность</th>
@@ -66,7 +66,7 @@
                         {% for bill in bills %}
                             <tr>
                                 <td class="align-middle text-center text-small">{{ loop.index }}</td>
-                                <td class="align-middle text-center"><input type="checkbox" name="bills[]" value="{{ bill.id }}" class="form-check-input bill-select" checked /></td>
+                                <td class="align-middle text-center"><input type="checkbox" name="bills[]" value="{{ bill.id }}" class="form-check-input bill-select" /></td>
                                 <td class="align-middle text-small text-nowrap">
                                 {% for application in bill.applications %}
                                     {% if loop.index > 1 %}<br />{% endif %}{{ application.getTitle }}<br /><span class="text-muted text-small"><a href="/applications/view?number={{ application.id }}" target="_blank">№{{ application.getId }} от {{ application.getDateCreate|date('d.m.Y') }}</a></span>
@@ -102,7 +102,22 @@
 
             <div class="clearfix"></div>
 
-            <button type="button" class="btn btn-outline-primary mb-3 me-2" id="sendBtn">Напечатать отмеченные счета</button>
+            <div id="setStatusBlock" class="mb-4" style="display: none;">
+                <label class="text-small mt-1" for="setStatus">Изменить статус заявок</label>
+                <div class="input-group input-group-sm">
+                    <select class="form-select" id="setStatus">
+                        <option value="" selected>Выберите</option>
+                        {% for status in statuses %}
+                            <option value="{{ status.getId }}">{{ status.getTitle }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-outline-secondary" type="button" id="setBtn">Сохранить</button>
+                </div>
+            </div>            
+
+            <div class="clearfix"></div>
+
+            <button type="button" class="btn btn-outline-primary mb-3 me-2" id="sendBtn" disabled>Напечатать отмеченные счета</button>
             <button type="button" class="btn btn-outline-secondary mb-3 me-2" onclick="location.href='/applications/';">Отмена</button>
             <div class="spinner-border text-primary d-none" role="status" style="margin-bottom: 0.8rem!important;"><span class="visually-hidden">Обработка...</span></div>
         </form>

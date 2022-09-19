@@ -347,7 +347,13 @@ class BillsController extends AbstractController
      * @Route("/applications/bills/print", methods={"GET"}))
      * @IsGranted("ROLE_SUPERVISOR")
      */
-    public function printBillsForm(BillsStatusesRepository $billsStatusesRepository, BillsRepository $billsRepository, BillsMaterialsRepository $billsMaterialsRepository, ApplicationsRepository $applicationsRepository): Response
+    public function printBillsForm(
+        ApplicationsRepository $applicationsRepository,
+        BillsStatusesRepository $billsStatusesRepository, 
+        BillsRepository $billsRepository, 
+        BillsMaterialsRepository $billsMaterialsRepository,
+        StatusesOfBillsRepository $statusesOfBillsRepository
+    ): Response
     {
         //Получаем список счетов на оплату
         $bills = [];
@@ -405,7 +411,8 @@ class BillsController extends AbstractController
         return $this->render('bills/print.html.twig', [
             'title' => 'Печать счетов',
             'breadcrumbs' => $breadcrumbs,
-            'bills' => $bills
+            'bills' => $bills,
+            'statuses' => $statusesOfBillsRepository->findAll()
         ]);
     }
 
@@ -542,6 +549,84 @@ class BillsController extends AbstractController
             $mpdf->Output('Счет заявке №'.$title.'.pdf', 'I');
         }
     }
+
+    /**
+     * Установка статуса нескольких заявок
+     * @Route("/applications/bills/set-bill-status", methods={"POST"}))
+     * @IsGranted("ROLE_SUPERVISOR")
+     */
+    public function setStatuses(
+        Request $request,
+        BillsRepository $billsRepository,
+        StatusesOfBillsRepository $statusesOfBillsRepository
+    ): JsonResponse
+    {
+        $result = [];
+
+        $submittedToken = $request->request->get('token');
+
+        if ($this->isCsrfTokenValid('download-bills', $submittedToken)) {
+            //Получаем переменные
+            $billsIDs = json_decode($request->request->get('bills')); if (!is_array($billsIDs)) {$billsIDs = [$billsIDs];}
+            $statusID = $request->request->get('status');
+
+            $this->entityManager->getConnection()->beginTransaction(); //Начинаем транзакцию
+
+            try {
+                //Получаем статус
+                $status = $statusesOfBillsRepository->findBy( array('id' => $statusID) );
+                if (is_array($status)) {$status = array_shift($status);}
+                if ($status === null) {
+                    $result[] = 0;
+                    $result[] = 'Неверный идентификатор статуса';
+                    return new JsonResponse($result);
+                }
+
+                //Ставим статусы счетам
+                if (sizeof($billsIDs) == 0) {
+                    $result[] = 1;
+                    $result[] = '';
+
+                    return new JsonResponse($result);
+                }
+
+                foreach ($billsIDs as $billID) {
+                    //Получаем счет
+                    $bill = $billsRepository->findBy( array('id' => $billID) );
+                    if (is_array($bill)) {$bill = array_shift($bill);}
+                    if ($bill !== null) {
+                        //Проверяем, изменился ли статус
+                        if ($billsRepository->getStatus($billID) != $statusID) {
+                            //Вносим информацию в базу
+                            $billStatus = new BillsStatuses();
+                            $billStatus->setBill($bill);
+                            $billStatus->setStatus($status);
+                            $this->entityManager->persist($billStatus);
+                            $this->entityManager->flush();
+                        }
+                    }
+                }
+
+                $this->entityManager->getConnection()->commit();
+        
+                $result[] = 1;
+                $result[] = '';
+            } catch (Exception $e) {
+                $this->entityManager->getConnection()->rollBack();
+
+                $result[] = 0;
+                $result[] = $e;
+                //throw $e;
+            }
+
+            return new JsonResponse($result);
+        } else {
+            $result[] = 0;
+            $result[] = 'Недействительный токен CSRF.';
+            return new JsonResponse($result);
+        }
+    }
+
 
     /**
      * История печати счетов
