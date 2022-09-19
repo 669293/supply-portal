@@ -246,7 +246,7 @@
                             {% if material.done == material.getAmount %}{% set isDone = true %}{% endif %}
                             <tr data-offset="8" data-material="{{ material.getId }}" class="material{{ material.getId }}{% if '.' in material.getNum %} table-primary{% endif %}{% if material.getUrgency %} table-warning{% endif %}"> <!-- {% if 'АВИА' in material.getComment %} table-danger{% endif %} -->
                                 {% if (is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR')) and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
-                                    <td class="align-middle text-center"><input class="form-check-input material-select{% if material.getRequested %} is-valid{% endif %}" type="checkbox" name="" value="{{ material.getId }}" /></td>
+                                    <td class="align-middle text-center"><input class="form-check-input material-select{% if material.getRequested %} is-valid{% endif %}" type="checkbox" data-amount="{{ material.getAmount }}" data-application="{{ application.getId }}" name="" value="{{ material.getId }}" /></td>
                                 {% endif %}
                                 <td class="align-middle text-center text-xsmall">{{ material.getNum }}</td>
                                 <td class="align-middle title-col" style="max-width: 250px;">
@@ -390,11 +390,15 @@
                 <button type="button" class="btn btn-outline-primary mb-2 me-2" id="sendBtn">Сохранить</button>
             {% endif %}
             <button type="button" class="btn btn-outline-secondary mb-2 me-2" onclick="location.href='/applications/';">Закрыть</button>
-            <a role="button" class="btn btn-outline-secondary mb-2 me-2" href="/applications/print?number={{ application.getId }}" target="_blank">Распечатать для согласования</a>
-            <a role="button" class="btn btn-outline-secondary mb-2 me-2" href="/applications/export-to-excel?number={{ application.getId }}" target="_blank">Экспортировать в Excel</a>
+            <button type="button" class="btn btn-outline-secondary mb-2 me-2" id="printBtn" data-bs-toggle="modal" data-bs-target="#printModal"><i class="bi bi-printer"></i> Распечатать</button>
+            <button class="btn btn-outline-secondary mb-2 me-2" style="display: none;" type="button" id="requestBtn"><i class="bi bi-table"></i> Сформировать запрос</button>
             <div class="spinner-border text-primary d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
         </div>
     </form>
+
+    <div class="d-none">
+        <form action="/applications/request" method="POST" target="_blank" id="requestForm"></form>
+    </div>
 
     {# Скрытый fileinput для инициализации предпросмотра #}
     <div class="d-none">
@@ -409,6 +413,32 @@
 
 {# Модальные окна #}
 {% block modal %}
+    {# Варианты печати заявки #}
+    <div class="modal fade" id="printModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Печать заявки</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <a role="button" class="btn btn-outline-secondary mb-2 w-100" href="/applications/print?number={{ application.getId }}" target="_blank"><i class="bi bi-printer"></i> Распечатать полностью</a>
+                    <a role="button" class="btn btn-outline-secondary mb-2 w-100" href="/applications/export-to-excel?number={{ application.getId }}" target="_blank"><i class="bi bi-file-earmark-excel"></i> Экспортировать в Excel</a>
+                    <hr />
+                    <form action="/applications/print?" method="GET" target="_blank">
+                        <input type="hidden" name="number" value="{{ application.getId }}" />
+                        <select class="form-select mb-2" name="responsible">
+                            {% for responsible in responsibles %}
+                                <option value="{{ responsible.getId }}">{{ responsible.getUsername }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="sublit" class="btn btn-outline-secondary w-100"><i class="bi bi-printer"></i> Для ответственного</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {# Изменение статуса заявки #}
     <div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
@@ -454,16 +484,17 @@
                 <div class="modal-body">
                     <div class="form-floating">
                         <select class="form-select" id="filterSelect">
-                            <option selected>Выберите</option>
+                            <option selected disabled>Выберите</option>
                             <option>Не назначен</option>
                             {% for user in users %}
                                 <option>{{ user.getShortUserName }}</option>
                             {% endfor %}
                         </select>
-                        <label for="filterSelect">Статус</label>
+                        <label for="filterSelect">Ответственный</label>
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-danger d-none" id="filterCancelBtn">Сбросить фильтр</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
                     <button type="button" class="btn btn-primary" id="filterBtn">Сохранить</button>
                     <div class="spinner-border text-primary d-none" role="status"><span class="visually-hidden">Обработка...</span></div>

@@ -55,8 +55,10 @@ $(document).ready(function() {
 
   $('#only_hurry').change(function() {
     $('.accordion-item').removeClass('d-none');
+    $('.material-row').removeClass('d-none');
     if ($(this).is(':checked')) {
       $('.accordion-item').not('.accordion-hurry').addClass('d-none');
+      $('.material-row').not('.material-hurry').addClass('d-none');
     }
   });
 });

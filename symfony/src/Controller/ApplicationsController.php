@@ -2993,6 +2993,9 @@ class ApplicationsController extends AbstractController
             return new RedirectResponse('/applications');
         }
 
+        //Возможно фильто по ответственному
+        $responsible = $request->query->get('responsible');
+
         //Проверяем наличие заявки
         $objApplication = $applicationsRepository->findBy( array('id' => $id) );
         if (sizeof($objApplication) == 0) {
@@ -3027,7 +3030,11 @@ class ApplicationsController extends AbstractController
         $title = $objApplication->getTitle().' №'.$id;
 
         //Список материалов
-        $arrMaterials = $materialsRepository->findBy( array('application' => $objApplication->getId()), array('num' => 'ASC') );
+        if ($responsible === null) {
+            $arrMaterials = $materialsRepository->findBy( array('application' => $objApplication->getId()), array('num' => 'ASC') );
+        } else {
+            $arrMaterials = $materialsRepository->findBy( array( 'application' => $objApplication->getId(), 'responsible' => (int)$responsible ), array('num' => 'ASC') );
+        }
 
         //Список пользователей
         $users = $usersRepository->findByRole('ROLE_EXECUTOR');

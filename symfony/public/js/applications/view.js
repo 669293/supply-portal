@@ -75,8 +75,10 @@ $(document).ready(function() {
   $('.material-select').change(function() {
     if ($('.material-select:checked').length > 0) {
       $('#setResponsible').show('fast');
+      $('#requestBtn').show('fast');
     } else {
       $('#setResponsible').hide('fast');
+      $('#requestBtn').hide('fast');
     }
   });
 
@@ -411,6 +413,14 @@ $(document).ready(function() {
     }
 
     filterModal.hide();
+    $('#filterCancelBtn').removeClass('d-none');
+  });
+
+  $('#filterCancelBtn').click(function() {
+    $('#materialsTable tbody tr').removeClass('d-none');
+    $('#toggleFilterModal i').removeClass('bi-funnel-fill').addClass('bi-funnel');
+    filterModal.hide();
+    $('#filterCancelBtn').addClass('d-none');
   });
 
   //Добавление сообщения к комментарию
@@ -520,4 +530,29 @@ $(document).ready(function() {
 
     return result;
   }
+
+  //Формирование запроса поставщикам
+  var materials = [];
+  var amounts = [];
+  var applications = [];
+
+  $('#requestBtn').click(function() {
+    $('.material-select:checked').each(function() {
+      materials.push($(this).val());
+      amounts.push($(this).data('amount'));
+      applications.push($(this).data('application'));
+    });
+
+    $('#requestForm').html('').submit();
+  });
+
+  $('#requestForm').submit(function() {
+    var form = $(this);
+
+    materials.forEach((element) => {form.append('<input type="hidden" name="material[]" value="' + element + '" />')});
+    amounts.forEach((element) => {form.append('<input type="hidden" name="amount[]" value="' + element + '" />')});
+    applications.forEach((element) => {form.append('<input type="hidden" name="application[]" value="' + element + '" />')});
+
+    return true;
+  });
 });

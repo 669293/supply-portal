@@ -139,14 +139,16 @@
       <label class="form-check-label" for="only_hurry">Только срочные заявки</label>
     </div>
     <form action="/applications/request" method="POST" id="makeRequestForm" target="_blank">
-      <div class="accordion">
+      <div class="accordion mb-3">
       {% for row in inwork %}
-        <div class="accordion-item{% if loop.last %} mb-3{% endif %}{% if row.urgency %} accordion-hurry{% endif %}">
+        {% set urgency = false %}
+        {% for arr in row.materials %}{% if arr.material.getUrgency %}{% set urgency = true %}{% endif %}{% endfor %}
+        <div class="accordion-item{% if loop.last %} mb-3{% endif %}{% if urgency %} accordion-hurry{% endif %}">
             <h2 class="accordion-header" id="heading{{ row.application.getId }}">
                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ row.application.getId }}" aria-expanded="false" aria-controls="collapse{{ row.application.getId }}">
                     <div class="d-flex w-100">
                         <div>
-                            {{ row.application.getTitle }}{% if row.urgency %}<i class="bi bi-exclamation-triangle text-danger ms-2" data-bs-toggle="tooltip" data-bs-placement="right" title="В заявке есть срочные позиции"></i>{% endif %}
+                            {{ row.application.getTitle }}{% if urgency %}<i class="bi bi-exclamation-triangle text-danger ms-2" data-bs-toggle="tooltip" data-bs-placement="right" title="В заявке есть срочные позиции"></i>{% endif %}
                             <br /><span class="text-muted text-small">№{{ row.application.getId }}{% if row.application.getNumber != '' %} <span class="text-muted text-small">({{ row.application.getNumber }})</span>{% endif %} от {{ row.application.getDateCreate|date('d.m.Y') }}</span>
                         </div>
                         <div class="d-none d-sm-block ms-auto mt-2 text-end">
@@ -171,7 +173,7 @@
                       </thead>
                       <tbody>
                         {% for arr in row.materials %}
-                          <tr>
+                          <tr class="material-row{% if arr.material.getUrgency %} material-hurry{% endif %}">
                             <td class="align-middle text-center text-xsmall">{{ arr.material.getNum }}</td>
                             <td class="py-2 align-middle text-center" scope="col">
                               <input type="checkbox" name="material[]" value="{{ arr.material.getId }}" class="form-check-input material-select{% if arr.material.getRequested %} is-valid{% endif %}" />
