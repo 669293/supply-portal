@@ -137,6 +137,9 @@
 {% block scripts %}
     <script src="{{ asset('js/fileinput.min.js') }}" type="text/javascript"></script>
     <script src="{{ asset('js/fileinput.ru.js') }}" type="text/javascript"></script>
+    <script type="text/javascript">
+        var docID = {{ docid }}
+    </script>
     <script src="{{ asset('js/stock/pick-bill.js') }}" type="text/javascript"></script>
 
     {% if scripts is defined %}

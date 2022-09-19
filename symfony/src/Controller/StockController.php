@@ -38,12 +38,20 @@ class StockController extends AbstractController
      * @IsGranted("ROLE_STOCK")
      */
     public function pickBillAndMaterials(
+        Request $request,
         BillsRepository $billsRepository,
         BillsMaterialsRepository $billsMaterialsRepository,
         MaterialsRepository $materialsRepository, 
         ProvidersRepository $providersRepository
     ): Response
     {
+        $docID = $request->query->get('doc');
+        if ($docID === null) {
+            return new RedirectResponse('/applications');
+        } else {
+            $docID = (int)$docID;
+        }
+
         // Получаем список счетов в работе подразделения текущего пользователя
         $sql = "SELECT res.bid AS id FROM (SELECT bs.bill AS bid, (SELECT bs2.status FROM bills_statuses bs2 WHERE bs2.id = MAX(bs.id)) FROM bills_statuses bs GROUP BY bs.bill) res, bills b WHERE res.bid = b.id AND b.user IN (SELECT u.id FROM users u WHERE u.office = (SELECT office FROM users WHERE id = ".(int)$this->security->getUser()->getId().")) AND res.status <> 5 ORDER BY b.inn;";
         $stmt = $this->entityManager->getConnection()->prepare($sql);
@@ -88,6 +96,7 @@ class StockController extends AbstractController
 
         $params['title'] = 'Выбор материалов';
         $params['bills'] = $bills;
+        $params['docid'] = $docID;
 
         return $this->render('stock/pick-bill.html.twig', $params);
     }
@@ -103,11 +112,11 @@ class StockController extends AbstractController
         OfficesRepository $officesRepository
     ): Response
     {
-        $returnID = $request->query->get('id'); //Возвращаемое значение
-        if ($returnID === null) {
+        $docID = $request->query->get('id'); //Возвращаемое значение
+        if ($docID === null) {
             return new RedirectResponse('/applications');
         } else {
-            $returnID = (int)$returnID;
+            $docID = (int)$docID;
         }
 
         $logisticsIDs = $request->query->get('logistic');
@@ -202,7 +211,7 @@ class StockController extends AbstractController
         $params['title'] = 'Выбор получения материалов';
         $params['logistics'] = $arrLogistics;
         $params['offices'] = $officesRepository->findAll();
-        $params['returnid'] = $returnID;
+        $params['docid'] = $docID;
 
         return $this->render('stock/pick-log.html.twig', $params);
     }
