@@ -356,6 +356,7 @@ class ApplicationsController extends AbstractController
      */
     public function getRequest(Request $request, MaterialsRepository $materialsRepository): Response
     {
+        $type = $request->request->get('typeOfRequest');
         $materials = $request->request->get('material');
         $amounts = $request->request->get('amount');
         $applications = $request->request->get('application');
@@ -385,9 +386,126 @@ class ApplicationsController extends AbstractController
 
         $this->entityManager->getConnection()->commit();
 
-        return $this->render('applications/request.html.twig', [
-            'materials' => $materialsList
-        ]);
+        if ($type === null || empty($type)) {
+            // Выводим в браузер
+            return $this->render('applications/request.html.twig', [
+                'materials' => $materialsList
+            ]);
+        } else {
+            // Формируем PDF
+            ob_start();
+            echo <<<HERE
+                h1 {
+                    font-family: Tahoma, Serif;
+                    font-size: 24px;
+                    margin-bottom: 10px;
+                    }
+    
+                h2 {
+                    color: #555555;
+                    font-family: Tahoma, Serif;
+                    font-size: 14px;
+                    font-weight: normal;
+                    }
+    
+                table {
+                    border-collapse: collapse;
+                    font-family: Tahoma, Serif;
+                    margin-top: 10px;
+                    width: 100%;
+                    }
+    
+                table thead tr th,
+                table tbody tr td {
+                    border: 1px solid #000000;
+                    font-weight: normal;
+                    padding: 5px 10px;
+                    }
+    
+                table thead tr th {
+                    background: #dddddd;
+                    border-bottom: 0px solid #000000;
+                    }
+    
+                table tbody tr td.no-border {
+                    border: none;
+                    padding: 0;
+                    }
+HERE;
+            $css = ob_get_contents();
+            ob_end_clean();
+    
+            ob_start();
+            echo <<<HERE
+                <table class="table w-auto ms-3" id="requestTable">
+                    <thead>
+                        <tr>
+                            <th>№</th>
+                            <th>Наименование</th>
+                            <th>Ед.изм.</th>
+                            <th>Количество</th>
+                            <th>Вид техники</th>
+                            <th>Комментарий</th>
+                            <th>Номер заявки</th>
+                            <th>Срочность</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+HERE;
+
+                        $num = 0;
+                        foreach ($materialsList as $row) {
+                            $num++;
+                            echo '                    <tr>'."\n";
+                            echo '                        <td style="text-align: center;">'.$num.'</td>'."\n";
+                            echo '                        <td>'.$row->material->getTitle().'</td>'."\n";
+                            echo '                        <td style="text-align: center;">'.$row->material->getUnit()->getTitle().'</td>'."\n";
+                            echo '                        <td style="text-align: center;">'.$row->material->getAmount().'</td>'."\n";
+                            echo '                        <td>'.( $row->material->getTypeOfEquipment() ? $row->material->getTypeOfEquipment()->getTitle() : '' ).'</td>'."\n";
+                            echo '                        <td>'.wordwrap($row->material->getComment(), 60, '<br />', true).'</td>'."\n";
+                            echo '                        <td style="text-align: center;">'.$row->application.'</td>'."\n";
+                            echo '                        <td style="text-align: center;">'.( $row->material->getUrgency() ? '<span style="color: #ff0000; font-size: 12px; text-transform:uppercase;">Срочно</span>' : '' ).'</td>'."\n";
+                            echo '                    </tr>'."\n";
+                        }
+    
+                        echo <<<HERE
+                    </tbody>
+                </table>
+HERE;
+    
+            $content = ob_get_contents();
+            ob_end_clean();
+    
+            ob_start();
+    
+            echo '            <table style="font-size: 12px;">'."\n";
+            echo '                <tr>'."\n";
+            echo '                    <td width="50%">Дата печати: {DATE j.m.Y}</td>'."\n";
+            echo '                    <td width="50%" align="right">Страница {PAGENO} из {nbpg}</td>'."\n";
+            echo '                </tr>'."\n";
+            echo '            </table>'."\n";
+    
+            $footer = ob_get_contents();
+            ob_end_clean();
+    
+            require_once $this->getParameter('kernel.project_dir').'/../vendor/autoload.php';
+    
+            $mpdf = new \Mpdf\Mpdf([
+                'mode' => 'utf-8',
+                'format' => 'A4-L',
+                'orientation' => 'L'
+            ]);
+            // $mpdf->debug = true;
+    
+            $mpdf->packTableData = true;
+            $mpdf->keep_table_proportions = TRUE;
+            $mpdf->shrink_tables_to_fit=1;
+            $mpdf->SetHTMLFooter($footer);
+            $mpdf->SetTitle('Запрос к поставщику');
+            $mpdf->WriteHTML($css, \Mpdf\HTMLParserMode::HEADER_CSS);
+            $mpdf->WriteHTML($content, \Mpdf\HTMLParserMode::HTML_BODY);
+            $mpdf->Output('Запрос к поставщику'.'.pdf', 'I');
+        }
     }
 
     /**

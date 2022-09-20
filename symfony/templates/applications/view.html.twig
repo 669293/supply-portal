@@ -391,14 +391,12 @@
             {% endif %}
             <button type="button" class="btn btn-outline-secondary mb-2 me-2" onclick="location.href='/applications/';">Закрыть</button>
             <button type="button" class="btn btn-outline-secondary mb-2 me-2" id="printBtn" data-bs-toggle="modal" data-bs-target="#printModal"><i class="bi bi-printer"></i> Распечатать</button>
-            <button class="btn btn-outline-secondary mb-2 me-2" style="display: none;" type="button" id="requestBtn"><i class="bi bi-table"></i> Сформировать запрос</button>
+            <button type="button" class="btn btn-outline-secondary mb-2 me-2" id="showRequestForm" style="display: none;" data-bs-toggle="modal" data-bs-target="#requestModal"><i class="bi bi-table"></i> Сформировать запрос</button>
+            {# <button class="btn btn-outline-secondary mb-2 me-2" style="display: none;" type="button" id="requestBtn"><i class="bi bi-table"></i> Сформировать запрос</button>
+            <button class="btn btn-outline-secondary mb-2 me-2" style="display: none;" type="button" id="requestPdfBtn"><i class="bi bi-file-pdf"></i> Сформировать запрос (PDF)</button> #}
             <div class="spinner-border text-primary d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
         </div>
     </form>
-
-    <div class="d-none">
-        <form action="/applications/request" method="POST" target="_blank" id="requestForm"></form>
-    </div>
 
     {# Скрытый fileinput для инициализации предпросмотра #}
     <div class="d-none">
@@ -434,6 +432,25 @@
                         </select>
                         <button type="sublit" class="btn btn-outline-secondary w-100"><i class="bi bi-printer"></i> Для ответственного</button>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Варианты запроса к поставщикам #}
+    <div class="modal fade" id="requestModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Формирование запроса</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <button class="btn btn-outline-secondary mb-2 w-100" type="button" id="requestBtn"><i class="bi bi-table"></i> В браузере в виде таблицы</button>
+                    <button class="btn btn-outline-secondary w-100" type="button" id="requestPdfBtn"><i class="bi bi-file-pdf"></i> В формате PDF</button>
+                    <div class="d-none">
+                        <form action="/applications/request" method="POST" target="_blank" id="requestForm"></form>
+                    </div>
                 </div>
             </div>
         </div>

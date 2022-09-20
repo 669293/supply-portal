@@ -43,9 +43,21 @@ $(document).ready(function() {
     }
   });
 
+  //Формирование запроса к поставщикам
   $('#requestBtn').click(function() {
     //Преобразовываем списки ответственных
-    $(this).closest('form').find('input[type="hidden"]').attr('name', '');
+    $('input[name="typeOfRequest"]').val('');
+    $(this).closest('form').find('input[type="hidden"]').not('input[name="typeOfRequest"]').attr('name', '');
+    $('input[name="material[]"]:checked').each(function() {
+      $(this).closest('td').find('.amounts').attr('name', 'amount[]');
+      $(this).closest('td').find('.applications').attr('name', 'application[]');
+    });
+    $(this).closest('form').submit();
+  });
+
+  $('#requestPdfBtn').click(function() {
+    $('input[name="typeOfRequest"]').val('pdf');
+    $(this).closest('form').find('input[type="hidden"]').not('input[name="typeOfRequest"]').attr('name', '');
     $('input[name="material[]"]:checked').each(function() {
       $(this).closest('td').find('.amounts').attr('name', 'amount[]');
       $(this).closest('td').find('.applications').attr('name', 'application[]');

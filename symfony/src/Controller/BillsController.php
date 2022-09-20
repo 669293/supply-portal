@@ -763,11 +763,12 @@ class BillsController extends AbstractController
      * @Security("is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR')")
      */
     public function inWorkBillsForm(
+        ApplicationsRepository $applicationsRepository,
         BillsStatusesRepository $billsStatusesRepository, 
         BillsRepository $billsRepository, 
         BillsMaterialsRepository $billsMaterialsRepository, 
-        ApplicationsRepository $applicationsRepository,
-        ProvidersRepository $providersRepository
+        ProvidersRepository $providersRepository,
+        UsersRepository $usersRepository
     ): Response
     {
         //Получаем роли текущего пользователя
@@ -826,6 +827,9 @@ class BillsController extends AbstractController
             unset($objBill, $billMaterials);
         }
 
+        //Список пользователей
+        $users = $usersRepository->findByRole('ROLE_EXECUTOR');
+
         //Хлебные крошки
         $breadcrumbs = [];
         $breadcrumbs[0] = new \stdClass();
@@ -838,7 +842,8 @@ class BillsController extends AbstractController
         return $this->render('bills/in-work.html.twig', [
             'title' => 'Счета в работе',
             'breadcrumbs' => $breadcrumbs,
-            'bills' => $bills
+            'bills' => $bills,
+            'users' => $users
         ]);
     }
 

@@ -30,7 +30,7 @@
                         <tr>
                             <th class="py-2 align-middle text-center text-small" scope="col" style="width: 40px;">№</th>
                             <th class="py-2 align-middle text-small" scope="col">Заявка</th>
-                            <th class="py-2 align-middle text-small" scope="col">Отправитель<br />Ответственный</th>
+                            <th class="py-2 align-middle text-small text-nowrap" scope="col">Отправитель<br />Ответственный <a role="button" class="text-primary" data-bs-toggle="modal" data-bs-target="#filterModal" id="toggleFilterModal"><i class="bi bi-funnel"></i></a></th>
                             <th class="py-2 align-middle text-small" scope="col">Поставщик</th>
                             <th class="py-2 align-middle text-small" scope="col">Сумма<br />Срочность</th>
                             <th class="py-2 align-middle text-small" scope="col">Комментарии</th>
@@ -43,13 +43,15 @@
                         <tr>
                             <td class="align-middle text-center text-small">{{ loop.index }}</td>
                             <td class="align-top text-small text-nowrap">
-                            {% for application in bill.applications %}
-                                {% if loop.index > 1 %}<br />{% endif %}<a href="/applications/bills/in-work/view/?id={{ bill.obj.getId }}">{{ application.getTitle }}</a> <span class="text-muted text-small">№{{ application.getId }} от {{ application.getDateCreate|date('d.m.Y') }}</span>
-                            {% endfor %}
+                                {% for application in bill.applications %}
+                                    {% if loop.index > 1 %}<br />{% endif %}<a href="/applications/bills/in-work/view/?id={{ bill.obj.getId }}">{{ application.getTitle }}</a> <span class="text-muted text-small">№{{ application.getId }} от {{ application.getDateCreate|date('d.m.Y') }}</span>
+                                {% endfor %}
+                                <hr class="mt-1 mb-1" />
+                                <span class="text-muted text-small">{{ bill.obj.getNum }} на сумму {{ bill.obj.sum|number_format(2, '.', ' ') }} {{ bill.obj.currency }}</span>
                             </td>
                             <td class="align-middle text-xsmall text-nowrap">
                                 {% for application in bill.applications %}{% if loop.index > 1 %}<br />{% endif %}{{ application.getAuthor.getShortUsername }}{% endfor %}
-                                <hr class="mt-1 mb-1" style="border-color: #dee2e6; background: #dee2e6; opacity: 1;" />{{ bill.obj.getUser.getShortUsername }}
+                                <hr class="mt-1 mb-1" /><span class="responsible">{{ bill.obj.getUser.getShortUsername }}</span>
                             </td>
                             <td class="align-top text-small text-nowrap">
                                 <table>
@@ -107,6 +109,39 @@
     {% endif %}
 {% endblock %}
 
+{# Модальные окна #}
+{% block modal %}
+    {# Фильтрация заявки по ответственному #}
+    <div class="modal fade" id="filterModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Фильтр по ответственному</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-floating">
+                        <select class="form-select" id="filterSelect">
+                            <option selected disabled>Выберите</option>
+                            <option>Не назначен</option>
+                            {% for user in users %}
+                                <option>{{ user.getShortUserName }}</option>
+                            {% endfor %}
+                        </select>
+                        <label for="filterSelect">Ответственный</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-danger d-none" id="filterCancelBtn">Сбросить фильтр</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                    <button type="button" class="btn btn-primary" id="filterBtn">Сохранить</button>
+                    <div class="spinner-border text-primary d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
 {# Скрипты #}
 {% block scripts %}
     <script src="{{ asset('js/fileinput.min.js') }}" type="text/javascript"></script>
@@ -136,6 +171,42 @@
             ],
             language: 'ru'
         };
+
+        $(document).ready(function() {
+            //Получаем instance модального окна
+            const filterModal = new bootstrap.Modal(document.getElementById('filterModal'));
+
+            //Фильтрация по ответственному
+            $('#filterBtn').click(function() {
+                //Получаем текущее значение
+                var filterResponsible = $('#filterSelect').val();
+
+                $('#billsTable tbody tr').removeClass('d-none');
+
+                if (filterResponsible != 'Выберите') {
+                $('#billsTable tbody tr').each(function() {
+                    var tr = $(this);
+                    
+                    if (tr.find('.responsible').text() != filterResponsible) {
+                        tr.addClass('d-none');
+                    }
+                });
+                $('#toggleFilterModal i').removeClass('bi-funnel').addClass('bi-funnel-fill');
+                } else {
+                $('#toggleFilterModal i').removeClass('bi-funnel-fill').addClass('bi-funnel');
+                }
+
+                filterModal.hide();
+                $('#filterCancelBtn').removeClass('d-none');
+            });
+
+            $('#filterCancelBtn').click(function() {
+                $('#billsTable tbody tr').removeClass('d-none');
+                $('#toggleFilterModal i').removeClass('bi-funnel-fill').addClass('bi-funnel');
+                filterModal.hide();
+                $('#filterCancelBtn').addClass('d-none');
+            });
+        });
     </script>
     {% endif %}
     <script src="{{ asset('js/bills/print.js') }}" type="text/javascript"></script>

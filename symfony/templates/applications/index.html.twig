@@ -139,6 +139,7 @@
       <label class="form-check-label" for="only_hurry">Только срочные заявки</label>
     </div>
     <form action="/applications/request" method="POST" id="makeRequestForm" target="_blank">
+      <input type="hidden" name="typeOfRequest" value="" />
       <div class="accordion mb-3">
       {% for row in inwork %}
         {% set urgency = false %}
@@ -195,6 +196,7 @@
       </div>
       <div id="makeRequest" style="display: none;" class="mb-3">
         <button class="btn btn-sm btn-outline-secondary" type="button" id="requestBtn"><i class="bi bi-table"></i> Сформировать запрос</button>
+        <button class="btn btn-sm btn-outline-secondary ms-2" type="button" id="requestPdfBtn"><i class="bi bi-file-pdf"></i> Сформировать запрос (PDF)</button>
       </div>
     </form>
 

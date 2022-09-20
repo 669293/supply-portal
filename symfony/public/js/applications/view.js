@@ -31,19 +31,6 @@ $(document).ready(function() {
     );
   });
 
-  //Отмена заявки
-  // $('#cancelBtn').click(function() {
-  //   //Вызываем подтверждение
-  //   modalConfirm(function(confirm) {
-  //     if (confirm) {
-  //       $.redirectPost('/applications/set-status', {'id': id, 'status': 5});
-  //     }
-  //   }, 
-  //   'Вы уверены что хотите отменить данную заявку?<br />Вернуться к ее выполнению будет невозможно.',
-  //   'Отмена заявки'
-  //   );
-  // });
-
   //Выделение всех позиций в заявке
   $('body').on('change', '.material-select-all', function() {
     $(this).closest('table').find('.material-select:visible').prop('checked', $(this).prop('checked'));
@@ -75,10 +62,10 @@ $(document).ready(function() {
   $('.material-select').change(function() {
     if ($('.material-select:checked').length > 0) {
       $('#setResponsible').show('fast');
-      $('#requestBtn').show('fast');
+      $('#showRequestForm').show('fast');
     } else {
       $('#setResponsible').hide('fast');
-      $('#requestBtn').hide('fast');
+      $('#showRequestForm').hide('fast');
     }
   });
 
@@ -543,7 +530,17 @@ $(document).ready(function() {
       applications.push($(this).data('application'));
     });
 
-    $('#requestForm').html('').submit();
+    $('#requestForm').html('<input type="hidden" name="typeOfRequest" value="" />').submit();
+  });
+
+  $('#requestPdfBtn').click(function() {
+    $('.material-select:checked').each(function() {
+      materials.push($(this).val());
+      amounts.push($(this).data('amount'));
+      applications.push($(this).data('application'));
+    });
+
+    $('#requestForm').html('<input type="hidden" name="typeOfRequest" value="pdf" />').submit();
   });
 
   $('#requestForm').submit(function() {

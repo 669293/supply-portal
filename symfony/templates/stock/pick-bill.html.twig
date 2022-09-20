@@ -34,6 +34,7 @@
                                                 </div>
                                                 <div class="d-none d-sm-block ms-auto mt-2 text-end">
                                                     <span class="text-muted me-3 text-small">Сумма: {{ bill.sum|number_format(2, '.', ' ') }} {{ bill.currency }}</span><br />
+                                                    <span class="text-muted me-3 text-small">Ответственный: {{ bill.getUser.getShortUsername }}</span>
                                                 </div>
                                             </div>
                                         </button>
