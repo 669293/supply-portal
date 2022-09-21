@@ -85,4 +85,24 @@ $(document).ready(function() {
       });
     }
   });
+
+  //Подсказка о количестве выбранных позиций
+  $('body').on('change', 'input[name="bills[]"]', function() {
+    //Количество выбраных позиций
+    var cnt = $('input[name="bills[]"]:checked').length;
+
+    $(this).attr('data-bs-container', 'body');
+    $(this).attr('data-bs-toggle', 'popover');
+    $(this).attr('data-bs-placement', 'left');
+    $(this).attr('data-bs-content',  'Выбрано: ' + cnt);
+
+    //Инициализируем popover
+    var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+    var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+      return new bootstrap.Popover(popoverTriggerEl);
+    });
+
+    $('.popover').popover('hide');
+    $(this).popover('show');
+  });
 });

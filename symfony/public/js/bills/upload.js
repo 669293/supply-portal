@@ -403,7 +403,7 @@ $(document).ready(function() {
     $(this).attr('data-bs-container', 'body');
     $(this).attr('data-bs-toggle', 'popover');
     $(this).attr('data-bs-placement', 'left');
-    $(this).attr('data-bs-content',  'Количество выбранных позиций: ' + cnt);
+    $(this).attr('data-bs-content',  'Выбрано: ' + cnt);
 
     //Инициализируем popover
     var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
