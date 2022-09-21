@@ -165,4 +165,9 @@ $(document).ready(function() {
           $('#photos').fileinput('enable');
       }); 
   }
+
+  //Автозаполнение поля "Способ отправки"
+  $('input[name="way"]').autocomplete({
+    serviceUrl: '/logistics/way'
+  });
 });

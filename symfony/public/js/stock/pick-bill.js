@@ -168,3 +168,16 @@ $(document).ready(function() {
       }); 
   }
 });
+
+//Правка вставляемого значения суммы
+window.onload = function() {
+    var billSumInput = document.getElementById('sum');
+    billSumInput.addEventListener('input', function() {
+        checkBullSum(billSumInput);
+    });
+}
+
+function checkBullSum(input) {
+    var newValue = input.value.replace(/,/g, '.').replace(/[^\.\d]/g, '');
+    if (input.value != newValue) {input.value = newValue;}
+}
