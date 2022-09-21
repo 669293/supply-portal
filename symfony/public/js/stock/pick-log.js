@@ -154,15 +154,7 @@ $(document).ready(function() {
           data: formData
       }).done(function(data) {
           if ($.isArray(data) && data[0] == 1) {
-            $.post('http://vitim.1gb.ru/model/php/setPMLogistic.php', { secret: '35b7fff08b557bd2909fc91316fc6216', doc: docID, logistic: JSON.stringify(data[1]) })
-            .done(function(data) {
-                if (data == 'done.') {
-                    location.href = 'http://vitim.1gb.ru/journal/view/tn/' + docID;
-                } else {
-                    console.error(data);
-                }
-                freezeForm(frm, false);
-            });
+            location.href = 'http://vitim.1gb.ru/model/php/setPMLogistic.php?type=tn&secret=35b7fff08b557bd2909fc91316fc6216&doc=' + docID + '&logistic=' + JSON.stringify(data[1]);
           } else {
               showFormAlert(frm, data[1]);
               freezeForm(frm, false);
