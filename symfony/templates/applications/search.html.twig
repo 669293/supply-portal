@@ -21,7 +21,7 @@
           <div class="card-body">
             <blockquote class="blockquote mb-0 text-small">
               <p class="mb-0">
-                {{ result.application.getTitle|highlight(q)|raw }} <a href="/applications/view?number={{ result.application.getId }}">#{{ result.application.getId }}</a>
+                {{ result.application.getTitle|highlight(q)|raw }} <a href="/applications/view?number={{ result.application.getId }}" target="_blank">#{{ result.application.getId }}</a>
                 {% if result.application.getNumber %} <span class="text-small text-muted">({{ result.application.getNumber }})</span>{% endif %}
                 {% if result.applicationUrgency %} <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="" data-bs-original-title="В заявке есть срочные позиции" aria-label="В заявке есть срочные позиции"></i>{% endif %}
                 <span class="text-muted text-xsmall">от {{ result.application.getDateCreate|date('d.m.Y') }}</span>
@@ -37,6 +37,7 @@
               {% if result.materials|length > 0 %}<div class="clearfix mb-4"></div>{% endif %}
               {% for material in result.materials %}
                 <footer class="blockquote-footer" style="margin-top: -0.5rem!important;">
+                  <span class="text-body">#{{ material.getNum }}</span> <i class="bi bi-arrow-right"></i>
                   <span class="text-body">{{ material.getTitle|highlight(q)|raw }}</span>
                   {% if result.equipment %} ({{ result.equipment|highlight(q)|raw }}){% endif %}
                   <i class="bi bi-arrow-right"></i> Обработано {{ material.amountDone }} из {{ material.amount }}

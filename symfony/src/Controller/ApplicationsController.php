@@ -2478,6 +2478,7 @@ HERE;
         Request $request, 
         ApplicationsRepository $applicationsRepository, 
         ApplicationsStatusesRepository $applicationsStatusesRepository,
+        BillsMaterialsRepository $billsMaterialsRepository,
         MaterialsRepository $materialsRepository,
         TypesOfEquipmentRepository $typesOfEquipmentRepository
     ): Response
@@ -2638,17 +2639,15 @@ HERE;
                 $results[$i]->status = $applicationsStatusesRepository->findBy( array('application' => $results[$i]->application->getId()), array('datetime' => 'DESC') )[0];
 
                 foreach ($results[$i]->materials as $material) {
-                    $material->amountDone = $materialsRepository->createQueryBuilder('m')
-                    ->where('m.application = :app')
-                    ->setParameter('app', $results[$i]->application->getId())
-                    ->leftJoin('App\Entity\BillsMaterials', 'bm', 'WITH' ,'bm.material=m.id')
-                    ->leftJoin('App\Entity\Users', 'u', 'WITH' ,'u.id=m.responsible')
+                    $material->amountDone = $billsMaterialsRepository->createQueryBuilder('bm')
+                    ->where('bm.material = :material')
+                    ->setParameter('material', $material->getId())
                     ->select('SUM(bm.amount) AS amount')
                     ->getQuery()
                     ->getResult()
                     [0]['amount']
                     ;
- 
+
                     if ($material->amountDone === null) {$material->amountDone = 0;}
                 }
             }

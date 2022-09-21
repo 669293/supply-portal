@@ -102,6 +102,7 @@ class BillsController extends AbstractController
                 $rest = $material[0]->getAmount() - $cnt; if ($rest < 0) {$rest = 0;}
                 if (!$material[0]->getIsDeleted() && 
                     $rest > 0 && 
+                    $material[0]->getResponsible() !== null &&
                     $this->security->getUser()->getId() == $material[0]->getResponsible()->getId() && 
                     !$material[0]->getCash() && 
                     !$material[0]->getImpossible()) 
