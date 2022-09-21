@@ -91,9 +91,6 @@
                         {% set collapsed = true %}
                         {% if app.request.query.all['application'] is defined and app.request.query.all['application'] == application.getId %}
                             {% set collapsed = false %}
-                            <script type="text/javascript">
-                                var notCollapsedId = {{ application.getId }};
-                            </script>
                         {% endif %}
                         <div class="accordion-item">
                             <h2 class="accordion-header" id="heading{{ application.getId }}">
@@ -261,21 +258,6 @@
                     return array;
                 }
             });
-
-            if (typeof notCollapsedId !== 'undefined') {
-                // Подгружаем информацию по позициям заявки
-                $(document).ready(function() {
-                    var id = notCollapsedId;
-
-                    $.post('/applications/bills/show-materials', {id: id})
-                    .done(function(data) {
-                        $('#collapse' + id + ' .accordion-body').html(data);
-                        $('.deleted-item').prop('indeterminate', true);
-                    }).fail(function() {
-                        $('#collapse' + id + ' .accordion-body').html('<i class="bi bi-x-circle text-danger"></i> Произошла ошибка при загрузке материалов по данной заявке. Попробуйте обновить страницу и попробовать еще раз.');
-                    });
-                });
-            }
         });
     </script>
 {% endblock %}
