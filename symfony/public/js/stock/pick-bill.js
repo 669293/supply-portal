@@ -155,8 +155,8 @@ $(document).ready(function() {
           url: frm.attr('action'),
           data: formData
       }).done(function(data) {
-          if ($.isArray(data) && data[0] == 1) {
-            location.href = 'http://vitim.1gb.ru/model/php/setPMLogistic.php?type=pm&secret=35b7fff08b557bd2909fc91316fc6216&doc=' + docID + '&logistic=' + JSON.stringify(data[1]);
+          if (data[0] == 1) {
+            location.href = 'http://vitim.1gb.ru/model/php/setPMLogistic.php?type=pm&secret=35b7fff08b557bd2909fc91316fc6216&doc=' + docID + '&logistic=' + JSON.stringify(data[1]) + '&appinfo=' + encodeURI(data[2]);
           } else {
               showFormAlert(frm, data[1]);
               freezeForm(frm, false);

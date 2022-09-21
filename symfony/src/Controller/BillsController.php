@@ -1273,14 +1273,35 @@ class BillsController extends AbstractController
                         $logistics[] = $this->recieveMaterials($type, $bill['billId'], $bill['materials'], $bill['amounts'], $params);
                     }
                     $logistics = json_encode($logistics);
+
+                    //Дополняем результат отправителем по заявке
+                    $applications = [];
+                    for ($i=0; $i<sizeof($bill['materials']); $i++) {
+                        //Получаем строку в BillsMaterials
+                        $billMaterial = $billsMaterialsRepository->findBy(array('id' => $materials[$i]));
+                        if (is_array($billMaterial)) {$billMaterial = array_shift($billMaterial);}
+         
+                        $exist = false;
+                        foreach ($applications as $application) {
+                            if ($application->getId() == $billMaterial->getMaterial()->getApplication()->getId()) {$exist = true; break;}
+                        }
+                        if (!$exist) {$applications[] = $billMaterial->getMaterial()->getApplication();}
+                    }
+
+                    $appinfo = '';
+                    foreach ($applications as $application) {
+                        if (!empty($appinfo)) {$appinfo .= ', ';}
+                        $appinfo .= 'Заявка '.$application->getId().' ('.$application->getAuthor()->getShortUsername().')';
+                    }
+                    $result[2] = $appinfo;
                 } else {
                     //Вызов из формы просмотра счета
                     $billId = $request->request->get('bid');
                     $type = $request->request->get('type');
 
                     if ($billId === null || ($materials !== null && $amounts !== null && sizeof($materials) != sizeof($amounts))) {
-                        $result[] = 0;
-                        $result[] = 'Ошибка во входных данных.';
+                        $result[0] = 0;
+                        $result[1] = 'Ошибка во входных данных.';
                         return new JsonResponse($result);
                     }
 
@@ -1290,8 +1311,8 @@ class BillsController extends AbstractController
     
                 $this->entityManager->getConnection()->commit();
 
-                $result[] = 1;
-                $result[] = $logistics;
+                $result[0] = 1;
+                $result[1] = $logistics;
             } catch (Exception $e) {
                 $this->entityManager->getConnection()->rollBack();
 
