@@ -67,9 +67,10 @@ class BillsController extends AbstractController
         ->select('IDENTITY(m.application)')
         ->andWhere('m.isDeleted = FALSE')
         ->andWhere('m.responsible = :uid')
-        ->getQuery();
+        ->getQuery()
+        ;
 
-        $applications = $applicationsRepository->createQueryBuilder('a')
+        $applications_ = $applicationsRepository->createQueryBuilder('a')
         ->where('a.isBillsLoaded = FALSE')
         ->andWhere(
             $this->entityManager->createQueryBuilder()->expr()->in('a.id', $subQuery->getDQL())
@@ -77,12 +78,45 @@ class BillsController extends AbstractController
         ->orderBy('a.id', 'ASC')
         ->getQuery()
         ->setParameter('uid', $this->security->getUser()->getId())
-        ->getResult();
+        ->getResult()
+        ;
 
-        foreach ($applications as $application) {
-            $application->urgency = $applicationsRepository->getUrgency($application->getId());
-            $application->responsibles = $applicationsRepository->getResponsibles($application->getId());
-            $application->show = true;
+        $applications = [];
+        foreach ($applications_ as $application) {
+            $materials_ = $materialsRepository->createQueryBuilder('m')
+            ->where('m.application = :app')
+            ->setParameter('app', $application->getId())
+            ->leftJoin('App\Entity\BillsMaterials', 'bm', 'WITH' ,'bm.material=m.id')
+            ->leftJoin('App\Entity\Users', 'u', 'WITH' ,'u.id=m.responsible')
+            ->select(['m', 'SUM(bm.amount) AS amount', 'u.username', 'u.id'])
+            ->groupBy('m, u.username, u.id')
+            ->orderBy('m.num', 'ASC')
+            ->getQuery()
+            ->getResult()
+            ;
+
+            $materials = [];
+            foreach ($materials_ as $material) {
+                $cnt = $material['amount']; if ($cnt === null) {$cnt = 0;}
+                $toe = ''; if ($material[0]->getTypeOfEquipment() !== null) {$toe = $material[0]->getTypeOfEquipment()->getTitle();}
+                $rest = $material[0]->getAmount() - $cnt; if ($rest < 0) {$rest = 0;}
+                if (!$material[0]->getIsDeleted() && 
+                    $rest > 0 && 
+                    $this->security->getUser()->getId() == $material[0]->getResponsible()->getId() && 
+                    !$material[0]->getCash() && 
+                    !$material[0]->getImpossible()) 
+                {
+                    $materials[] = $material;
+                }
+            }
+
+            if (sizeof($materials) > 0) {
+                $application->materials = $materials;
+                $application->urgency = $applicationsRepository->getUrgency($application->getId());
+                $application->responsibles = $applicationsRepository->getResponsibles($application->getId());
+                $application->show = true;
+                $applications[] = $application;
+            }
         }
 
         //Хлебные крошки
@@ -106,27 +140,27 @@ class BillsController extends AbstractController
      * @Route("/applications/bills/show-materials", methods={"POST"}))
      * @IsGranted("ROLE_EXECUTOR")
      */
-    public function showMaterials(Request $request, MaterialsRepository $materialsRepository): Response
-    {
-        $application_id = $request->request->get('id');
-        if ($application_id === null) {return new Response();}
+    // public function showMaterials(Request $request, MaterialsRepository $materialsRepository): Response
+    // {
+    //     $application_id = $request->request->get('id');
+    //     if ($application_id === null) {return new Response();}
 
-        $materials = $materialsRepository->createQueryBuilder('m')
-        ->where('m.application = :app')
-        ->setParameter('app', $application_id)
-        ->leftJoin('App\Entity\BillsMaterials', 'bm', 'WITH' ,'bm.material=m.id')
-        ->leftJoin('App\Entity\Users', 'u', 'WITH' ,'u.id=m.responsible')
-        ->select(['m', 'SUM(bm.amount) AS amount', 'u.username', 'u.id'])
-        ->groupBy('m, u.username, u.id')
-        ->orderBy('m.num', 'ASC')
-        ->getQuery()
-        ->getResult()
-        ;
+    //     $materials = $materialsRepository->createQueryBuilder('m')
+    //     ->where('m.application = :app')
+    //     ->setParameter('app', $application_id)
+    //     ->leftJoin('App\Entity\BillsMaterials', 'bm', 'WITH' ,'bm.material=m.id')
+    //     ->leftJoin('App\Entity\Users', 'u', 'WITH' ,'u.id=m.responsible')
+    //     ->select(['m', 'SUM(bm.amount) AS amount', 'u.username', 'u.id'])
+    //     ->groupBy('m, u.username, u.id')
+    //     ->orderBy('m.num', 'ASC')
+    //     ->getQuery()
+    //     ->getResult()
+    //     ;
 
-        return $this->render('bills/show-materials.html.twig', [
-            'materials' => $materials
-        ]);
-    }
+    //     return $this->render('bills/show-materials.html.twig', [
+    //         'materials' => $materials
+    //     ]);
+    // }
 
     /**
      * Загрузка файла

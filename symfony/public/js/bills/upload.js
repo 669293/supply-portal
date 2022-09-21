@@ -3,28 +3,6 @@ $(document).ready(function() {
   var formData;
   var lastChecked = null;
 
-  //Событие при разворачивании заявки
-  $('#applicationsAccordion').on('show.bs.collapse', function (e) {
-    var id = $(e.target).data('id');
-    
-    $.post('/applications/bills/show-materials', {id: id})
-    .done(function(data) {
-      $('#collapse' + id + ' .accordion-body').html(data);
-      $('.deleted-item').prop('indeterminate', true);
-    }).fail(function() {
-      $('#collapse' + id + ' .accordion-body').html('<i class="bi bi-x-circle text-danger"></i> Произошла ошибка при загрузке материалов по данной заявке. Попробуйте обновить страницу и попробовать еще раз.');
-    });
-
-    $('.popover').popover('hide');
-  });
-
-  //Событие при сворачивании заявки
-  $('#applicationsAccordion').on('hide.bs.collapse', function (e) {
-    var id = $(e.target).data('id');
-    $('#collapse' + id + ' .accordion-body').html('<div class="spinner-border spinner-border-sm text-primary me-1" role="status" aria-hidden="true"></div> <span class="text-muted">Секундочку, идет загрузка...</span>');
-    $('.popover').popover('hide');
-  });
-
   //Выделение всех позиций в заявке
   $('body').on('change', '.bill-select-all', function() {
     $(this).closest('table').find('.bill-select').prop('checked', $(this).prop('checked'));

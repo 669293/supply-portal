@@ -120,7 +120,45 @@
                             </h2>
                             <div id="collapse{{ application.getId }}" data-id="{{ application.getId }}" class="accordion-collapse{% if collapsed == true %} collapse{% endif %}" aria-labelledby="heading{{ application.getId }}">
                                 <div class="accordion-body">
-                                    <div class="spinner-border spinner-border-sm text-primary me-1" role="status" aria-hidden="true"></div> <span class="text-muted">Секундочку, идет загрузка...</span>
+                                    <div class="container-fluid w-100 overflow-scroll px-0">
+                                        <table class="table table-sm mb-0 table-hover table-striped table-bordered" style="min-width: 900px;">
+                                            <thead>
+                                                <tr>
+                                                    <th class="py-2 align-middle text-center text-small" scope="col" style="width: 50px;">№</th>
+                                                    <th class="py-2 align-middle text-center" scope="col" style="width: 50px;"><input type="checkbox" name="" value="" class="form-check-input bill-select-all" /></th>
+                                                    <th class="py-2 align-middle text-nowrap text-start text-small" scope="col" style="width: 140px;">Кол-во в счете</th>
+                                                    <th class="py-2 align-middle text-nowrap text-center text-small" scope="col" style="width: 140px;">Кол-во в заявке</th>
+                                                    <th class="py-2 align-middle text-small" scope="col">Наименование</th>
+                                                    <th class="py-2 align-middle text-nowrap text-small" scope="col">Вид техники</th>
+                                                    <th class="py-2 align-middle text-nowrap text-small" scope="col">Ответственный</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for material in application.materials %}
+                                                {% set count = material.amount %}
+                                                {% if count is null %}{% set count = 0 %}{% endif %}
+                                                {% set toe = '' %}
+                                                {% if not material.0.getTypeOfEquipment is null %}{% set toe = material.0.getTypeOfEquipment.getTitle %}{% endif %}
+                                                {% set rest = material.0.getAmount - count %}
+                                                {% if rest < 0 %}{% set rest = 0 %}{% endif %}
+                                                {# Данная позиция доступна для выбора #}
+                                                <tr>
+                                                    <td class="align-middle text-center text-xsmall">{{ material.0.getNum }}</td>
+                                                    <td class="py-2 align-middle text-center" scope="col">
+                                                        <input type="checkbox" name="material[]" value="{{ material.0.getId }}" class="form-check-input bill-select" />
+                                                    </td>
+                                                    <td class="py-2 align-middle" scope="col">
+                                                        <input type="number" name="" value="{{ rest }}" class="amount-input form-control form-control-sm" min="1" max="{{ rest }}" />
+                                                    </td>
+                                                    <td class="align-middle text-center text-xsmall">{{ material.0.getAmount }} {{ material.0.getUnit.getTitle }} / {{ count }} {{ material.0.getUnit.getTitle }}</td>
+                                                    <td class="align-middle text-xsmall">{{ material.0.getTitle }}{% if material.0.getUrgency %} <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="Срочная позиция"></i> <span class="text-danger">Срочно</span>{% endif %}</td>
+                                                    <td class="align-middle text-xsmall">{{ toe }}</td>
+                                                    <td class="align-middle text-xsmall">{% if material.username == null %}<span class="text-muted">Не назначен</span>{% else %}{{ material.username }}{% endif %}</td>
+                                                </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
