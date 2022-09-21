@@ -2477,6 +2477,7 @@ HERE;
     public function search(
         Request $request, 
         ApplicationsRepository $applicationsRepository, 
+        ApplicationsStatusesRepository $applicationsStatusesRepository,
         MaterialsRepository $materialsRepository,
         TypesOfEquipmentRepository $typesOfEquipmentRepository
     ): Response
@@ -2634,6 +2635,22 @@ HERE;
 
             for ($i=0; $i<sizeof($results); $i++) {
                 $results[$i]->applicationUrgency = $applicationsRepository->getUrgency($results[$i]->application->getId());
+                $results[$i]->status = $applicationsStatusesRepository->findBy( array('application' => $results[$i]->application->getId()), array('datetime' => 'DESC') )[0];
+
+                foreach ($results[$i]->materials as $material) {
+                    $material->amountDone = $materialsRepository->createQueryBuilder('m')
+                    ->where('m.application = :app')
+                    ->setParameter('app', $results[$i]->application->getId())
+                    ->leftJoin('App\Entity\BillsMaterials', 'bm', 'WITH' ,'bm.material=m.id')
+                    ->leftJoin('App\Entity\Users', 'u', 'WITH' ,'u.id=m.responsible')
+                    ->select('SUM(bm.amount) AS amount')
+                    ->getQuery()
+                    ->getResult()
+                    [0]['amount']
+                    ;
+ 
+                    if ($material->amountDone === null) {$material->amountDone = 0;}
+                }
             }
 
             //Убираем из результатов те заявки которые пользователь не может видеть

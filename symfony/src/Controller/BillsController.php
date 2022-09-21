@@ -136,33 +136,6 @@ class BillsController extends AbstractController
     }
 
     /**
-     * Сервис отображает материалы в заявке
-     * @Route("/applications/bills/show-materials", methods={"POST"}))
-     * @IsGranted("ROLE_EXECUTOR")
-     */
-    // public function showMaterials(Request $request, MaterialsRepository $materialsRepository): Response
-    // {
-    //     $application_id = $request->request->get('id');
-    //     if ($application_id === null) {return new Response();}
-
-    //     $materials = $materialsRepository->createQueryBuilder('m')
-    //     ->where('m.application = :app')
-    //     ->setParameter('app', $application_id)
-    //     ->leftJoin('App\Entity\BillsMaterials', 'bm', 'WITH' ,'bm.material=m.id')
-    //     ->leftJoin('App\Entity\Users', 'u', 'WITH' ,'u.id=m.responsible')
-    //     ->select(['m', 'SUM(bm.amount) AS amount', 'u.username', 'u.id'])
-    //     ->groupBy('m, u.username, u.id')
-    //     ->orderBy('m.num', 'ASC')
-    //     ->getQuery()
-    //     ->getResult()
-    //     ;
-
-    //     return $this->render('bills/show-materials.html.twig', [
-    //         'materials' => $materials
-    //     ]);
-    // }
-
-    /**
      * Загрузка файла
      * @Route("/applications/bills/upload-bill", methods={"POST"})
      * @IsGranted("ROLE_EXECUTOR")
