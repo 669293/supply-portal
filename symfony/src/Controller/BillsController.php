@@ -950,6 +950,13 @@ class BillsController extends AbstractController
         StatusesOfBillsRepository $statusesOfBillsRepository,
     ): Response
     {
+        //Получаем роли текущего пользователя
+        $roles = $this->security->getUser()->getRoles();
+
+        if (in_array('ROLE_THIEF', $roles)) {
+            return new RedirectResponse('/applications');
+        }
+
         $id = $request->query->get('id');
         if ($id === null || !is_numeric($id)) {
             return new RedirectResponse('/applications');

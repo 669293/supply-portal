@@ -170,7 +170,7 @@
             <th class="align-middle d-none d-sm-table-cell">Ответственные</th>
             <th class="align-middle d-none d-sm-table-cell">Статус <i role="button" class="bi {{ orderClass4 }} app-sort" data-order="4" data-sort="{{ orderSort4 }}"></i></th>
             <th class="align-middle">Вложенные файлы</th>
-            <th class="align-middle">Счета</th>
+            {% if 'ROLE_THIEF' not in roles %}<th class="align-middle">Счета</th>{% endif %}
             {% set flag = false %}
             {% for application in applications %}
               {# {% if ('ROLE_SUPERVISOR' in app.user.roles) or (application.0.author.getId == app.user.id) %} #}
@@ -241,39 +241,41 @@
               {% endfor %}
             {% endif %}
             </td>
-            <td class="text-nowrap">
-            {% if application.bills is empty %}
-              <span class="text-black-50">Нет счетов</span>
-              {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
-                {# Проверяем, может ли пользователь загружать счета в данную заявку #}
-                {% set canUploadBill = false %}
-                {% for responsible in application.responsibles %}
-                  {% if responsible.id == app.user.id %}{% set canUploadBill = true %}{% endif %}
-                {% endfor %}
-                {% if canUploadBill == true %}
-                  <a href="/applications/bills/upload?application={{ application.0.getId }}"><i class="bi bi-upload"></i></a>
-                {% endif %}
-              {% endif %}
-            {% else %}
-              <button type="button" class="btn btn-sm btn-outline-secondary mb-1 text-truncate show-hidden-buttons"><i class="bi bi-chevron-down"></i> Показать счета</button><div class="clearfix"></div>
-              {% for bill in application.bills %}
-                <div class="dropdown d-none{% if not loop.first %} mt-1{% endif %}">
-                  <button class="btn btn-sm {{ bill.class }} text-truncate text-start dropdown-toggle" type="button" id="dropdownBill{{ fileId }}" data-bs-toggle="dropdown" aria-expanded="false" style="width: 180px;"><i class="bi {{ bill.icon }}"></i> {{ bill.title }}</button>
-                  <ul class="dropdown-menu" aria-labelledby="dropdownBill{{ fileId }}">
-                    <li><h6 class="dropdown-header fw-normal {{ bill.style }}">{{ bill.status }}</h6></li>
-                    <li><h6 class="dropdown-header fw-normal">{{ bill.sum|number_format(2, '.', ' ') }} {{ bill.currency }}</h6></li>
-                    {% if ('ROLE_SUPERVISOR' in app.user.roles) %}
-                      <li><a class="dropdown-item text-small" href="/applications/bills/download?id={{ bill.id }}">Распечатать на подпись</a></li>
+            {% if 'ROLE_THIEF' not in roles %}
+              <td class="text-nowrap">
+                {% if application.bills is empty %}
+                  <span class="text-black-50">Нет счетов</span>
+                  {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
+                    {# Проверяем, может ли пользователь загружать счета в данную заявку #}
+                    {% set canUploadBill = false %}
+                    {% for responsible in application.responsibles %}
+                      {% if responsible.id == app.user.id %}{% set canUploadBill = true %}{% endif %}
+                    {% endfor %}
+                    {% if canUploadBill == true %}
+                      <a href="/applications/bills/upload?application={{ application.0.getId }}"><i class="bi bi-upload"></i></a>
                     {% endif %}
-                    <li><a class="dropdown-item text-small filePreview" data-id="thumb-attachments-init-{{ fileId }}" href="#?">Просмотр</a></li>
-                    <li><a class="dropdown-item text-small" href="/applications/bills/in-work/view?id={{ bill.id }}">Информация о счете</a></li>
-                    <li><a class="dropdown-item text-small" href="/upload/bills/{{ bill.path }}">Скачать</a></li>
-                  </ul>
-                </div>
-                {% set fileId = fileId + 1 %}
-              {% endfor %}
+                  {% endif %}
+                {% else %}
+                  <button type="button" class="btn btn-sm btn-outline-secondary mb-1 text-truncate show-hidden-buttons"><i class="bi bi-chevron-down"></i> Показать счета</button><div class="clearfix"></div>
+                  {% for bill in application.bills %}
+                    <div class="dropdown d-none{% if not loop.first %} mt-1{% endif %}">
+                      <button class="btn btn-sm {{ bill.class }} text-truncate text-start dropdown-toggle" type="button" id="dropdownBill{{ fileId }}" data-bs-toggle="dropdown" aria-expanded="false" style="width: 180px;"><i class="bi {{ bill.icon }}"></i> {{ bill.title }}</button>
+                      <ul class="dropdown-menu" aria-labelledby="dropdownBill{{ fileId }}">
+                        <li><h6 class="dropdown-header fw-normal {{ bill.style }}">{{ bill.status }}</h6></li>
+                        <li><h6 class="dropdown-header fw-normal">{{ bill.sum|number_format(2, '.', ' ') }} {{ bill.currency }}</h6></li>
+                        {% if ('ROLE_SUPERVISOR' in app.user.roles) %}
+                          <li><a class="dropdown-item text-small" href="/applications/bills/download?id={{ bill.id }}">Распечатать на подпись</a></li>
+                        {% endif %}
+                        <li><a class="dropdown-item text-small filePreview" data-id="thumb-attachments-init-{{ fileId }}" href="#?">Просмотр</a></li>
+                        <li><a class="dropdown-item text-small" href="/applications/bills/in-work/view?id={{ bill.id }}">Информация о счете</a></li>
+                        <li><a class="dropdown-item text-small" href="/upload/bills/{{ bill.path }}">Скачать</a></li>
+                      </ul>
+                    </div>
+                    {% set fileId = fileId + 1 %}
+                  {% endfor %}
+                {% endif %}
+              </td>
             {% endif %}
-            </td>
             {% if flag %}
             <td class="align-top text-center">
               {% if ('ROLE_SUPERVISOR' in app.user.roles) or (application.0.author.getId == app.user.id) %}

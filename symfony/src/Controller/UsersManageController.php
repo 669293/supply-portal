@@ -38,7 +38,8 @@ class UsersManageController extends AbstractController
             'ROLE_LOGISTICS' => ['Добавление логистической информации', 'bg-warning text-dark'],
             'ROLE_BUH' => ['Бухгалтерия', 'bg-warning text-dark'],
             'ROLE_STOCK' => ['Склад', 'bg-warning text-dark'],
-            'ROLE_WATCHER' => ['Наблюдатель', 'bg-success']
+            'ROLE_WATCHER' => ['Наблюдатель', 'bg-success'],
+            'ROLE_THIEF' => ['Не может видеть суммы и счета', 'bg-danger'],
         ];
     }
 

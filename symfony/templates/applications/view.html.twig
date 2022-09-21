@@ -120,66 +120,68 @@
                             {% endif %}
                         </td>
                     </tr>
-                    <tr>
-                        <td><i class="bi bi-file-earmark text-muted me-1"></i> <strong>Счета</strong></td>
-                        <td class="pe-0">
-                        {% if bills is empty %}
-                            <span class="text-muted">Нет счетов</span>
-                        {% else %}
-                            <table class="table table-sm table-bordered mb-0 text-xsmall">
-                                <thead>
-                                    <tr>
-                                        <th>Счет</th>
-                                        <th>Сумма</th>
-                                        <th>Статус</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                {% set sumrub, sumeur, sumusd = 0, 0, 0 %}
-                                {% for bill in bills %}
-                                    <tr>
-                                        <td>
-                                            <div class="btn-group w-100" role="group">
-                                                <button type="button" data-id="thumb-attachments-init-{{ fileId }}" class="w-100 btn btn-sm {{ bill.status.getClassBtn }} text-truncate filePreview text-start"><i class="bi {{ bill.status.getIcon }}"></i> {{ bill.title|length > 50 ? bill.title|slice(0, 50) ~ '...' : bill.title }}</button>
-                                                <a class="kv-file-download btn btn-sm btn-kv btn-default {{ bill.status.getClassBtn }}" title="Скачать файл" href="/upload/bills/{{ bill.path }}" target="_blank" style="width: 30px!important;"><i class="bi-download"></i></a>
-                                                <a class="btn btn-sm btn-default btn-outline-primary" title="Информация по счету" href="/applications/bills/in-work/view/?id={{ bill.id }}" style="width: 30px!important;"><i class="bi bi-info-lg"></i></a>
-                                            </div><div class="clearfix"></div>
-                                        </td>
-                                        <td class="align-middle text-nowrap">{{ bill.sum|number_format(2, '.', ' ') }} {{ bill.currency }}</td>
-                                        {% if bill.currency == 'руб.' %}{% set sumrub = sumrub + bill.sum %}{% endif %}
-                                        {% if bill.currency == '$' %}{% set sumusd = sumusd + bill.sum %}{% endif %}
-                                        {% if bill.currency == '€' %}{% set sumeur = sumeur + bill.sum %}{% endif %}
-                                        <td class="align-middle text-nowrap">
-                                            {% if is_granted('ROLE_SUPERVISOR') and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
-                                                <div class="input-group input-group-sm" role="group">
-                                                    <input type="hidden" name="bid[]" value="{{ bill.id }}" />
-                                                    <select class="form-select form-select-sm" name="bstatus[]">
-                                                    {% for status in billsstatuses %}
-                                                        <option value="{{ status.getId }}"{% if status.getId == bill.status.getId %} selected{% endif %}>{{ status.getTitle }}</option>
-                                                    {% endfor %}
-                                                    </select>
-                                                    <button type="button" class="btn btn-sm btn-danger remove-bill-btn" data-id="{{ bill.id }}" data-name="{{ bill.name }}" data-sum="{{ bill.sum|number_format(2, '.', ' ') }} {{ bill.currency }}"><i class="bi bi-x"></i></button>
-                                                </div>
-                                            {% else %}
-                                                {{ bill.status.getTitle }}
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% set fileId = fileId + 1 %}
-                                {% endfor %}
-                                    <tr>
-                                        <td class="text-end fw-bold">Итого</td>
-                                        <td colspan="2">
-                                        {% if sumrub > 0 %}{{ sumrub|number_format(2, '.', ' ') }} руб.{% set br = true %}{% endif %}
-                                        {% if sumusd > 0 %}{% if br is defined %}<br />{% endif %}{{ sumusd|number_format(2, '.', ' ') }} ${% set br = true %}{% endif %}
-                                        {% if sumeur > 0 %}{% if br is defined %}<br />{% endif %}{{ sumeur|number_format(2, '.', ' ') }} €{% set br = true %}{% endif %}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        {% endif %}
-                        </td>
-                    </tr>
+                    {% if 'ROLE_THIEF' not in roles %}
+                        <tr>
+                            <td><i class="bi bi-file-earmark text-muted me-1"></i> <strong>Счета</strong></td>
+                            <td class="pe-0">
+                            {% if bills is empty %}
+                                <span class="text-muted">Нет счетов</span>
+                            {% else %}
+                                <table class="table table-sm table-bordered mb-0 text-xsmall">
+                                    <thead>
+                                        <tr>
+                                            <th>Счет</th>
+                                            <th>Сумма</th>
+                                            <th>Статус</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% set sumrub, sumeur, sumusd = 0, 0, 0 %}
+                                    {% for bill in bills %}
+                                        <tr>
+                                            <td>
+                                                <div class="btn-group w-100" role="group">
+                                                    <button type="button" data-id="thumb-attachments-init-{{ fileId }}" class="w-100 btn btn-sm {{ bill.status.getClassBtn }} text-truncate filePreview text-start"><i class="bi {{ bill.status.getIcon }}"></i> {{ bill.title|length > 50 ? bill.title|slice(0, 50) ~ '...' : bill.title }}</button>
+                                                    <a class="kv-file-download btn btn-sm btn-kv btn-default {{ bill.status.getClassBtn }}" title="Скачать файл" href="/upload/bills/{{ bill.path }}" target="_blank" style="width: 30px!important;"><i class="bi-download"></i></a>
+                                                    <a class="btn btn-sm btn-default btn-outline-primary" title="Информация по счету" href="/applications/bills/in-work/view/?id={{ bill.id }}" style="width: 30px!important;"><i class="bi bi-info-lg"></i></a>
+                                                </div><div class="clearfix"></div>
+                                            </td>
+                                            <td class="align-middle text-nowrap">{{ bill.sum|number_format(2, '.', ' ') }} {{ bill.currency }}</td>
+                                            {% if bill.currency == 'руб.' %}{% set sumrub = sumrub + bill.sum %}{% endif %}
+                                            {% if bill.currency == '$' %}{% set sumusd = sumusd + bill.sum %}{% endif %}
+                                            {% if bill.currency == '€' %}{% set sumeur = sumeur + bill.sum %}{% endif %}
+                                            <td class="align-middle text-nowrap">
+                                                {% if is_granted('ROLE_SUPERVISOR') and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
+                                                    <div class="input-group input-group-sm" role="group">
+                                                        <input type="hidden" name="bid[]" value="{{ bill.id }}" />
+                                                        <select class="form-select form-select-sm" name="bstatus[]">
+                                                        {% for status in billsstatuses %}
+                                                            <option value="{{ status.getId }}"{% if status.getId == bill.status.getId %} selected{% endif %}>{{ status.getTitle }}</option>
+                                                        {% endfor %}
+                                                        </select>
+                                                        <button type="button" class="btn btn-sm btn-danger remove-bill-btn" data-id="{{ bill.id }}" data-name="{{ bill.name }}" data-sum="{{ bill.sum|number_format(2, '.', ' ') }} {{ bill.currency }}"><i class="bi bi-x"></i></button>
+                                                    </div>
+                                                {% else %}
+                                                    {{ bill.status.getTitle }}
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% set fileId = fileId + 1 %}
+                                    {% endfor %}
+                                        <tr>
+                                            <td class="text-end fw-bold">Итого</td>
+                                            <td colspan="2">
+                                            {% if sumrub > 0 %}{{ sumrub|number_format(2, '.', ' ') }} руб.{% set br = true %}{% endif %}
+                                            {% if sumusd > 0 %}{% if br is defined %}<br />{% endif %}{{ sumusd|number_format(2, '.', ' ') }} ${% set br = true %}{% endif %}
+                                            {% if sumeur > 0 %}{% if br is defined %}<br />{% endif %}{{ sumeur|number_format(2, '.', ' ') }} €{% set br = true %}{% endif %}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            {% endif %}
+                            </td>
+                        </tr>
+                    {% endif %}
                     {% if application.getComment != '' %}
                     <tr>
                         <td><i class="bi bi-chat-left-text text-muted me-1"></i> <strong>Комментарий</strong></td>
