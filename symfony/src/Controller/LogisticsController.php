@@ -1050,7 +1050,7 @@ class LogisticsController extends AbstractController
                 if (!empty($response)) {$response .= '<br />';}
                 $response .= 'Заявка: №'.$applications[$i]->getId();
                 if (!empty($applications[$i]->getNumber())) {
-                    $response .= '('.$applications[$i]->getNumber().')<br />';
+                    $response .= ' ('.$applications[$i]->getNumber().')<br />';
                 }
                 $response .= 'Отправитель: '.$applications[$i]->getAuthor()->getShortUsername().'<br />';
                 $response .= 'Исполнитель: '.$responsibles[$i]->getShortUsername();
