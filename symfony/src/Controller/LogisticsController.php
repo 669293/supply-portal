@@ -993,4 +993,68 @@ class LogisticsController extends AbstractController
             'breadcrumbs' => $breadcrumbs
         ]);
     }
+
+    /**
+     * Получение информации для требований-накладных в старой базе
+     * @Route("/applications/logistics/info", methods={"GET"})
+     */
+    public function getInfo(
+        Request $request, 
+        ApplicationsRepository $applicationsRepository,
+        BillsMaterialsRepository $billsMaterialsRepository,
+        BillsRepository $billsRepository,
+        LogisticsRepository $logisticsRepository,
+    ) {
+        $secret = '4c261a55d6d9bf87b77e12292095b184';
+        if ($secret != $request->query->get('secret')) {die();}
+
+        //Получаем ID логистики
+        $id = $request->query->get('id');
+
+        $logistics = $logisticsRepository->findBy( array('id' => $id) );
+        if (sizeof($logistics) == 0 || $logistics === null) {return new RedirectResponse('/applications');}
+        if (is_array($logistics)) {$logistics = array_shift($logistics);}
+
+        //Получаем счет
+        $objBill = $logistics->getBill();
+        if ($objBill === null) {
+            $logistics_ = $logisticsRepository->findBy( array('id' => $logistics->getParent()) );
+            if (is_array($logistics_)) {$logistics_ = array_shift($logistics_);}
+            $objBill = $logistics_->getBill();
+        }
+
+        if ($objBill === null) {die();}
+
+        //Нашли счет, получаем материалы
+        $applications = [];
+        $responsibles = [];
+        $billMaterials = $billsMaterialsRepository->findBy(array('bill' => $objBill->getId()));
+        foreach ($billMaterials as $billMaterial) {
+            $exists = false;
+            foreach ($applications as $application) {
+                if ($application->getId() == $billMaterial->getMaterial()->getApplication()->getId()) {
+                    $exists = true; break;
+                }
+            }
+
+            if (!$exists) {
+                $applications[] = $billMaterial->getMaterial()->getApplication();
+                $responsibles[] = $billMaterial->getBill()->getUser();
+            }
+        }
+
+        if (sizeof($applications) == sizeof($responsibles)) {
+            $response = '';
+            
+            for ($i=0; $i < sizeof($applications); $i++) {
+                if (!empty($response)) {$response .= '<br />';}
+                $response .= 'Заявка: №'.$applications[$i]->getId();
+                if (!empty($applications[$i]->getNumber())) {
+                    $response .= '('.$applications[$i]->getNumber().')<br />';
+                }
+                $response .= 'Отправитель: '.$applications[$i]->getAuthor()->getShortUsername().'<br />';
+                $response .= 'Исполнитель: '.$responsibles[$i]->getShortUsername();
+            }
+        }
+    }
 }

@@ -49,6 +49,11 @@
         <option name="fixed"/>
       </options>
     </field>
+    <field name="isPrinted" type="boolean" column="is_printed" nullable="false">
+      <options>
+        <option name="default"/>
+      </options>
+    </field>
     <many-to-one field="&quot;user&quot;" target-entity="Users" fetch="LAZY">
       <join-columns>
         <join-column name="&quot;user&quot;" referenced-column-name="id"/>

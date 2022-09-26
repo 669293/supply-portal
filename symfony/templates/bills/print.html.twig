@@ -66,7 +66,7 @@
                         {% for bill in bills %}
                             <tr>
                                 <td class="align-middle text-center text-small">{{ loop.index }}</td>
-                                <td class="align-middle text-center"><input type="checkbox" name="bills[]" value="{{ bill.id }}" class="form-check-input bill-select" /></td>
+                                <td class="align-middle text-center"><input type="checkbox" name="bills[]" value="{{ bill.id }}" class="form-check-input bill-select{% if bill.obj.getIsPrinted %} is-valid{% endif %}" /></td>
                                 <td class="align-middle text-small text-nowrap">
                                 {% for application in bill.applications %}
                                     {% if loop.index > 1 %}<br />{% endif %}{{ application.getTitle }}<br /><span class="text-muted text-small"><a href="/applications/view?number={{ application.id }}" target="_blank">№{{ application.getId }} от {{ application.getDateCreate|date('d.m.Y') }}</a></span>
@@ -91,6 +91,9 @@
                                     <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-success" title="Распечатать на подпись" href="/applications/bills/download?id={{ bill.id }}" target="_blank"><i class="bi-printer"></i></a>
                                     <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-secondary filePreview" data-id="thumb-attachments-init-{{ fileId }}" title="Просмотр" href="#?" target="_blank"><i class="bi-zoom-in"></i></a>
                                     <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-secondary" title="Скачать файл" href="/upload/bills/{{ bill.obj.getPath }}" target="_blank"><i class="bi-download"></i></a>
+                                    {% if 'ROLE_ADMIN' in roles and bill.able_to_fix %}
+                                        <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-danger" title="Восстановить файл" href="/applications/bills/fix?id={{ bill.id }}"><i class="bi-tools"></i></a>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% set fileId = fileId + 1 %}

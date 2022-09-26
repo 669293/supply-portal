@@ -88,6 +88,13 @@ class Bills
      */
     private $comment;
 
+    /**
+     * @var bool
+     *
+     * @ORM\Column(name="is_printed", type="boolean", nullable=false)
+     */
+    private $isPrinted = false;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -205,6 +212,18 @@ class Bills
         } else {
             $this->comment = $comment;
         }
+
+        return $this;
+    }
+
+    public function getIsPrinted(): ?bool
+    {
+        return $this->isPrinted;
+    }
+
+    public function setIsPrinted(bool $isPrinted): self
+    {
+        $this->isPrinted = $isPrinted;
 
         return $this;
     }

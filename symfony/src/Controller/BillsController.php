@@ -112,11 +112,14 @@ class BillsController extends AbstractController
             }
 
             if (sizeof($materials) > 0) {
-                $application->materials = $materials;
-                $application->urgency = $applicationsRepository->getUrgency($application->getId());
-                $application->responsibles = $applicationsRepository->getResponsibles($application->getId());
-                $application->show = true;
-                $applications[] = $application;
+                //Проверяем статус заявки
+                if (!in_array($applicationsRepository->getStatus($application->getId()), [3,4,5])) {
+                    $application->materials = $materials;
+                    $application->urgency = $applicationsRepository->getUrgency($application->getId());
+                    $application->responsibles = $applicationsRepository->getResponsibles($application->getId());
+                    $application->show = true;
+                    $applications[] = $application;
+                }
             }
         }
 
@@ -172,13 +175,17 @@ class BillsController extends AbstractController
             $dirname = uniqid(); while (file_exists($this->getParameter('bills_directory').'/'.$dirname)) {$dirname = uniqid();} 
             mkdir($this->getParameter('bills_directory').'/'.$dirname, 0755);
 
+            //Новое имя с расширением файла в нижнем регистре
+            $pathInfo = pathinfo($file->getClientOriginalName());
+            $filename = $pathInfo['filename'].'.'.mb_strtolower($pathInfo['extension']);
+
             try {
                 $file->move(
                     $this->getParameter('bills_directory').'/'.$dirname,
-                    $file->getClientOriginalName()
+                    $filename
                 );
 
-                $result->path = $dirname.'/'.$file->getClientOriginalName();
+                $result->path = $dirname.'/'.$filename;
 
                 return new JsonResponse($result);
             } catch (FileException $e) {
@@ -376,6 +383,11 @@ class BillsController extends AbstractController
             $objBill = $billsRepository->findBy(array('id' => $bills_[$i]['id']));
             if (is_array($objBill)) {$objBill = array_shift($objBill);}
 
+            //Проверяем возможно ли восстановление файла из копии
+            $dirname = dirname($this->getParameter('bills_directory').'/'.$objBill->getPath());
+            $filename = basename($this->getParameter('bills_directory').'/'.$objBill->getPath());
+            $bills_[$i]['able_to_fix'] = false; if (file_exists($dirname.'/'.str_replace('.pdf', '.old.pdf', $filename))) {$bills_[$i]['able_to_fix'] = true;}
+
             //Получаем массив заявок по этому счету
             $applications = []; $urgency = false;
             $billMaterials = $billsMaterialsRepository->findBy(array('bill' => $bills_[$i]['id']));
@@ -463,92 +475,100 @@ class BillsController extends AbstractController
         // $nextStatus = $statusesOfBillsRepository->findBy(array('id' => 2));
         // if (is_array($nextStatus)) {$nextStatus = array_shift($nextStatus);}
 
-        foreach ($bills as $billId) {
-            //Получаем счет
-            $bill = $billsRepository->findBy(array('id' => $billId));
-            if (is_array($bill)) {$bill = array_shift($bill);}
+        try {
+            foreach ($bills as $billId) {
+                //Получаем счет
+                $bill = $billsRepository->findBy(array('id' => $billId));
+                if (is_array($bill)) {$bill = array_shift($bill);}
 
-            //Получаем массив заявок по этому счету
-            $applications = []; $urgency = false;
-            $billMaterials = $billsMaterialsRepository->findBy(array('bill' => $bill->getId()));
-            foreach ($billMaterials as $billMaterial) {
-                $exist = false;
+                $bill->setIsPrinted(true);
+                $this->entityManager->persist($bill);
+                $this->entityManager->flush();
+
+                //Получаем массив заявок по этому счету
+                $applications = []; $urgency = false;
+                $billMaterials = $billsMaterialsRepository->findBy(array('bill' => $bill->getId()));
+                foreach ($billMaterials as $billMaterial) {
+                    $exist = false;
+                    foreach ($applications as $application) {
+                        if ($application->getId() == $billMaterial->getMaterial()->getApplication()->getId()) {$exist = true; break;}
+                    }
+                    if (!$exist) {$applications[] = $billMaterial->getMaterial()->getApplication();}
+                    $urgency = $urgency || $billMaterial->getMaterial()->getUrgency();
+                }
+                
+                $titles = []; $title = '';
                 foreach ($applications as $application) {
-                    if ($application->getId() == $billMaterial->getMaterial()->getApplication()->getId()) {$exist = true; break;}
+                    $titles[] = '<span style="font-weight: bold;">'.$application->getId().( !empty($application->getNumber()) ? ' ['.$application->getNumber().']' : '' ).'</span> ('.$application->getAuthor()->getShortUsername().')';
+                    $title = $application->getId().( !empty($application->getNumber()) ? ' ['.$application->getNumber().']' : '' ).' ('.$application->getAuthor()->getShortUsername().')'; //Используется для формирования имени файла, если счет один
                 }
-                if (!$exist) {$applications[] = $billMaterial->getMaterial()->getApplication();}
-                $urgency = $urgency || $billMaterial->getMaterial()->getUrgency();
-            }
-            
-            $titles = []; $title = '';
-            foreach ($applications as $application) {
-                $titles[] = '<span style="font-weight: bold;">'.$application->getId().( !empty($application->getNumber()) ? ' ['.$application->getNumber().']' : '' ).'</span> ('.$application->getAuthor()->getShortUsername().')';
-                $title = $application->getId().( !empty($application->getNumber()) ? ' ['.$application->getNumber().']' : '' ).' ('.$application->getAuthor()->getShortUsername().')'; //Используется для формирования имени файла, если счет один
-            }
 
-            ob_start();
+                ob_start();
 
-            echo '<div style="border: 1px solid #f00; font-family: Tahoma, Serif; font-size: 12px; padding: 5px;">'."\n";
+                echo '<div style="border: 1px solid #f00; font-family: Tahoma, Serif; font-size: 12px; padding: 5px;">'."\n";
 
-            echo 'Заявка: '.implode(', ', $titles)."\n";
-            if ($urgency) {echo '<img style="float: right; height: 30px; margin-right: 3px; width: 30px;" src="img/exclamation-triangle.svg" alt="" />'."\n";}
-            echo '<br />Ответственный: '.$bill->getUser()->getShortUsername()."\n";
-            if (!empty($bill->getNote())) {echo '<br />Комментарий: <span style="color: #f00;">'.$bill->getNote().'</span>'."\n";}
+                echo 'Заявка: '.implode(', ', $titles)."\n";
+                if ($urgency) {echo '<img style="float: right; height: 30px; margin-right: 3px; width: 30px;" src="img/exclamation-triangle.svg" alt="" />'."\n";}
+                echo '<br />Ответственный: '.$bill->getUser()->getShortUsername()."\n";
+                if (!empty($bill->getNote())) {echo '<br />Комментарий: <span style="color: #f00;">'.$bill->getNote().'</span>'."\n";}
 
-            echo '</div>'."\n";
+                echo '</div>'."\n";
 
-            $header = ob_get_contents();
-            ob_end_clean();
-            
-            $mpdf->SetHTMLHeader($header);
+                $header = ob_get_contents();
+                ob_end_clean();
+                
+                $mpdf->SetHTMLHeader($header);
 
-            //Определяем расширение
-            $tmp = explode('.', basename($bill->getPath())); $ext = end($tmp); unset($tmp);
+                //Определяем расширение
+                $tmp = explode('.', basename($bill->getPath())); $ext = end($tmp); unset($tmp);
 
-            if ($ext == 'pdf') {
-                //Понижаем версию pdf до 1.4 для того чтобы mPDF могла его обработать
-                $filename = basename($this->getParameter('bills_directory').'/'.$bill->getPath());
-                $dirname = dirname($this->getParameter('bills_directory').'/'.$bill->getPath());
+                if ($ext == 'pdf') {
+                    //Понижаем версию pdf до 1.4 для того чтобы mPDF могла его обработать
+                    $filename = basename($this->getParameter('bills_directory').'/'.$bill->getPath());
+                    $dirname = dirname($this->getParameter('bills_directory').'/'.$bill->getPath());
 
-                rename($dirname.'/'.$filename, $dirname.'/old.pdf');
-                $cmd = 'gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -o '.$dirname.'/new.pdf '.$dirname.'/old.pdf';
-                $result = shell_exec($cmd);
-                rename($dirname.'/old.pdf', $dirname.'/'.str_replace('.pdf', '.old.pdf', $filename));
-                rename($dirname.'/new.pdf', $dirname.'/'.$filename);
+                    rename($dirname.'/'.$filename, $dirname.'/old.pdf');
+                    $cmd = 'gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -o '.$dirname.'/new.pdf '.$dirname.'/old.pdf';
+                    $result = shell_exec($cmd);
+                    rename($dirname.'/old.pdf', $dirname.'/'.str_replace('.pdf', '.old.pdf', $filename));
+                    rename($dirname.'/new.pdf', $dirname.'/'.$filename);
 
-                $pagesCount = $mpdf->SetSourceFile($this->getParameter('bills_directory').'/'.$bill->getPath());
+                    $pagesCount = $mpdf->SetSourceFile($this->getParameter('bills_directory').'/'.$bill->getPath());
 
-                for ($i=1; $i<=$pagesCount; $i++) {
-                    $tplId = $mpdf->ImportPage($i);
-                    $size = $mpdf->getTemplateSize($tplId);
-                    $mpdf->AddPage($size['orientation']);
-                    $k = ($size['height'] - 25) / $size['height'];
-                    $mpdf->useTemplate($tplId, 5, 25, ceil($size['width'] * $k), ceil($size['height'] * $k));
+                    for ($i=1; $i<=$pagesCount; $i++) {
+                        $tplId = $mpdf->ImportPage($i);
+                        $size = $mpdf->getTemplateSize($tplId);
+                        $mpdf->AddPage($size['orientation']);
+                        $k = ($size['height'] - 25) / $size['height'];
+                        $mpdf->useTemplate($tplId, 5, 25, ceil($size['width'] * $k), ceil($size['height'] * $k));
+                    }
+                } else {
+                    $mpdf->AddPage();
+                    $mpdf->WriteHTML('<img src="'.$this->getParameter('bills_directory').'/'.$bill->getPath().'" alt="'.$bill->getPath().'" style="margin-top: 50px;" />');
                 }
-            } else {
-                $mpdf->AddPage();
-                $mpdf->WriteHTML('<img src="'.$this->getParameter('bills_directory').'/'.$bill->getPath().'" alt="'.$bill->getPath().'" style="margin-top: 50px;" />');
+
+                // Получаем текущий статус
+                // $status = $billsStatusesRepository->createQueryBuilder('bs')
+                // ->select('IDENTITY(bs.status) AS status')
+                // ->where('bs.bill = :bill')
+                // ->setParameter('bill', $billId)
+                // ->orderBy('bs.datetime', 'DESC')
+                // ->setMaxResults(1)
+                // ->getQuery()
+                // ->getResult();
+                // if (is_array($status)) {$status = array_shift($status);}
+
+                // if ($status['status'] == 1) {
+                //     //Добавляем статус "Передан на оплату к счету"
+                //     $billStatus = new BillsStatuses();
+                //     $billStatus->setBill($bill);
+                //     $billStatus->setStatus($nextStatus);
+                //     $this->entityManager->persist($billStatus);
+                //     $this->entityManager->flush();
+                // }
             }
-
-            //Получаем текущий статус
-            // $status = $billsStatusesRepository->createQueryBuilder('bs')
-            // ->select('IDENTITY(bs.status) AS status')
-            // ->where('bs.bill = :bill')
-            // ->setParameter('bill', $billId)
-            // ->orderBy('bs.datetime', 'DESC')
-            // ->setMaxResults(1)
-            // ->getQuery()
-            // ->getResult();
-            // if (is_array($status)) {$status = array_shift($status);}
-
-            // if ($status['status'] == 1) {
-            //     //Добавляем статус "Передан на оплату к счету"
-            //     $billStatus = new BillsStatuses();
-            //     $billStatus->setBill($bill);
-            //     $billStatus->setStatus($nextStatus);
-            //     $this->entityManager->persist($billStatus);
-            //     $this->entityManager->flush();
-            // }
+        } catch (Exception $e) {
+            throw new Exception($e);
         }
 
         if (sizeof($bills) > 1) {
@@ -558,6 +578,34 @@ class BillsController extends AbstractController
         }
     }
 
+    /**
+     * Восстанавливает файл счета (принимает данные из URL)
+     * @Route("/applications/bills/fix", methods={"GET"}))
+     * @IsGranted("ROLE_ADMIN")
+     */
+    public function fixBillForm(Request $request, BillsRepository $billsRepository): Response
+    {
+        $billId = $request->query->get('id');
+
+        try {
+            $bill = $billsRepository->findBy(array('id' => $billId));
+            if (is_array($bill)) {$bill = array_shift($bill);}
+
+            //Восстанавливаем файл из копии
+            $filename = basename($this->getParameter('bills_directory').'/'.$bill->getPath());
+            $dirname = dirname($this->getParameter('bills_directory').'/'.$bill->getPath());
+
+            if (file_exists($dirname.'/'.str_replace('.pdf', '.old.pdf', $filename))) {
+                unlink($dirname.'/'.$filename);
+                rename($dirname.'/'.str_replace('.pdf', '.old.pdf', $filename), $dirname.'/'.$filename);
+            }
+        } catch (Exception $e) {
+            throw new Exception($e);
+        }
+
+        return new RedirectResponse('/applications/bills/print');
+    }
+    
     /**
      * Установка статуса нескольких заявок
      * @Route("/applications/bills/set-bill-status", methods={"POST"}))

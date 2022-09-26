@@ -35,7 +35,13 @@
             {% endif %}
             <p class="{% if 'ROLE_LOGISTICS' in roles %}mb-1{% else %}mb-3{% endif %} text-muted text-nowrap">{{ tree.logistics.getDate|date('d.m.Y') }} {% if tree.logistics.getWay != '' %}{{ tree.logistics.getWay }}{% if tree.logistics.getTrack != '' %} <i class="bi bi-arrow-right"></i> {{ tree.logistics.getTrack }}{% endif %}{% endif %}</p>
 
-            {% if tree.logistics.getBill %}<a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.logistics.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>{% endif %}
+            {% if tree.logistics.getBill %}
+                <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.logistics.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>
+            {% else %}
+                {% if tree.parent.getBill %}
+                    <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.parent.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>
+                {% endif %}
+            {% endif %}
             {% if 'ROLE_LOGISTICS' in roles %}
                 {% if tree.logistics.getOffice.getId == app.user.getOffice.getId and tree.avalibleMaterials %}
                     <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/logistics/add-info/?parent={{ tree.logistics.getId }}"><i class="bi bi-pencil"></i> Дополнить информацию на основании {% if tree.logistics.getType == 0 %}данного поступления{% else %}данной отгрузки{% endif %}</a>
@@ -134,7 +140,13 @@
                     {% endif %}
                     <p class="{% if 'ROLE_LOGISTICS' in roles %}mb-1{% else %}mb-3{% endif %} text-muted text-nowrap">{{ tree.logistics.getDate|date('d.m.Y') }} {% if tree.logistics.getWay != '' %}{{ tree.logistics.getWay }}{% if tree.logistics.getTrack != '' %} <i class="bi bi-arrow-right"></i> {{ tree.logistics.getTrack }}{% endif %}{% endif %}</p>
 
-                    {% if tree.logistics.getBill %}<a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.logistics.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>{% endif %}
+                    {% if tree.logistics.getBill %}
+                        <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.logistics.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>
+                    {% else %}
+                        {% if tree.parent.getBill %}
+                            <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.parent.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>
+                        {% endif %}
+                    {% endif %}
                     {% if 'ROLE_LOGISTICS' in roles %}
                         {% if tree.logistics.getOffice.getId == app.user.getOffice.getId and tree.avalibleMaterials %}
                             <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/logistics/add-info/?parent={{ tree.logistics.getId }}"><i class="bi bi-pencil"></i> Дополнить информацию на основании {% if tree.logistics.getType == 0 %}данного поступления{% else %}данной отгрузки{% endif %}</a>
@@ -238,7 +250,13 @@
         {% endif %}
         <p class="{% if 'ROLE_LOGISTICS' in roles %}mb-1{% else %}mb-3{% endif %} text-muted text-nowrap">{{ tree.logistics.getDate|date('d.m.Y') }} {% if tree.logistics.getWay != '' %}{{ tree.logistics.getWay }}{% if tree.logistics.getTrack != '' %} <i class="bi bi-arrow-right"></i> {{ tree.logistics.getTrack }}{% endif %}{% endif %}</p>
 
-        {% if tree.logistics.getBill %}<a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.logistics.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>{% endif %}
+        {% if tree.logistics.getBill %}
+            <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.logistics.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>
+        {% else %}
+            {% if tree.parent.getBill %}
+                <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.parent.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>
+            {% endif %}
+        {% endif %}
         {% if 'ROLE_LOGISTICS' in roles %}
             {% if tree.logistics.getOffice.getId == app.user.getOffice.getId and tree.avalibleMaterials %}
                 <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/logistics/add-info/?parent={{ tree.logistics.getId }}"><i class="bi bi-pencil"></i> Дополнить информацию на основании {% if tree.logistics.getType == 0 %}данного поступления{% else %}данной отгрузки{% endif %}</a>
