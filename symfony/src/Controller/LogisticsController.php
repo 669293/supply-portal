@@ -1056,5 +1056,7 @@ class LogisticsController extends AbstractController
                 $response .= 'Исполнитель: '.$responsibles[$i]->getShortUsername();
             }
         }
+
+        echo $response; die();
     }
 }
