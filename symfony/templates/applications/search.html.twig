@@ -42,6 +42,16 @@
                   {% if result.equipment %} ({{ result.equipment|highlight(q)|raw }}){% endif %}
                   <i class="bi bi-arrow-right"></i> Обработано {{ material.amountDone }} из {{ material.amount }}
                   {% if material.getResponsible != '' %} <i class="bi bi-arrow-right"></i> Ответственный: {{ material.getResponsible.getUsername }}{% endif %}
+                  {# Логистика #}
+                  {% if result.track[loop.index - 1] != '' or result.way[loop.index - 1] != '' %}
+                    <i class="bi bi-arrow-right"></i> Отгрузка: 
+                    {% if result.track[loop.index - 1] != '' and result.way[loop.index - 1] != '' %}
+                      {{ result.way[loop.index - 1]|highlight(q)|raw }} ({{ result.track[loop.index - 1]|highlight(q)|raw }})
+                    {% else %}
+                      {% if result.track[loop.index - 1] != '' %}{{ result.track[loop.index - 1]|highlight(q)|raw }}{% endif %}
+                      {% if result.way[loop.index - 1] != '' %}{{ result.way[loop.index - 1]|highlight(q)|raw }}{% endif %}
+                    {% endif %}  
+                  {% endif %}
                 </footer>
               {% endfor %}
             </blockquote>

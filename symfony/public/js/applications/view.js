@@ -552,4 +552,13 @@ $(document).ready(function() {
 
     return true;
   });
+
+  //Печать заявки для ответственных
+  $('#printForResponsible').click(function() {
+    $(this).closest('form').attr('action', '/applications/print?').submit();
+  });
+
+  $('#excelForResponsible').click(function() {
+    $(this).closest('form').attr('action', '/applications/export-to-excel?').submit();
+  });
 });

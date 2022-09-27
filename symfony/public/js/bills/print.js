@@ -47,6 +47,7 @@ $(document).ready(function() {
 
   //Отправка формы
   $('#sendBtn').click(function() {
+    $('.bill-select:checked').addClass('is-valid');
     $('#printBillsForm').submit();
   });
 

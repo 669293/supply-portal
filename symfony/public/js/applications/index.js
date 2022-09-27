@@ -65,6 +65,16 @@ $(document).ready(function() {
     $(this).closest('form').submit();
   });
 
+  $('#requestExcelBtn').click(function() {
+    $('input[name="typeOfRequest"]').val('excel');
+    $(this).closest('form').find('input[type="hidden"]').not('input[name="typeOfRequest"]').attr('name', '');
+    $('input[name="material[]"]:checked').each(function() {
+      $(this).closest('td').find('.amounts').attr('name', 'amount[]');
+      $(this).closest('td').find('.applications').attr('name', 'application[]');
+    });
+    $(this).closest('form').submit();
+  });
+
   $('#only_hurry').change(function() {
     $('.accordion-item').removeClass('d-none');
     $('.material-row').removeClass('d-none');

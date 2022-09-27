@@ -31,6 +31,7 @@ use App\Repository\BillsRepository;
 use App\Repository\BillsMaterialsRepository;
 use App\Repository\BillsStatusesRepository;
 use App\Repository\FilesRepository;
+use App\Repository\LogisticsRepository;
 use App\Repository\LogisticsMaterialsRepository;
 use App\Repository\MaterialsRepository;
 use App\Repository\MaterialsCommentsRepository;
@@ -391,6 +392,110 @@ class ApplicationsController extends AbstractController
             return $this->render('applications/request.html.twig', [
                 'materials' => $materialsList
             ]);
+        } elseif ($type == 'excel') {
+            // Формируем Excel
+            $objPHPExcel = new \PHPExcel();
+
+            //Свойства документа
+            $objPHPExcel->getProperties()->setTitle('Запрос к поставщику');
+            $objPHPExcel->getProperties()->setCompany('ЗАО «Артель старателей «Витим»');
+            $objPHPExcel->getProperties()->setCreated(date('d.m.Y'));
+    
+            //Создаем лист
+            $objPHPExcel->setActiveSheetIndex(0);
+            $sheet = $objPHPExcel->getActiveSheet();
+            $sheet->setTitle('Запрос к поставщику');
+            
+            //Формат
+            $sheet->getPageSetup()->SetPaperSize(\PHPExcel_Worksheet_PageSetup::PAPERSIZE_A4);
+            
+            //Ориентация
+            $sheet->getPageSetup()->setOrientation(\PHPExcel_Worksheet_PageSetup::ORIENTATION_LANDSCAPE); //ORIENTATION_PORTRAIT, ORIENTATION_LANDSCAPE
+            
+            //Поля
+            $sheet->getPageMargins()->setTop(1);
+            $sheet->getPageMargins()->setRight(0.75);
+            $sheet->getPageMargins()->setLeft(0.75);
+            $sheet->getPageMargins()->setBottom(1);
+    
+            //Задаем шапку
+            $sheet->setCellValueByColumnAndRow(0, 1, '№');
+            $sheet->setCellValueByColumnAndRow(1, 1, 'Наименование');
+            $sheet->setCellValueByColumnAndRow(2, 1, 'Ед.изм.');
+            $sheet->setCellValueByColumnAndRow(3, 1, 'Кол-во');
+            $sheet->setCellValueByColumnAndRow(4, 1, 'Вид техники');
+            $sheet->setCellValueByColumnAndRow(5, 1, 'Комментарий');
+            $sheet->setCellValueByColumnAndRow(6, 1, 'Номер заявки');
+            $sheet->setCellValueByColumnAndRow(7, 1, 'Срочность');
+    
+            $style = array(
+                'fill' => array(
+                    'type' => \PHPExcel_Style_Fill::FILL_SOLID,
+                    'color' => array('rgb' => 'EEEEEE')
+                ),
+                'font' => array(
+                    'size'      => 12,
+                    'bold'      => true
+                ),
+                'borders'=>array(
+                    'allborders' => array(
+                        'style' => \PHPExcel_Style_Border::BORDER_THIN,
+                        'color' => array('rgb' => '000000')
+                    )
+                )
+            );
+    
+            $sheet->getStyle('A1:H1')->applyFromArray($style);
+    
+            //Заполняем содержимое
+            $num = 0;
+            foreach ($materialsList as $row) {
+                $num++;
+
+                $sheet->setCellValueByColumnAndRow(0, $num + 1, $num);
+                $sheet->setCellValueByColumnAndRow(1, $num + 1, $row->material->getTitle());
+                $sheet->setCellValueByColumnAndRow(2, $num + 1, $row->material->getUnit()->getTitle());
+                $sheet->setCellValueByColumnAndRow(3, $num + 1, $row->material->getAmount());
+                $sheet->setCellValueByColumnAndRow(4, $num + 1, ( $row->material->getTypeOfEquipment() ? $row->material->getTypeOfEquipment()->getTitle() : '' ));
+                $sheet->setCellValueByColumnAndRow(5, $num + 1, $row->material->getComment());
+                $sheet->setCellValueByColumnAndRow(6, $num + 1, $row->application);
+
+                if ($row->material->getUrgency()) {
+                    $sheet->setCellValueByColumnAndRow(7, $num + 1, 'Срочно');
+                    $style = array(
+                        'font' => array(
+                            'color'     => array('rgb' => 'FF0000'),
+                            'bold'      => true
+                        )
+                    );
+            
+                    $sheet->getStyle('H'.($num + 1))->applyFromArray($style);
+                }
+            }
+    
+            $style = array(
+                'borders'=>array(
+                    'allborders' => array(
+                        'style' => \PHPExcel_Style_Border::BORDER_THIN,
+                        'color' => array('rgb' => '000000')
+                    )
+                )
+            );
+    
+            $sheet->getStyle('A2:H'.($num + 1))->applyFromArray($style);
+    
+            //Авто ширина колонки по содержимому
+            foreach(range('A','H') as $columnID) {
+                $sheet->getColumnDimension($columnID)->setAutoSize(TRUE);
+            }
+    
+            //Отдаем на скачивание
+            header('Content-type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment; filename=Запрос.xlsx');
+             
+            $objWriter = new \PHPExcel_Writer_Excel2007($objPHPExcel);
+            $objWriter->save('php://output'); 
+            exit();
         } else {
             // Формируем PDF
             ob_start();
@@ -2479,6 +2584,8 @@ HERE;
         ApplicationsRepository $applicationsRepository, 
         ApplicationsStatusesRepository $applicationsStatusesRepository,
         BillsMaterialsRepository $billsMaterialsRepository,
+        LogisticsRepository $logisticsRepository,
+        LogisticsMaterialsRepository $logisticsMaterialsRepository,
         MaterialsRepository $materialsRepository,
         TypesOfEquipmentRepository $typesOfEquipmentRepository
     ): Response
@@ -2506,6 +2613,8 @@ HERE;
                 $result->comment = '';
                 $result->number = '';
                 $result->equipment = '';
+                $result->way = '';
+                $result->track = '';
                 $results[] = $result;
                 unset($result);
             }
@@ -2533,6 +2642,8 @@ HERE;
                     $result->comment = $application->getComment();
                     $result->number = '';
                     $result->equipment = '';
+                    $result->way = '';
+                    $result->track = '';
                     $results[] = $result;
                     unset($result);
                 }
@@ -2561,6 +2672,8 @@ HERE;
                     $result->comment = '';
                     $result->number = $application->getNumber();
                     $result->equipment = '';
+                    $result->way = '';
+                    $result->track = '';
                     $results[] = $result;
                     unset($result);
                 }
@@ -2595,6 +2708,8 @@ HERE;
                             $result->comment = '';
                             $result->number = '';
                             $result->equipment = $toe->getTitle();
+                            $result->way = '';
+                            $result->track = '';
                             $results[] = $result;
                             unset($result);
                         }
@@ -2626,6 +2741,8 @@ HERE;
                         $result->comment = '';
                         $result->number = '';
                         $result->equipment = '';
+                        $result->way = '';
+                        $result->track = '';
                         $results[] = $result;
                         unset($result);
                     }
@@ -2634,6 +2751,41 @@ HERE;
 
             unset($materials);
 
+            //Выполняем поиск по логистике
+            $logistics = $logisticsRepository->findLike($q);
+            foreach ($logistics as $logistic) {
+                $logisticsMaterials = $logisticsMaterialsRepository->findBy(array('logistic' => $logistic->getId()));
+                foreach ($logisticsMaterials as $logisticsMaterial) {
+                    $material = $logisticsMaterial->getMaterial();
+
+                    $exists = false;
+                    for ($i=0; $i<sizeof($results); $i++) {
+                        if ($results[$i]->application->getId() == $material->getApplication()->getId()) {
+                            $exists = true;
+                            //Заявка уже существует в результатах, добавляем в нее материал
+                            array_push($results[$i]->materials, $material);
+                            array_push($results[$i]->way, $logistic->getWay());
+                            array_push($results[$i]->track, $logistic->getTrack());
+                        }
+                    }
+
+                    if (!$exists) {
+                        //Добавляем заявку в результаты
+                        $result = new \stdClass;
+                        $result->application = $material->getApplication();
+                        $result->materials = [$material];
+                        $result->comment = '';
+                        $result->number = '';
+                        $result->equipment = '';
+                        $result->way = [$logistic->getWay()];
+                        $result->track = [$logistic->getTrack()];
+                        $results[] = $result;
+                        unset($result);
+                    }
+                }
+            }
+
+            //Обрабатываем результаты
             for ($i=0; $i<sizeof($results); $i++) {
                 $results[$i]->applicationUrgency = $applicationsRepository->getUrgency($results[$i]->application->getId());
                 $results[$i]->status = $applicationsStatusesRepository->findBy( array('application' => $results[$i]->application->getId()), array('datetime' => 'DESC') )[0];
@@ -2945,6 +3097,7 @@ HERE;
         $roles = $this->security->getUser()->getRoles();
 
         $id = $request->query->get('number');
+        $user = $request->query->get('responsible');
         if ($id === null || empty($id) || !is_numeric($id)) {
             return new RedirectResponse('/applications');
         }
@@ -2962,7 +3115,12 @@ HERE;
         if (in_array('ROLE_SUPERVISOR', $roles)) {$canPrint = true;}
         if (in_array('ROLE_CREATOR', $roles) && $this->security->getUser()->getId() == $objApplication->getAuthor()->getId()) {$canPrint = true;}
 
-        $arrMaterials = $materialsRepository->findBy(array('application' => $id)); //Также пригодится потом
+        //Список материалов
+        if ($user !== null) {
+            $arrMaterials = $materialsRepository->findBy( array('application' => $objApplication->getId(), 'responsible' => (int)$user), array('num' => 'ASC') );
+        } else {
+            $arrMaterials = $materialsRepository->findBy( array('application' => $objApplication->getId()), array('num' => 'ASC') );
+        }
 
         if (in_array('ROLE_EXECUTOR', $roles)) {
             foreach ($arrMaterials as $material) {
@@ -2981,9 +3139,6 @@ HERE;
 
         //Заголовок
         $title = $objApplication->getTitle().' №'.$id;
-
-        //Список материалов
-        $arrMaterials = $materialsRepository->findBy( array('application' => $objApplication->getId()), array('num' => 'ASC') );
 
         //Список пользователей
         $users = $usersRepository->findByRole('ROLE_EXECUTOR');
@@ -3097,7 +3252,7 @@ HERE;
         foreach(range('A','H') as $columnID) {
             $sheet->getColumnDimension($columnID)->setAutoSize(TRUE);
         }
-        
+
         //Отдаем на скачивание
         header('Content-type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment; filename=Заявка '.$id.'.xlsx');

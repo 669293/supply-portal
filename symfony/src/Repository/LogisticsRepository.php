@@ -50,4 +50,20 @@ class LogisticsRepository extends ServiceEntityRepository
             ->getResult()
         ;
     }
+
+    // /**
+    //  * @return Logistics[] Returns an array of Logistics objects
+    //  */
+    public function findLike($value)
+    {
+        return $this->createQueryBuilder('l')
+            ->andWhere('LOWER(l.way) LIKE LOWER(:val) OR LOWER(l.track) LIKE LOWER(:val)')
+            ->setParameter('val', '%'.$value.'%')
+            ->orderBy('l.way', 'ASC')
+            ->setMaxResults(10)
+            ->distinct()
+            ->getQuery()
+            ->getResult()
+        ;
+    }
 }
