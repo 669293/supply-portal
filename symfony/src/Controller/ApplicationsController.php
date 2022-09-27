@@ -1270,7 +1270,7 @@ HERE;
     /**
      * Автозаполнение поля "Поставщик"
      * @Route("/autocomplete/provider", methods={"GET"})
-     * @IsGranted("ROLE_BUH")
+     * @IsGranted("ROLE_USER")
      */
     public function providerAutocomplete(Request $request, ProvidersRepository $providersRepository): JsonResponse
     {
@@ -1296,7 +1296,7 @@ HERE;
     /**
      * Получение информации по поставщику
      * @Route("/autocomplete/provider", methods={"POST"})
-     * @IsGranted("ROLE_BUH")
+     * @IsGranted("ROLE_USER")
      */
     public function providerInfo(Request $request, ProvidersRepository $providersRepository): Response
     {

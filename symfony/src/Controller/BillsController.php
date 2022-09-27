@@ -252,74 +252,76 @@ class BillsController extends AbstractController
                 $this->entityManager->flush();
 
                 //Привязываем счет к материалам
-                $materials = $request->request->get('material');
-                $amounts = $request->request->get('amount');
+                if ($request->request->get('notApplication') === NULL) {
+                    $materials = $request->request->get('material');
+                    $amounts = $request->request->get('amount');
 
-                //Массив заявок
-                $applications = [];
+                    //Массив заявок
+                    $applications = [];
 
-                for ($i=0; $i<sizeof($materials); $i++) {
-                    $objBillMaterial = new BillsMaterials;
-                    $objBillMaterial->setBill($objBill);
-                    $objBillMaterial->setAmount($amounts[$i]);
-                    $material = $materialsRepository->findBy(array('id' => (int)$materials[$i]))[0];
-                    $objBillMaterial->setMaterial($material);
+                    for ($i=0; $i<sizeof($materials); $i++) {
+                        $objBillMaterial = new BillsMaterials;
+                        $objBillMaterial->setBill($objBill);
+                        $objBillMaterial->setAmount($amounts[$i]);
+                        $material = $materialsRepository->findBy(array('id' => (int)$materials[$i]))[0];
+                        $objBillMaterial->setMaterial($material);
 
-                    $flag = false;
-                    foreach ($applications as $application) {
-                        if ($application->getId() == $material->getApplication()->getId()) {$flag = true; break;}
-                    }
-
-                    if (!$flag) {$applications[] = $material->getApplication();}
-
-                    //Записываем
-                    $this->entityManager->persist($objBillMaterial);
-                    $this->entityManager->flush();
-                }
-
-                //Возможно стоит обновить дату закрытия заявки и/или скрыть заявку из формы загрузки счета
-                foreach ($applications as $application) {
-                    $isChanged = false;
-
-                    //Проверяем, стоит ли обновить дату закрытия заявки
-                    $appDateClose = new \DateTime();
-                    $appDateClose->setTimestamp(strtotime('1970-01-01 00:00:01'));
-                    if ($application->getDateClose() !== null) {$appDateClose = $application->getDateClose();}
-
-                    if ($dateClose > $appDateClose) {
-                        $application->setDateClose($dateClose);
-                        $isChanged = true;
-                    }
-
-                    //Проверяем, все ли позиции в заявке закрыты
-                    $materials_ = $materialsRepository->findBy(array('application' => (int)$application->getId(), 'isDeleted' => false, 'impossible' => false, 'cash' => false));
-                    $flag = false;
-                    foreach ($materials_ as $material_) {
-                        //Получаем количество материала в заявке
-                        $applicationAmount = (int)$material_->getAmount();
-
-                        //Получаем количество материала в загруженных счетах
-                        $billsAmount = $billsMaterialsRepository->createQueryBuilder('bm')
-                        ->select('SUM(bm.amount) as amount')
-                        ->where('bm.material = :material')
-                        ->setParameter('material', $material_->getId())
-                        ->getQuery()->getResult();
-                        $billsAmount = (int)$billsAmount[0]['amount'];
-
-                        if ($applicationAmount != $billsAmount) {
-                            $flag = true; break;
+                        $flag = false;
+                        foreach ($applications as $application) {
+                            if ($application->getId() == $material->getApplication()->getId()) {$flag = true; break;}
                         }
-                    }
 
-                    if (!$flag) {
-                        $application->setIsBillsLoaded(true);
-                        $isChanged = true; 
-                    }
+                        if (!$flag) {$applications[] = $material->getApplication();}
 
-                    if ($isChanged) {
                         //Записываем
-                        $this->entityManager->persist($application);
+                        $this->entityManager->persist($objBillMaterial);
                         $this->entityManager->flush();
+                    }
+
+                    //Возможно стоит обновить дату закрытия заявки и/или скрыть заявку из формы загрузки счета
+                    foreach ($applications as $application) {
+                        $isChanged = false;
+
+                        //Проверяем, стоит ли обновить дату закрытия заявки
+                        $appDateClose = new \DateTime();
+                        $appDateClose->setTimestamp(strtotime('1970-01-01 00:00:01'));
+                        if ($application->getDateClose() !== null) {$appDateClose = $application->getDateClose();}
+
+                        if ($dateClose > $appDateClose) {
+                            $application->setDateClose($dateClose);
+                            $isChanged = true;
+                        }
+
+                        //Проверяем, все ли позиции в заявке закрыты
+                        $materials_ = $materialsRepository->findBy(array('application' => (int)$application->getId(), 'isDeleted' => false, 'impossible' => false, 'cash' => false));
+                        $flag = false;
+                        foreach ($materials_ as $material_) {
+                            //Получаем количество материала в заявке
+                            $applicationAmount = (int)$material_->getAmount();
+
+                            //Получаем количество материала в загруженных счетах
+                            $billsAmount = $billsMaterialsRepository->createQueryBuilder('bm')
+                            ->select('SUM(bm.amount) as amount')
+                            ->where('bm.material = :material')
+                            ->setParameter('material', $material_->getId())
+                            ->getQuery()->getResult();
+                            $billsAmount = (int)$billsAmount[0]['amount'];
+
+                            if ($applicationAmount != $billsAmount) {
+                                $flag = true; break;
+                            }
+                        }
+
+                        if (!$flag) {
+                            $application->setIsBillsLoaded(true);
+                            $isChanged = true; 
+                        }
+
+                        if ($isChanged) {
+                            //Записываем
+                            $this->entityManager->persist($application);
+                            $this->entityManager->flush();
+                        }
                     }
                 }
 
@@ -507,7 +509,11 @@ class BillsController extends AbstractController
 
                 echo '<div style="border: 1px solid #f00; font-family: Tahoma, Serif; font-size: 12px; padding: 5px;">'."\n";
 
-                echo 'Заявка: '.implode(', ', $titles)."\n";
+                if (sizeof($titles) > 0) {
+                    echo 'Заявка: '.implode(', ', $titles)."\n";
+                } else {
+                    echo 'Счет без заявки'."\n";
+                }
                 if ($urgency) {echo '<img style="float: right; height: 30px; margin-right: 3px; width: 30px;" src="img/exclamation-triangle.svg" alt="" />'."\n";}
                 echo '<br />Ответственный: '.$bill->getUser()->getShortUsername()."\n";
                 if (!empty($bill->getNote())) {echo '<br />Комментарий: <span style="color: #f00;">'.$bill->getNote().'</span>'."\n";}

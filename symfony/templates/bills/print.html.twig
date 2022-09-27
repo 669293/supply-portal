@@ -68,13 +68,18 @@
                                 <td class="align-middle text-center text-small">{{ loop.index }}</td>
                                 <td class="align-middle text-center"><input type="checkbox" name="bills[]" value="{{ bill.id }}" class="form-check-input bill-select{% if bill.obj.getIsPrinted %} is-valid{% endif %}" /></td>
                                 <td class="align-middle text-small text-nowrap">
-                                {% for application in bill.applications %}
-                                    {% if loop.index > 1 %}<br />{% endif %}{{ application.getTitle }}<br /><span class="text-muted text-small"><a href="/applications/view?number={{ application.id }}" target="_blank">№{{ application.getId }} от {{ application.getDateCreate|date('d.m.Y') }}</a></span>
-                                {% endfor %}
+                                    {% for application in bill.applications %}
+                                        {% if loop.index > 1 %}<br />{% endif %}{{ application.getTitle }}<br /><span class="text-muted text-small"><a href="/applications/view?number={{ application.id }}" target="_blank">№{{ application.getId }} от {{ application.getDateCreate|date('d.m.Y') }}</a></span>
+                                    {% endfor %}
+                                    {% if bill.applications|length == 0 %}<span class="text-muted">Счет без заявки</span>{% endif %}
                                 </td>
                                 <td class="align-middle text-xsmall text-nowrap">
-                                    {% for application in bill.applications %}{% if loop.index > 1 %}, {% endif %}{{ application.getAuthor.getShortUsername }}{% endfor %}
-                                    <br />{{ bill.obj.getUser.getShortUsername }}
+                                    {% if bill.applications|length == 0 %}
+                                        {{ bill.obj.getUser.getShortUsername }}
+                                    {% else %}
+                                        {% for application in bill.applications %}{% if loop.index > 1 %}, {% endif %}{{ application.getAuthor.getShortUsername }}{% endfor %}
+                                        <br />{{ bill.obj.getUser.getShortUsername }}
+                                    {% endif %}
                                 </td>
                                 <td class="align-middle text-xsmall text-nowrap">
                                     {{ bill.obj.sum|number_format(2, '.', ' ') }} {{ bill.obj.currency }}

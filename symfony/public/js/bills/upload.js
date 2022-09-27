@@ -277,6 +277,7 @@ $(document).ready(function() {
   function validateMaterials() {
     var valid = true;
     if ($('input[name="material[]"]:checked').length == 0) {valid = false;}
+    if ($('#notApplication').is(':checked')) {valid = true;}
     return valid;
   }
 
@@ -473,5 +474,15 @@ $(document).ready(function() {
       }
   }).on('fileuploaderror', function(event, data, msg) {
       fileUploadError = true;
+  });
+
+  //Загрузка счета без заявки
+  $('#notApplication').change(function() {
+    if ($(this).is(':checked')) {
+      $('#applicationsList').addClass('d-none');
+    } else {
+      $('#applicationsList').removeClass('d-none');
+    }
+    checkButtonState();
   });
 });
