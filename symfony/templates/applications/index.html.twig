@@ -202,7 +202,7 @@
     </form>
 
     {# Просроченные счета #}
-    {# {% if expired|length > 0 %}
+    {% if expired|length > 0 %}
       <p>Просроченные счета:</p>
       <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-1 pb-3">
         <table class="table table-sm table-hover table-bordered table-striped mb-0 us-none" id="billsTable">
@@ -253,13 +253,13 @@
             {% endfor %}
             </tbody>
         </table>
-      </div> #}
+      </div>
 
       {# Скрытый fileinput для инициализации предпросмотра #}
-      {# <div class="d-none">
+      <div class="d-none">
         <input id="attachments" type="file" name="" multiple="multiple" />
       </div>
-    {% endif %} #}
+    {% endif %}
 
     {# Активные заявки #}
     {# <p>Активные заявки:</p>

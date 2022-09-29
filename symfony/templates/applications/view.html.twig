@@ -154,7 +154,7 @@
                                                 {% if is_granted('ROLE_SUPERVISOR') and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
                                                     <div class="input-group input-group-sm" role="group">
                                                         <input type="hidden" name="bid[]" value="{{ bill.id }}" />
-                                                        <select class="form-select form-select-sm" name="bstatus[]">
+                                                        <select class="form-select form-select-sm" name="bstatus[]" data-current="{{ bill.status.getId }}">
                                                         {% for status in billsstatuses %}
                                                             <option value="{{ status.getId }}"{% if status.getId == bill.status.getId %} selected{% endif %}>{{ status.getTitle }}</option>
                                                         {% endfor %}

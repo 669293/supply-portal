@@ -222,6 +222,30 @@ $(document).ready(function() {
   $('#sendBtn').click(function() {
     appForm = $(this).closest('form');
 
+    //Проверяем, есть ли счета с отменой с удалением позиций
+    var needToCancelBills = false;
+    $('select[name="bstatus[]"]').each(function() {
+      if ($(this).data('current') != $(this).val() && $(this).val() == 10) {
+        needToCancelBills = true;
+      }
+    });
+
+    if (needToCancelBills) {
+        //Вызываем подтверждение
+        modalConfirm(function(confirm) {
+          if (confirm) {
+            sendForm(appForm);
+          }
+        }, 
+        'Вы отметили один или несколько счетов на отмену с закрытием заявки.<br />Вы уверены что хотите установить данный статус?<br /><span class="text-muted">Позиции к которым был привязан счет,<br />больше не будут учитываться в заявке.</span>',
+        'Отмена счета'
+        );
+    } else {
+      sendForm(appForm);
+    }
+  });
+
+  function sendForm(appForm) {
     //Преобразовываем списки ответственных
     $('select[name="mresponsible[]"]').each(function() {
       $(this).closest('td').find('input[type="hidden"]').attr('name', 'mid[]');
@@ -248,7 +272,7 @@ $(document).ready(function() {
         freezeForm(appForm, false);
       }
     });
-  });
+  }
 
   //Подстановка исходной позиции в модальное окно по замене позиции на аналоги
   const exampleModal = document.getElementById('splitModal');

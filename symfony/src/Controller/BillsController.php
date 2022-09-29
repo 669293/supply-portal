@@ -620,6 +620,10 @@ class BillsController extends AbstractController
     public function setStatuses(
         Request $request,
         BillsRepository $billsRepository,
+        BillsMaterialsRepository $billsMaterialsRepository,
+        BillsStatusesRepository $billsStatusesRepository,
+        MaterialsRepository $materialsRepository,
+        StatusesOfApplicationsRepository $statusesOfApplicationsRepository,
         StatusesOfBillsRepository $statusesOfBillsRepository
     ): JsonResponse
     {
@@ -665,6 +669,90 @@ class BillsController extends AbstractController
                             $billStatus->setStatus($status);
                             $this->entityManager->persist($billStatus);
                             $this->entityManager->flush();
+
+                            //Если статус отмена с закрытием заявки, изменяем количество материалов
+                            if ($statusID == 10) {
+                                $billMaterials = $billsMaterialsRepository->findBy( array('bill' => $billID) );
+                                foreach ($billMaterials as $billMaterial) {
+                                    $objMaterial = $billMaterial->getMaterial();
+                                    $application = $objMaterial->getApplication();
+
+                                    //Проверяем заявку, может нужно закрыть
+                                    //Получаем материалы в заявке
+                                    $applicationMaterials = $materialsRepository->createQueryBuilder('m')
+                                    ->where('m.application = :application')
+                                    ->setParameter('application', $application->getId())
+                                    ->getQuery()
+                                    ->getResult();
+
+                                    $canCloseApplication = true;
+                                    foreach ($applicationMaterials as $material) {
+                                        if (
+                                            !$material->getIsDeleted() &&
+                                            !$material->getCash() &&
+                                            !$material->getImpossible() &&
+                                            $material->getAmount() != 0
+                                        ) {
+                                            //Смотрим выставлен ли счет по материалу
+                                            $arrBillsMaterials = $billsMaterialsRepository->findBy( array('material' => $material->getId()) );
+
+                                            $allmaterialsDone = true;
+                                            if (sizeof($arrBillsMaterials) > 0) {
+                                                $cntInBills = 0;
+                                                foreach ($arrBillsMaterials as $billMaterial_) {
+                                                    $cntInBills += $billMaterial_->getAmount();
+                                                    $allBillsDone = true;
+                                                    //Проверяем статус счета
+                                                    if (
+                                                        $billMaterial_->getBill()->getId() != $bill->getId() &&
+                                                        $billsStatusesRepository->findBy(
+                                                            array('bill' => $billMaterial_->getBill()->getId()), 
+                                                            array('datetime' => 'DESC')
+                                                        )[0]->getStatus()->getId() != 5
+                                                    ) { //Не получен
+                                                        $canCloseApplication = false;
+                                                        break;
+                                                    }
+                                                }
+
+                                                //Смотрим, все ли количество покрыто счетами
+                                                if ($material->getAmount() > $cntInBills) {
+                                                    $allmaterialsDone = false;
+                                                }
+                                            }
+
+                                            if (!$allmaterialsDone) {
+                                                $canCloseApplication = false;
+                                            }
+                                        }
+                                    }
+
+                                    if ($canCloseApplication) {
+                                        //Можем закрывать заявку
+                                        //Обновляем дату закрытия
+                                        $dateClose = new \DateTime();
+                                        $application->setDateClose($dateClose);
+                                        $this->entityManager->persist($application);
+                                        $this->entityManager->flush();
+
+                                        //Получаем статус
+                                        $objStatus = $statusesOfApplicationsRepository->findBy( array('id' => 3) );
+                                        if (is_array($objStatus)) {$objStatus = array_shift($objStatus);}
+
+                                        //Добавляем статус в базу
+                                        $applicationStatus = new ApplicationsStatuses;
+                                        $applicationStatus->setApplication($application);
+                                        $applicationStatus->setStatus($objStatus);
+
+                                        $this->entityManager->persist($applicationStatus);
+                                        $this->entityManager->flush();
+                                    } else {
+                                        $application->setIsBillsLoaded(false);
+                                        $this->entityManager->persist($application);
+                                        $this->entityManager->flush();
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -791,6 +879,8 @@ class BillsController extends AbstractController
 
         $id = (int)$id; $bid = (int)$bid;
 
+        $this->entityManager->getConnection()->beginTransaction(); //Начинаем транзакцию
+
         try {
             //Удаляем счет
             $bill = $billsRepository->findBy( array('id' => $bid) );
@@ -799,23 +889,47 @@ class BillsController extends AbstractController
             $this->entityManager->remove($bill);
             $this->entityManager->flush();
 
-            //Убираем флаг из заявки о том что все счета загружены
-            $application = $applicationsRepository->findBy( array('id' => $id) );
-            if (is_array($application)) {$application = array_shift($application);}
+            if ($id != 0) {
+                //Убираем флаг из заявки о том что все счета загружены
+                $application = $applicationsRepository->findBy( array('id' => $id) );
+                if (is_array($application)) {$application = array_shift($application);}
 
-            $application->setIsBillsLoaded(false);
-            $this->entityManager->persist($application);
-            $this->entityManager->flush();
-
-
-            if (file_exists($this->getParameter('bills_directory').'/'.$bill->getPath())) {
-                unlink($this->getParameter('bills_directory').'/'.$bill->getPath());
-                rmdir(dirname($this->getParameter('bills_directory').'/'.$bill->getPath()));
+                $application->setIsBillsLoaded(false);
+                $this->entityManager->persist($application);
+                $this->entityManager->flush();
             }
 
-            return new RedirectResponse('/applications/view?number='.$id);
+            $this->cleanDir(dirname($this->getParameter('bills_directory').'/'.$bill->getPath()));
+            rmdir(dirname($this->getParameter('bills_directory').'/'.$bill->getPath()));
+            // if (file_exists($this->getParameter('bills_directory').'/'.$bill->getPath())) {
+            //     unlink($this->getParameter('bills_directory').'/'.$bill->getPath());
+            //     rmdir(dirname($this->getParameter('bills_directory').'/'.$bill->getPath()));
+            // }
+
+            $this->entityManager->getConnection()->commit();
+
+            if ($id == 0) {
+                return new Response();
+            } else {
+                return new RedirectResponse('/applications/view?number='.$id);
+            }
         } catch (FileException $e) {
+            $this->entityManager->getConnection()->rollBack();
+
             return new RedirectResponse('/applications/view?number='.$id);
+        }
+    }
+
+    //Функция очистки дирректории
+    function cleanDir($dir) {
+        $files = glob($dir."/*");
+        $c = count($files);
+        if (count($files) > 0) {
+            foreach ($files as $file) {      
+                if (file_exists($file)) {
+                unlink($file);
+                }   
+            }
         }
     }
 
@@ -1477,42 +1591,53 @@ class BillsController extends AbstractController
                 //Получаем материалы в заявке
                 $applicationMaterials = $materialsRepository->createQueryBuilder('m')
                 ->where('m.application = :application')
-                ->andWhere('m.isDeleted = FALSE')
-                ->andWhere('m.cash = FALSE')
-                ->andWhere('m.impossible = FALSE')
                 ->setParameter('application', $application->getId())
                 ->getQuery()
                 ->getResult();
 
-                $mIds = [];
-                foreach ($applicationMaterials as $material) {$mIds[] = $material->getId();}
+                $canCloseApplication = true;
+                foreach ($applicationMaterials as $material) {
+                    if (
+                        !$material->getIsDeleted() &&
+                        !$material->getCash() &&
+                        !$material->getImpossible() &&
+                        $material->getAmount() != 0
+                    ) {
+                        //Смотрим выставлен ли счет по материалу
+                        $arrBillsMaterials = $billsMaterialsRepository->findBy( array('material' => $material->getId()) );
 
-                $closed = true;
+                        $allmaterialsDone = true;
+                        if (sizeof($arrBillsMaterials) > 0) {
+                            $cntInBills = 0;
+                            foreach ($arrBillsMaterials as $billMaterial_) {
+                                $cntInBills += $billMaterial_->getAmount();
+                                $allBillsDone = true;
+                                //Проверяем статус счета
+                                if (
+                                    $billsStatusesRepository->findBy(
+                                        array('bill' => $billMaterial_->getBill()->getId()), 
+                                        array('datetime' => 'DESC')
+                                    )[0]->getStatus()->getId() != 5
+                                ) { //Не получен
+                                    $canCloseApplication = false;
+                                    break;
+                                }
+                            }
 
-                //Получаем список счетов
-                $bills = [];
-                foreach ($mIds as $material) {
-                    $arrBillsMaterials = $billsMaterialsRepository->findBy(array('material' => $material));
+                            //Смотрим, все ли количество покрыто счетами
+                            if ($material->getAmount() > $cntInBills) {
+                                $allmaterialsDone = false;
+                            }
+                        }
 
-                    if (sizeof($arrBillsMaterials) == 0) {
-                        $closed = false; break;
-                    }
-
-                    foreach ($arrBillsMaterials as $billMaterial) {
-                        $bills[] = $billMaterial->getBill()->getId();
+                        if (!$allmaterialsDone) {
+                            $canCloseApplication = false;
+                        }
                     }
                 }
-                $bills = array_unique($bills);
 
-                foreach ($bills as $bill) {
-                    if ($billsStatusesRepository->findBy(array('bill' => $bill), array('datetime' => 'DESC'))[0]->getStatus()->getId() != 5) { //Получен
-                        $closed = false; break;
-                    }
-                }
-
-                if ($closed) {
+                if ($canCloseApplication) {
                     //Можем закрывать заявку
-
                     //Обновляем дату закрытия
                     $dateClose = new \DateTime();
                     $application->setDateClose($dateClose);

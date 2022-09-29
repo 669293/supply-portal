@@ -85,9 +85,9 @@ class ApplicationsRepository extends ServiceEntityRepository
             ->where('aps_.application = a.id')
             ->getDQL()
             .')')
+        ->groupBy('aps.status')
         ->getDQL()
         ;
-
         //Подзапрос возвращает дату/время статуса
         $statusDatetimeQuery = $this->entityManager->getRepository(ApplicationsStatuses::class)->createQueryBuilder('aps__')
         ->select('max(aps__.datetime)')

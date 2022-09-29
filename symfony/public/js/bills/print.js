@@ -63,29 +63,46 @@ $(document).ready(function() {
   //Изменение статуса нескольких заявок
   $('#setBtn').click(function() {
     if ($('#setStatus').val() != '') {
-      //Блокируем форму
       appForm = $(this).closest('form');
-      freezeForm(appForm);
 
-      var bills = [];
-      $('.bill-select:checked').each(function() {
-        bills.push($(this).val());
-      });
-
-      //Отправляем запрос на добавление комментарий
-      $.post('/applications/bills/set-bill-status', { bills: JSON.stringify(bills), status: $('#setStatus').val(), token: $('input[name="token"]').val() })
-      .done(function( data ) {
-        if ($.isArray(data) && data[0] == 1) {
-          //Все хорошо
-          freezeForm(appForm, false);
-          location.reload();
-        } else {
-          showFormAlert(appForm, data[1]);
-          freezeForm(appForm, false);
-        }
-      });
+      if ($('#setStatus').val() == 10) {
+        //Вызываем подтверждение
+        modalConfirm(function(confirm) {
+          if (confirm) {
+            sendForm(appForm);
+          }
+        }, 
+        'Вы уверены что хотите пометить данный счет как отмененный?<br /><span class="text-muted">Позиции к которым был привязан этот счет,<br />больше не будут учитываться в заявке.</span>',
+        'Отмена счета'
+        );
+      } else {
+        sendForm(appForm);
+      }
     }
   });
+
+  function sendForm(appForm) {
+    //Блокируем форму
+    freezeForm(appForm);
+
+    var bills = [];
+    $('.bill-select:checked').each(function() {
+      bills.push($(this).val());
+    });
+
+    //Отправляем запрос на добавление комментарий
+    $.post('/applications/bills/set-bill-status', { bills: JSON.stringify(bills), status: $('#setStatus').val(), token: $('input[name="token"]').val() })
+    .done(function( data ) {
+      if ($.isArray(data) && data[0] == 1) {
+        //Все хорошо
+        freezeForm(appForm, false);
+        location.reload();
+      } else {
+        showFormAlert(appForm, data[1]);
+        freezeForm(appForm, false);
+      }
+    });
+  }
 
   //Подсказка о количестве выбранных позиций
   $('body').on('change', 'input[name="bills[]"]', function() {
@@ -105,5 +122,37 @@ $(document).ready(function() {
 
     $('.popover').popover('hide');
     $(this).popover('show');
+  });
+
+  //Удаление счета
+  $('.remove-bill-btn').click(function() {
+    var tr = $(this).closest('tr');
+    var table = $(this).closest('table');
+    var bid = $(this).data('id');
+    var sum = $(this).data('sum');
+    var title = $(this).data('name');
+
+    //Вызываем подтверждение
+    modalConfirm(function(confirm) {
+      if (confirm) {
+        $.post('/applications/bills/remove', {'bid': bid, 'id': 0})
+        .done(function( data ) {
+          tr.hide('fast', function() {
+            tr.remove();
+
+            //Проверяем, если счетов больше не осталось
+            if (table.find('tbody tr').length == 0) {
+              table.closest('form').hide('fast', function() { 
+                table.closest('form').remove(); 
+                $('.bills-info').show('fast');
+              });
+            }
+          });
+        });
+      }
+    }, 
+    'Вы уверены что хотите удалить данный счет?<br /><span class="text-muted">Файл: ' + title + '<br />Сумма: ' + sum + '</span>',
+    'Удаление счета'
+    );
   });
 });

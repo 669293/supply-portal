@@ -144,7 +144,7 @@ class Applications
         return $this->number;
     }
 
-    public function setNumber(string $number): self
+    public function setNumber($number): self
     {
         $this->number = $number;
 

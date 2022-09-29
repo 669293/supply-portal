@@ -60,7 +60,43 @@ class ApplicationsController extends AbstractController
      */
     public function getPrintBillsCount(): int
     {
-        $sql = "SELECT res_.id AS id FROM (SELECT DISTINCT res.bid AS id, (SELECT aps.status FROM applications_statuses aps WHERE aps.application = a.id ORDER BY id DESC OFFSET 0 LIMIT 1) AS status FROM (SELECT bs.bill AS bid, (SELECT bs2.status FROM bills_statuses bs2 WHERE bs2.id = MAX(bs.id)) FROM bills_statuses bs GROUP BY bs.bill) res, applications a, bills_materials bm, materials m WHERE bm.bill = res.bid AND bm.material = m.id AND m.application = a.id AND res.status = 1) res_ WHERE res_.status NOT IN (3,4,5);";
+        $sql = "
+            SELECT 
+                res_.id AS id 
+            FROM 
+                (
+                SELECT DISTINCT 
+                    res.bid AS id, 
+                    CASE
+                        WHEN (SELECT count(bm.id) FROM bills_materials bm WHERE bm.bill = res.bid) > 0 THEN
+                            (
+                            SELECT 
+                                aps.status 
+                            FROM 
+                                applications a,
+                                applications_statuses aps, 
+                                bills_materials bm, 
+                                materials m 
+                            WHERE 
+                                aps.application = a.id AND 
+                                bm.bill = res.bid AND 
+                                bm.material = m.id AND 
+                                m.application = a.id
+                            ORDER BY aps.id DESC OFFSET 0 LIMIT 1
+                            )
+                        ELSE 0
+                    END AS application_status
+                FROM (
+                    SELECT bs.bill AS bid, (
+                        SELECT bs2.status FROM bills_statuses bs2 WHERE bs2.id = MAX(bs.id)
+                    ) AS status FROM bills_statuses bs GROUP BY bs.bill
+                ) res 
+                WHERE 
+                    res.status = 1
+                ) res_ 
+            WHERE 
+                res_.application_status NOT IN (3,4,5);
+        ";
         $stmt = $this->entityManager->getConnection()->prepare($sql);
         $stmt->execute();
         $bills_ = $stmt->fetchAllAssociative();
@@ -120,7 +156,6 @@ class ApplicationsController extends AbstractController
         $activeApplications = [];
         if (in_array('ROLE_EXECUTOR', $roles)) {
             //Получаем заявки и позиции, по которым не выставлены счета
-
             $sql = '
                 SELECT
                     res.aid AS aid,
@@ -203,7 +238,32 @@ class ApplicationsController extends AbstractController
             }
 
             //Получаем список счетов по которым провалены сроки
-            $sql = "SELECT res.bid AS id FROM (SELECT bs.bill AS bid, (SELECT bs2.status FROM bills_statuses bs2 WHERE bs2.id = MAX(bs.id)) FROM bills_statuses bs GROUP BY bs.bill) res, bills b WHERE res.bid = b.id AND res.status <> 5 AND b.date_close < '".date('Y-m-d')."';";
+            $sql = "
+                SELECT 
+                    res.bid AS id 
+                FROM 
+                    (
+                    SELECT 
+                        bs.bill AS bid, 
+                        (
+                        SELECT 
+                            bs2.status 
+                        FROM 
+                            bills_statuses bs2
+                        WHERE 
+                            bs2.id = MAX(bs.id)
+                        ) 
+                    FROM 
+                        bills_statuses bs 
+                    GROUP BY bs.bill
+                    ) res, 
+                    bills b 
+                WHERE 
+                    res.bid = b.id AND 
+                    res.status <> 5 AND 
+                    b.date_close < '".date('Y-m-d')."' AND
+                    b.user = 1;
+            ";
             $stmt = $this->entityManager->getConnection()->prepare($sql);
             $stmt->execute();
             $bills_ = $stmt->fetchAllAssociative();
@@ -1781,7 +1841,11 @@ HERE;
                 //Начинаем запись, пишем данные в таблицу applications
                 $application->setTitle($request->request->get('titleApp'));
                 $application->setComment($request->request->get('commentApp'));
-                $application->setNumber($request->request->get('additionalNumApp'));
+                if (!empty($request->request->get('additionalNumApp'))) {
+                    $application->setNumber($request->request->get('additionalNumApp'));
+                } else {
+                    $application->setNumber(null);
+                }
 
                 if ($materialsAdded) {
                     $application->setIsBillsLoaded(false);
@@ -2425,6 +2489,8 @@ HERE;
         ApplicationsStatusesRepository $applicationsStatusesRepository, 
         ApplicationsRepository $applicationsRepository, 
         BillsRepository $billsRepository, 
+        BillsMaterialsRepository $billsMaterialsRepository,
+        BillsStatusesRepository $billsStatusesRepository,
         MaterialsRepository $materialsRepository, 
         UsersRepository $usersRepository, 
         ResponsibleLog $responsibleLog = null,
@@ -2453,7 +2519,7 @@ HERE;
                         //Получаем счет
                         $bill = $billsRepository->findBy( array('id' => $arrBID[$i]) );
                         if (sizeof($bill) > 0) {
-                            $bill = $bill[0];
+                            if (is_array($bill)) {$bill = array_shift($bill);}
                         
                             //Получаем статус
                             $status = $statusesOfBillsRepository->findBy( array('id' => $arrBStatus[$i]) );
@@ -2468,6 +2534,90 @@ HERE;
                                     $billStatus->setStatus($status);
                                     $this->entityManager->persist($billStatus);
                                     $this->entityManager->flush();
+
+                                    //Если статус равен отмене с закрытием заявки
+                                    if ($arrBStatus[$i] == 10) {
+                                        $billMaterials = $billsMaterialsRepository->findBy( array('bill' => $bill->getId()) );
+                                        foreach ($billMaterials as $billMaterial) {
+                                            $objMaterial = $billMaterial->getMaterial();
+                                            $application = $objMaterial->getApplication();
+                
+                                            //Проверяем заявку, может нужно закрыть
+                                            //Получаем материалы в заявке
+                                            $applicationMaterials = $materialsRepository->createQueryBuilder('m')
+                                            ->where('m.application = :application')
+                                            ->setParameter('application', $application->getId())
+                                            ->getQuery()
+                                            ->getResult();
+                
+                                            $canCloseApplication = true;
+                                            foreach ($applicationMaterials as $material) {
+                                                if (
+                                                    !$material->getIsDeleted() &&
+                                                    !$material->getCash() &&
+                                                    !$material->getImpossible() &&
+                                                    $material->getAmount() != 0
+                                                ) {
+                                                    //Смотрим выставлен ли счет по материалу
+                                                    $arrBillsMaterials = $billsMaterialsRepository->findBy( array('material' => $material->getId()) );
+                
+                                                    $allmaterialsDone = true;
+                                                    if (sizeof($arrBillsMaterials) > 0) {
+                                                        $cntInBills = 0;
+                                                        foreach ($arrBillsMaterials as $billMaterial_) {
+                                                            $cntInBills += $billMaterial_->getAmount();
+                                                            $allBillsDone = true;
+                                                            //Проверяем статус счета
+                                                            if (
+                                                                $billMaterial_->getBill()->getId() != $bill->getId() &&
+                                                                $billsStatusesRepository->findBy(
+                                                                    array('bill' => $billMaterial_->getBill()->getId()), 
+                                                                    array('datetime' => 'DESC')
+                                                                )[0]->getStatus()->getId() != 5
+                                                            ) { //Не получен
+                                                                $canCloseApplication = false;
+                                                                break;
+                                                            }
+                                                        }
+                
+                                                        //Смотрим, все ли количество покрыто счетами
+                                                        if ($material->getAmount() > $cntInBills) {
+                                                            $allmaterialsDone = false;
+                                                        }
+                                                    }
+                
+                                                    if (!$allmaterialsDone) {
+                                                        $canCloseApplication = false;
+                                                    }
+                                                }
+                                            }
+                
+                                            if ($canCloseApplication) {
+                                                //Можем закрывать заявку
+                                                //Обновляем дату закрытия
+                                                $dateClose = new \DateTime();
+                                                $application->setDateClose($dateClose);
+                                                $this->entityManager->persist($application);
+                                                $this->entityManager->flush();
+                
+                                                //Получаем статус
+                                                $objStatus = $statusesOfApplicationsRepository->findBy( array('id' => 3) );
+                                                if (is_array($objStatus)) {$objStatus = array_shift($objStatus);}
+                
+                                                //Добавляем статус в базу
+                                                $applicationStatus = new ApplicationsStatuses;
+                                                $applicationStatus->setApplication($application);
+                                                $applicationStatus->setStatus($objStatus);
+                
+                                                $this->entityManager->persist($applicationStatus);
+                                                $this->entityManager->flush();
+                                            } else {
+                                                $application->setIsBillsLoaded(false);
+                                                $this->entityManager->persist($application);
+                                                $this->entityManager->flush();
+                                            }
+                                        }
+                                    }   
                                 }
                             }
                         }
@@ -2491,6 +2641,7 @@ HERE;
                                     if ($material->getResponsible() === null || $material->getResponsible()->getId() != $user->getId()) {
                                         //Если были изменения по ответственным, вносим их
                                         $material->setResponsible($user);
+                                        $material->setRequested(FALSE);
                                         $this->entityManager->persist($material);
                                         $this->entityManager->flush();
         
