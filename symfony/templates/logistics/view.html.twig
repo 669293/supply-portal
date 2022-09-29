@@ -35,6 +35,14 @@
             {% endif %}
             <p class="{% if 'ROLE_LOGISTICS' in roles %}mb-1{% else %}mb-3{% endif %} text-muted text-nowrap">{{ tree.logistics.getDate|date('d.m.Y') }} {% if tree.logistics.getWay != '' %}{{ tree.logistics.getWay }}{% if tree.logistics.getTrack != '' %} <i class="bi bi-arrow-right"></i> {{ tree.logistics.getTrack }}{% endif %}{% endif %}</p>
 
+            {% if tree.applications and tree.applications|length > 0 %}
+                {% for application in tree.applications %}
+                    {% if loop.index > 1 %}<br />{% endif %}
+                    <span class="text-muted"><a href="/applications/view?number={{ application.getId }}" target="_blank">Заявка №{{ application.getId }}</a>{% if application.getNumber %} ({{ application.getNumber }}){% endif %} Отправитель: {{ application.getAuthor.getShortUserName }}</span>
+                {% endfor %}
+                <div class="clearfix mb-2"></div>
+            {% endif %}
+
             {% if tree.logistics.getBill %}
                 <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.logistics.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>
             {% else %}
@@ -139,6 +147,14 @@
                         </p>
                     {% endif %}
                     <p class="{% if 'ROLE_LOGISTICS' in roles %}mb-1{% else %}mb-3{% endif %} text-muted text-nowrap">{{ tree.logistics.getDate|date('d.m.Y') }} {% if tree.logistics.getWay != '' %}{{ tree.logistics.getWay }}{% if tree.logistics.getTrack != '' %} <i class="bi bi-arrow-right"></i> {{ tree.logistics.getTrack }}{% endif %}{% endif %}</p>
+
+                    {% if tree.applications and tree.applications|length > 0 %}
+                        {% for application in tree.applications %}
+                            {% if loop.index > 1 %}<br />{% endif %}
+                            <span class="text-muted"><a href="/applications/view?number={{ application.getId }}" target="_blank">Заявка №{{ application.getId }}</a>{% if application.getNumber %} ({{ application.getNumber }}){% endif %} Отправитель: {{ application.getAuthor.getShortUserName }}</span>
+                        {% endfor %}
+                        <div class="clearfix mb-2"></div>
+                    {% endif %}
 
                     {% if tree.logistics.getBill %}
                         <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.logistics.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>
@@ -250,6 +266,14 @@
         {% endif %}
         <p class="{% if 'ROLE_LOGISTICS' in roles %}mb-1{% else %}mb-3{% endif %} text-muted text-nowrap">{{ tree.logistics.getDate|date('d.m.Y') }} {% if tree.logistics.getWay != '' %}{{ tree.logistics.getWay }}{% if tree.logistics.getTrack != '' %} <i class="bi bi-arrow-right"></i> {{ tree.logistics.getTrack }}{% endif %}{% endif %}</p>
 
+        {% if tree.applications and tree.applications|length > 0 %}
+            {% for application in tree.applications %}
+                {% if loop.index > 1 %}<br />{% endif %}
+                <span class="text-muted"><a href="/applications/view?number={{ application.getId }}" target="_blank">Заявка №{{ application.getId }}</a>{% if application.getNumber %} ({{ application.getNumber }}){% endif %} Отправитель: {{ application.getAuthor.getShortUserName }}</span>
+            {% endfor %}
+            <div class="clearfix mb-2"></div>
+        {% endif %}
+ 
         {% if tree.logistics.getBill %}
             <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.logistics.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>
         {% else %}

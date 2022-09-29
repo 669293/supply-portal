@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Bills;
+use App\Entity\BillsMaterials;
 use App\Entity\BillsStatuses;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -22,6 +23,19 @@ class BillsRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Bills::class);
         $this->entityManager = $entityManager;
+    }
+
+    public function getApplications($bill_id) {
+        $applications = $this->entityManager->getRepository(BillsMaterials::class)->createQueryBuilder('bm')
+        ->select('a')
+        ->where('bm.bill = :bid')
+        ->join('App\Entity\Materials', 'm', 'WITH' ,'m.id = bm.material')
+        ->join('App\Entity\Applications', 'a', 'WITH' ,'a.id = m.application')
+        ->setParameter('bid', $bill_id)
+        ->getQuery()
+        ->getResult();
+
+        return $applications;
     }
 
     public function getStatus($bill_id): int

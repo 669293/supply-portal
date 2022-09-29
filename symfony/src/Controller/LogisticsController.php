@@ -14,6 +14,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Entity\Bills;
 use App\Entity\Logistics;
 use App\Entity\LogisticsMaterials;
 use App\Entity\Materials;
@@ -279,6 +280,12 @@ class LogisticsController extends AbstractController
             unset($objFile);
         }
         $tmp->photos = $arrPhotos;
+
+        //Получаем список заявок
+        $tmp->applications = [];
+        if ($logistics->getBill()) {
+            $tmp->applications = $this->entityManager->getRepository(Bills::class)->getApplications( $logistics->getBill()->getId() );
+        }
 
         return $tmp;
     }
