@@ -290,7 +290,13 @@
                                     {% else %}
                                         {% if material.bills %}
                                             {% for bill in material.bills %}
-                                                <a title="Информация по счету" href="/applications/bills/in-work/view/?id={{ bill.id }}"><i class="bi bi-plus-circle"></i></a>
+                                                <a 
+                                                    title="Счет {{ bill.getPath|replace({ (bill.getPath|split('/')|first ~ '/'): '' }) }}" 
+                                                    data-bs-toggle="popover" 
+                                                    data-bs-trigger="hover focus" 
+                                                    data-bs-html="true" 
+                                                    data-bs-content="Сумма: {{ bill.getSum|number_format(2, '.', ' ') }} {{ bill.getCurrency }}{% if bill.getComment %}<br />Доп. информация: {{ bill.getComment }}{% endif %}{% if bill.getNote %}<br />Комментарий: {{ bill.getNote }}{% endif %}<br />Количество: {{ material.counts[loop.index - 1] }}"
+                                                    href="/applications/bills/in-work/view/?id={{ bill.id }}"><i class="bi bi-plus-circle"></i></a>
                                             {% endfor %}
                                         {% else %}
                                             <i class="bi bi-slash text-muted"></i>

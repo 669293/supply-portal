@@ -2124,8 +2124,10 @@ HERE;
             //Подгружаем счета
             $billsTmp = $billsMaterialsRepository->findBy(array('material' => $arrMaterials[$i]->getId()));
             $arrMaterials[$i]->bills = [];
+            $arrMaterials[$i]->counts = [];
             foreach($billsTmp as $bill) {
                 $arrMaterials[$i]->bills[] = $bill->getBill();
+                $arrMaterials[$i]->counts[] = $bill->getAmount();
             }
 
             //Сообщения к материалам
