@@ -2131,7 +2131,7 @@ HERE;
                 if ($logisticsMaterials !== null && sizeof($logisticsMaterials) > 0) {
                     foreach ($logisticsMaterials as $logisticsMaterial) {
                         $logistic = $logisticsMaterial->getLogistics();
-                        if ($logistic->getBill()->getId() == $bill->getBill()->getId()) {
+                        if ($logistic->getBill() && $bill->getBill() && $logistic->getBill()->getId() == $bill->getBill()->getId()) {
                             $tmp[] = $logistic;
                         }
                     }
