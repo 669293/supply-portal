@@ -285,23 +285,50 @@
                                 <td class="align-middle text-center text-xsmall">{{ material.getUnit.getTitle }}</td>
                                 <td class="align-middle text-center text-xsmall">{{ material.done }} / {{ material.getAmount }}</td>
                                 <td class="align-middle text-center">
-                                    {% if material.logistics %}
-                                        <a href="/applications/logistics/view/?material={{ material.id }}&application={{ application.getId }}"><i class="bi bi-box-seam"></i></a>
-                                    {% else %}
-                                        {% if material.bills %}
-                                            {% for bill in material.bills %}
+                                    {% if material.bills %}
+                                        {% set hasLogistics = false %}
+                                        {% set logisticsInfo = '' %}
+                                        {% set counter = 0 %}
+                                        {% for bill in material.bills %}
+                                            {% if material.logistics[ loop.index0 ]|length > 0 %}
+                                                {% set hasLogistics = true %}
+                                                {% for logistics in material.logistics[ loop.index0 ] %}
+                                                    {% if counter > 0 %}{% set logisticsInfo = logisticsInfo ~ '<hr />' %}{% endif %}
+                                                    {% if logistics.type == 0 %}
+                                                        {% set logisticsInfo = logisticsInfo ~ '<span class="text-primary">Получение</span>' %}
+                                                    {% else %}
+                                                        {% set logisticsInfo = logisticsInfo ~ '<span class="text-primary">Отгрузка</span>' %}
+                                                    {% endif %}
+                                                    {% set logisticsInfo = logisticsInfo ~ '<br /><span class="text-muted">Счет:</span> ' ~ bill.getNum %}
+                                                    {% set logisticsInfo = logisticsInfo ~ '<br /><span class="text-muted">Файл:</span> ' ~ bill.getPath|replace({ (bill.getPath|split('/')|first ~ '/'): '' }) %}
+                                                    {% set logisticsInfo = logisticsInfo ~ '<br /><span class="text-muted">Сумма:</span> ' ~ bill.getSum|number_format(2, '.', ' ') ~ bill.getCurrency %}
+                                                    {% if logistics.getWay %}{% set logisticsInfo = logisticsInfo ~ '<br /><span class="text-muted">Способ отправки:</span> ' ~ logistics.getWay %}{% endif %}
+                                                    {% if logistics.getTrack %}{% set logisticsInfo = logisticsInfo ~ '<br /><span class="text-muted">Трек-номер:</span> ' ~ logistics.getTrack %}{% endif %}
+                                                    {% if logistics.getDocinfo %}{% set logisticsInfo = logisticsInfo ~ '<br /><span class="text-muted">Документы:</span> ' ~ logistics.getDocinfo %}{% endif %}
+                                                    {% set counter = counter + 1 %}
+                                                {% endfor %}
+                                            {% else %}
                                                 <a 
-                                                    title="Счет {{ bill.getPath|replace({ (bill.getPath|split('/')|first ~ '/'): '' }) }}" 
+                                                    title="Счет {{ bill.getNum }}" 
                                                     data-bs-toggle="popover" 
                                                     data-bs-trigger="hover focus" 
                                                     data-bs-html="true" 
-                                                    data-bs-content="Сумма: {{ bill.getSum|number_format(2, '.', ' ') }} {{ bill.getCurrency }}{% if bill.getComment %}<br />Доп. информация: {{ bill.getComment }}{% endif %}{% if bill.getNote %}<br />Комментарий: {{ bill.getNote }}{% endif %}<br />Количество: {{ material.counts[loop.index - 1] }}"
+                                                    data-bs-content="Файл: {{ bill.getPath|replace({ (bill.getPath|split('/')|first ~ '/'): '' }) }}<br />Сумма: {{ bill.getSum|number_format(2, '.', ' ') }} {{ bill.getCurrency }}{% if bill.getComment %}<br />Доп. информация: {{ bill.getComment }}{% endif %}{% if bill.getNote %}<br />Комментарий: {{ bill.getNote }}{% endif %}<br />Количество: {{ material.counts[loop.index - 1] }}"
                                                     href="/applications/bills/in-work/view/?id={{ bill.id }}"><i class="bi bi-plus-circle"></i></a>
-                                            {% endfor %}
-                                        {% else %}
-                                            <i class="bi bi-slash text-muted"></i>
-                                        {% endif %}        
-                                    {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+
+                                        {% if hasLogistics %}                                            
+                                            <a 
+                                                data-bs-toggle="popover" 
+                                                data-bs-trigger="hover focus" 
+                                                data-bs-html="true" 
+                                                data-bs-content="{{ logisticsInfo }}"
+                                                href="/applications/logistics/view/?material={{ material.id }}&application={{ application.getId }}"><i class="bi bi-box-seam"></i></a>
+                                        {% endif %}
+                                    {% else %}
+                                        <i class="bi bi-slash text-muted"></i>
+                                    {% endif %}  
                                 </td>
                                 <td class="align-middle text-xsmall">{% if material.getTypeOfEquipment != null %}{{ material.getTypeOfEquipment.getTitle }}{% endif %}</td>
                                 <td class="align-middle text-xsmall">{{ material.getComment }}</td>

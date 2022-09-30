@@ -262,7 +262,7 @@ class ApplicationsController extends AbstractController
                     res.bid = b.id AND 
                     res.status <> 5 AND 
                     b.date_close < '".date('Y-m-d')."' AND
-                    b.user = 1;
+                    b.user = ".$this->security->getUser()->getId().";
             ";
             $stmt = $this->entityManager->getConnection()->prepare($sql);
             $stmt->execute();
@@ -2062,11 +2062,6 @@ HERE;
             //Получаем лог изменения статусов ответственных
             $arrMaterials[$i]->log = $responsibleLogRepository->findBy( array('material' => $arrMaterials[$i]->getId()) );
 
-            //Смотрим, есть ли логистическая информация
-            $logistics = $logisticsMaterialsRepository->findBy( array('material' => $arrMaterials[$i]->getId()) );
-            if ($logistics !== null && sizeof($logistics) > 0) {$arrMaterials[$i]->logistics = true;} else {$arrMaterials[$i]->logistics = false;}
-            unset($logistics);
-
             //Смотрим возможность дубликата
             //Получаем интервал дат, на которых смотрятся дубликаты
             $from = new \DateTime($objApplication->getDateCreate()->format('Y-m-d').' 00:00:00');
@@ -2125,9 +2120,23 @@ HERE;
             $billsTmp = $billsMaterialsRepository->findBy(array('material' => $arrMaterials[$i]->getId()));
             $arrMaterials[$i]->bills = [];
             $arrMaterials[$i]->counts = [];
+            $arrMaterials[$i]->logistics = [];
             foreach($billsTmp as $bill) {
                 $arrMaterials[$i]->bills[] = $bill->getBill();
                 $arrMaterials[$i]->counts[] = $bill->getAmount();
+
+                //Смотрим, есть ли логистическая информация по счетам
+                $tmp = [];
+                $logisticsMaterials = $logisticsMaterialsRepository->findBy( array('material' => $arrMaterials[$i]->getId()) );
+                if ($logisticsMaterials !== null && sizeof($logisticsMaterials) > 0) {
+                    foreach ($logisticsMaterials as $logisticsMaterial) {
+                        $logistic = $logisticsMaterial->getLogistics();
+                        if ($logistic->getBill()->getId() == $bill->getBill()->getId()) {
+                            $tmp[] = $logistic;
+                        }
+                    }
+                }
+                $arrMaterials[$i]->logistics[] = $tmp;
             }
 
             //Сообщения к материалам
