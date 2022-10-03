@@ -277,7 +277,7 @@ class Users implements UserInterface, PasswordAuthenticatedUserInterface
 
     // Замена ФИО для скрытых пользователей
     private const REPLACEMENTS = [
-        ['Стрежнев Иван Владимирович', 'Лаптев Денис Олегович'],
+        ['Стрежнев Иван Викторович', 'Лаптев Денис Олегович'],
         ['Стрежнев И.В.', 'Лаптев Д.О.']
     ];
 
@@ -294,6 +294,7 @@ class Users implements UserInterface, PasswordAuthenticatedUserInterface
                             if ($row[0] == $result) {return $row[1];}
                         }
                     }
+
                     return $result;
                 } else {
                     return $result;    
