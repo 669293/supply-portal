@@ -72,7 +72,7 @@
                         {% for bill in bills %}
                             <tr>
                                 <td class="align-middle text-center text-small">{{ loop.index }}</td>
-                                <td class="align-middle text-center"><input type="checkbox" name="bills[]" value="{{ bill.id }}" class="form-check-input bill-select{% if bill.obj.getIsPrinted %} is-valid{% endif %}" /></td>
+                                <td class="align-middle text-center"><input type="checkbox" name="bills[]" value="{{ bill.id }}" class="form-check-input bill-select{% if bill.obj.getIsPrinted %} is-valid{% endif %}" data-sum="{{ bill.obj.getSum }}" data-currency="{{ bill.obj.getCurrency }}" /></td>
                                 <td class="align-middle text-small text-nowrap">
                                     {% for application in bill.applications %}
                                         {% if loop.index > 1 %}<br />{% endif %}{{ application.getTitle }}<br /><span class="text-muted text-small"><a href="/applications/view?number={{ application.id }}" target="_blank">№{{ application.getId }} от {{ application.getDateCreate|date('d.m.Y') }}</a></span>
@@ -208,7 +208,7 @@
         };
     </script>
     {% endif %}
-    <script src="{{ asset('js/bills/print.js?r=1') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/bills/print.js?r=2') }}" type="text/javascript"></script>
 
     {% if scripts is defined %}
 {{ scripts|raw }}

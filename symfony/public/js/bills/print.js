@@ -109,10 +109,40 @@ $(document).ready(function() {
     //Количество выбраных позиций
     var cnt = $('input[name="bills[]"]:checked').length;
 
+    //Получаем суммы выбранных счетов
+    var sums = [];
+    $('input[name="bills[]"]:checked').each(function() {
+      var sum = $(this).data('sum');
+      var currency = $(this).data('currency');
+
+      var exists = false;
+      for (var i = 0; i < sums.length; i++) {
+        if (sums[i][0] == currency) {
+          sums[i][1] = Number(sums[i][1]) + Number(sum);
+          exists = true;
+          break;
+        }
+      }
+
+      if (!exists) {
+        var tmp = [];
+        tmp[0] = currency;
+        tmp[1] = Number(sum);
+        sums.push(tmp);
+      }
+    });
+
     $(this).attr('data-bs-container', 'body');
     $(this).attr('data-bs-toggle', 'popover');
     $(this).attr('data-bs-placement', 'left');
-    $(this).attr('data-bs-content',  'Выбрано: ' + cnt);
+    $(this).attr('data-bs-html', 'true');
+
+    var info = 'Выбрано: ' + cnt;
+    sums.forEach((element) => {
+      info += '<br />' + element[1] + ' ' + element[0];
+    });
+
+    $(this).attr('data-bs-content', info);
 
     //Инициализируем popover
     var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
