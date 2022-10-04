@@ -139,7 +139,7 @@ $(document).ready(function() {
 
     var info = 'Выбрано: ' + cnt;
     sums.forEach((element) => {
-      info += '<br />' + element[1] + ' ' + element[0];
+      info += '<br />' + element[1].toLocaleString() + ' ' + element[0];
     });
 
     $(this).attr('data-bs-content', info);
