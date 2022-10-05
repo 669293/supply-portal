@@ -299,9 +299,11 @@
                                                     {% else %}
                                                         {% set logisticsInfo = logisticsInfo ~ '<span class="text-primary">Отгрузка</span>' %}
                                                     {% endif %}
-                                                    {% set logisticsInfo = logisticsInfo ~ '<br /><span class="text-muted">Счет:</span> ' ~ bill.getNum %}
-                                                    {% set logisticsInfo = logisticsInfo ~ '<br /><span class="text-muted">Файл:</span> ' ~ bill.getPath|replace({ (bill.getPath|split('/')|first ~ '/'): '' }) %}
-                                                    {% if 'ROLE_THIEF' not in roles %}{% set logisticsInfo = logisticsInfo ~ '<br /><span class="text-muted">Сумма:</span> ' ~ bill.getSum|number_format(2, '.', ' ') ~ bill.getCurrency %}{% endif %}
+                                                    {% if 'ROLE_THIEF' not in roles %}
+                                                        {% set logisticsInfo = logisticsInfo ~ '<br /><span class="text-muted">Счет:</span> ' ~ bill.getNum %}
+                                                        {% set logisticsInfo = logisticsInfo ~ '<br /><span class="text-muted">Файл:</span> ' ~ bill.getPath|replace({ (bill.getPath|split('/')|first ~ '/'): '' }) %}
+                                                        {% set logisticsInfo = logisticsInfo ~ '<br /><span class="text-muted">Сумма:</span> ' ~ bill.getSum|number_format(2, '.', ' ') ~ bill.getCurrency %}
+                                                    {% endif %}
                                                     {% if logistics.getWay %}{% set logisticsInfo = logisticsInfo ~ '<br /><span class="text-muted">Способ отправки:</span> ' ~ logistics.getWay %}{% endif %}
                                                     {% if logistics.getTrack %}{% set logisticsInfo = logisticsInfo ~ '<br /><span class="text-muted">Трек-номер:</span> ' ~ logistics.getTrack %}{% endif %}
                                                     {% if logistics.getDocinfo %}{% set logisticsInfo = logisticsInfo ~ '<br /><span class="text-muted">Документы:</span> ' ~ logistics.getDocinfo %}{% endif %}

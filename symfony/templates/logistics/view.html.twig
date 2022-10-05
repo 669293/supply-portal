@@ -28,7 +28,7 @@
             {% if tree.logistics.getDocInfo != '' or tree.logistics.getSum != '' %}
                 <p class="mb-0 text-muted">
                     {% if tree.logistics.getDocInfo != '' %}Информация о документе: {{ tree.logistics.getDocInfo }} {% endif %}
-                    {% if tree.logistics.getSum != '' %}
+                    {% if tree.logistics.getSum != '' and 'ROLE_THIEF' not in roles %}
                         {% if tree.logistics.getDocInfo == '' %}На сумму: {% else %} на сумму {% endif %}{{ tree.logistics.getSum|number_format(2, '.', ' ') }} {{ tree.logistics.getBill.getCurrency }}
                     {% endif %}
                 </p>
@@ -141,7 +141,7 @@
                     {% if tree.logistics.getDocInfo != '' or tree.logistics.getSum != '' %}
                         <p class="mb-0 text-muted">
                             {% if tree.logistics.getDocInfo != '' %}Информация о документе: {{ tree.logistics.getDocInfo }} {% endif %}
-                            {% if tree.logistics.getSum != '' %}
+                            {% if tree.logistics.getSum != '' and 'ROLE_THIEF' not in roles %}
                                 {% if tree.logistics.getDocInfo == '' %}На сумму: {% else %} на сумму {% endif %}{{ tree.logistics.getSum|number_format(2, '.', ' ') }} {{ tree.logistics.getBill.getCurrency }}
                             {% endif %}
                         </p>
@@ -259,7 +259,7 @@
         {% if tree.logistics.getDocInfo != '' or tree.logistics.getSum != '' %}
             <p class="mb-0 text-muted">
                 {% if tree.logistics.getDocInfo != '' %}Информация о документе: {{ tree.logistics.getDocInfo }} {% endif %}
-                {% if tree.logistics.getSum != '' %}
+                {% if tree.logistics.getSum != '' and 'ROLE_THIEF' not in roles %}
                     {% if tree.logistics.getDocInfo == '' %}На сумму: {% else %} на сумму {% endif %}{{ tree.logistics.getSum|number_format(2, '.', ' ') }} {{ tree.logistics.getBill.getCurrency }}
                 {% endif %}
             </p>
