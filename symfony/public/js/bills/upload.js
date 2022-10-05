@@ -485,4 +485,35 @@ $(document).ready(function() {
     }
     checkButtonState();
   });
+
+  //Добавление поставщика
+  //Получаем instance модального окна
+  const providerModal = new bootstrap.Modal(document.getElementById('providerModal'));
+
+  //Редактирование информации о поставщике
+  $('#addProviderBtn').click(function() {
+    var form = $('#providerForm');
+    
+    formData = form.serialize();
+    freezeForm(form);
+
+    $.ajax({
+      type: form.attr('method'),
+      url: form.attr('action'),
+      data: formData
+    }).done(function(data) {
+      if ($.isArray(data) && data[0] == 1) {
+        //Все хорошо
+        freezeForm(form, false);
+
+        $('#innInput').val($('#providerForm input[name="inn"]').val());
+        $('#providerForm').trigger("reset");
+
+        providerModal.hide();
+      } else {
+        showFormAlert(form, data[1]);
+        freezeForm(form, false);
+      }
+    });
+  });
 });

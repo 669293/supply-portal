@@ -142,3 +142,9 @@ html.dark .color-picker .color-picker-color-dot-wrapper {
 html.dark .color-picker .color-picker-canvas-wrapper {
     background: #222222;
 }
+
+html.dark .bootstrap-select .status,
+html.dark .bootstrap-select .dropdown-menu,
+html.dark .bootstrap-select .dropdown-toggle {
+    background: #222222;
+}

@@ -192,11 +192,54 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                     </div>
                     <div class="modal-body">
-                        <select id="innSelect" class="selectpicker with-ajax w-100" data-live-search="true"></select>
+                        <div class="input-group">
+                            <select id="innSelect" class="selectpicker with-ajax form-control w-auto" data-live-search="true"></select>
+                            <button type="button" class="btn btn-outline-success" data-bs-target="#providerModal" data-bs-toggle="modal" data-bs-dismiss="modal"><i class="bi bi-plus"></i></button>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="setBtn">Применить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="providerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="/applications/bills/provider" method="POST" id="providerForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Добавление поставщика</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="title" placeholder=" " value="" name="title" />
+                            <label for="title">Наименование поставщика</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="inn" placeholder=" " value="" name="inn" />
+                            <label for="inn">ИНН</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="address" placeholder=" " value="" name="address" />
+                            <label for="address">Почтовый адрес</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="phone" placeholder=" " value="" name="phone" />
+                            <label for="phone">Телефон</label>
+                        </div>
+                        <div class="form-floating">
+                            <textarea class="form-control" placeholder="Комментарий" id="commentTextarea" style="height: 100px" name="comment"></textarea>
+                            <label for="commentTextarea">Комментарий</label>
+                        </div>
                     </div>
                     <div class="modal-footer">
                       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
-                      <button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="setBtn">Применить</button>
+                      <button type="button" class="btn btn-primary" id="addProviderBtn">Добавить</button>
+                      <div class="spinner-border text-primary d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
                     </div>
                 </form>
             </div>
