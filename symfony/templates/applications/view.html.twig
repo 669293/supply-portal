@@ -308,13 +308,17 @@
                                                     {% set counter = counter + 1 %}
                                                 {% endfor %}
                                             {% else %}
-                                                <a 
-                                                    title="Счет {{ bill.getNum }}" 
-                                                    data-bs-toggle="popover" 
-                                                    data-bs-trigger="hover focus" 
-                                                    data-bs-html="true" 
-                                                    data-bs-content="Файл: {{ bill.getPath|replace({ (bill.getPath|split('/')|first ~ '/'): '' }) }}<br />Сумма: {{ bill.getSum|number_format(2, '.', ' ') }} {{ bill.getCurrency }}{% if bill.getComment %}<br />Доп. информация: {{ bill.getComment }}{% endif %}{% if bill.getNote %}<br />Комментарий: {{ bill.getNote }}{% endif %}<br />Количество: {{ material.counts[loop.index - 1] }}"
-                                                    href="/applications/bills/in-work/view/?id={{ bill.id }}"><i class="bi bi-plus-circle"></i></a>
+                                                {% if 'ROLE_THIEF' not in roles %}
+                                                    <a 
+                                                        title="Счет {{ bill.getNum }}" 
+                                                        data-bs-toggle="popover" 
+                                                        data-bs-trigger="hover focus" 
+                                                        data-bs-html="true" 
+                                                        data-bs-content="Файл: {{ bill.getPath|replace({ (bill.getPath|split('/')|first ~ '/'): '' }) }}<br />Сумма: {{ bill.getSum|number_format(2, '.', ' ') }} {{ bill.getCurrency }}{% if bill.getComment %}<br />Доп. информация: {{ bill.getComment }}{% endif %}{% if bill.getNote %}<br />Комментарий: {{ bill.getNote }}{% endif %}<br />Количество: {{ material.counts[loop.index - 1] }}"
+                                                        href="/applications/bills/in-work/view/?id={{ bill.id }}"><i class="bi bi-plus-circle"></i></a>
+                                                {% else %}
+                                                    <i class="bi bi-slash text-muted"></i>
+                                                {% endif %}            
                                             {% endif %}
                                         {% endfor %}
 

@@ -43,10 +43,10 @@
                 <div class="clearfix mb-2"></div>
             {% endif %}
 
-            {% if tree.logistics.getBill %}
+            {% if tree.logistics.getBill and 'ROLE_THIEF' not in roles %}
                 <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.logistics.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>
             {% else %}
-                {% if tree.parent.getBill %}
+                {% if tree.parent.getBill and 'ROLE_THIEF' not in roles %}
                     <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.parent.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>
                 {% endif %}
             {% endif %}
@@ -156,10 +156,10 @@
                         <div class="clearfix mb-2"></div>
                     {% endif %}
 
-                    {% if tree.logistics.getBill %}
+                    {% if tree.logistics.getBill and 'ROLE_THIEF' not in roles %}
                         <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.logistics.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>
                     {% else %}
-                        {% if tree.parent.getBill %}
+                        {% if tree.parent.getBill and 'ROLE_THIEF' not in roles %}
                             <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.parent.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>
                         {% endif %}
                     {% endif %}
@@ -274,10 +274,10 @@
             <div class="clearfix mb-2"></div>
         {% endif %}
  
-        {% if tree.logistics.getBill %}
+        {% if tree.logistics.getBill and 'ROLE_THIEF' not in roles %}
             <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.logistics.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>
         {% else %}
-            {% if tree.parent and tree.parent.getBill %}
+            {% if tree.parent and tree.parent.getBill and 'ROLE_THIEF' not in roles %}
                 <a type="button" class="btn btn-sm btn-outline-primary text-start mb-3 me-2" href="/applications/bills/in-work/view?id={{ tree.parent.getBill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>
             {% endif %}
         {% endif %}
