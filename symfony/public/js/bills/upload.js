@@ -490,7 +490,6 @@ $(document).ready(function() {
   //Получаем instance модального окна
   const providerModal = new bootstrap.Modal(document.getElementById('providerModal'));
 
-  //Редактирование информации о поставщике
   $('#addProviderBtn').click(function() {
     var form = $('#providerForm');
     

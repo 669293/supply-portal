@@ -148,3 +148,7 @@ html.dark .bootstrap-select .dropdown-menu,
 html.dark .bootstrap-select .dropdown-toggle {
     background: #222222;
 }
+
+html.dark .btn-light {
+    border-color: #515151;
+}

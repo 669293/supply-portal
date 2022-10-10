@@ -421,6 +421,22 @@ class BillsController extends AbstractController
             unset($objBill, $billMaterials);
         }
 
+        //Сортируем счета по номерам заявок
+        for ($i=0; $i<sizeof($bills); $i++) {
+            for ($j=$i+1; $j<sizeof($bills); $j++) {
+                //Получаем минимальный номер заявок
+                $min_a = $bills[$i]['applications'][0]; for ($k=1; $k<sizeof($bills[$i]['applications']); $k++) { if ($bills[$i]['applications'][$k] < $min_a) {$min_a = $bills[$i]['applications'][$k];} }
+                $min_b = $bills[$j]['applications'][0]; for ($k=1; $k<sizeof($bills[$j]['applications']); $k++) { if ($bills[$j]['applications'][$k] < $min_b) {$min_b = $bills[$j]['applications'][$k];} }
+                if ($min_b < $min_a) {
+                    //Меняем местами
+                    $tmp = $bills[$i];
+                    $bills[$i] = $bills[$j];
+                    $bills[$j] = $tmp;
+                    unset($tmp);
+                }
+            }
+        }
+
         //Хлебные крошки
         $breadcrumbs = [];
         $breadcrumbs[0] = new \stdClass();
