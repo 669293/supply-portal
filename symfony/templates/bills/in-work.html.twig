@@ -123,7 +123,6 @@
                     <div class="form-floating">
                         <select class="form-select" id="filterSelect">
                             <option selected disabled>Выберите</option>
-                            <option>Не назначен</option>
                             {% for user in users %}
                                 <option>{{ user.getShortUserName }}</option>
                             {% endfor %}

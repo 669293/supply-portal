@@ -369,7 +369,8 @@ class BillsController extends AbstractController
         BillsStatusesRepository $billsStatusesRepository, 
         BillsRepository $billsRepository, 
         BillsMaterialsRepository $billsMaterialsRepository,
-        StatusesOfBillsRepository $statusesOfBillsRepository
+        StatusesOfBillsRepository $statusesOfBillsRepository,
+        UsersRepository $usersRepository
     ): Response
     {
         //Получаем список счетов на оплату
@@ -437,6 +438,9 @@ class BillsController extends AbstractController
             }
         }
 
+        //Список пользователей
+        $users = $usersRepository->findByRole('ROLE_EXECUTOR');
+
         //Хлебные крошки
         $breadcrumbs = [];
         $breadcrumbs[0] = new \stdClass();
@@ -450,7 +454,8 @@ class BillsController extends AbstractController
             'title' => 'Печать счетов',
             'breadcrumbs' => $breadcrumbs,
             'bills' => $bills,
-            'statuses' => $statusesOfBillsRepository->findAll()
+            'statuses' => $statusesOfBillsRepository->findAll(),
+            'users' => $users
         ]);
     }
 
