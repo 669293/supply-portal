@@ -1217,7 +1217,7 @@ class BillsController extends AbstractController
 
         //Проверяем может ли пользователь смотреть содержимое этого счета
         $canSee = false;
-        if (in_array('ROLE_SUPERVISOR', $roles) || in_array('ROLE_LOGISTICS', $roles) || in_array('ROLE_WATCHER', $roles)) {
+        if (in_array('ROLE_BUH', $roles) ||in_array('ROLE_SUPERVISOR', $roles) || in_array('ROLE_LOGISTICS', $roles) || in_array('ROLE_WATCHER', $roles)) {
             $canSee = true;
         }
 
