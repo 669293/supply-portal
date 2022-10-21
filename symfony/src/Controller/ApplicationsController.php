@@ -3549,11 +3549,11 @@ HERE;
         echo '<div style="float: right; width: 400px;">';
         echo '    <table>';
         echo '        <tbody>';
-        echo '            <tr><td class="no-border">Согласовано: _________________</td><td class="no-border">/Жарков Ю.В./</td></tr>';
-        echo '            <tr><td class="no-border">Согласовано: _________________</td><td class="no-border">/Михайличенко А.А./</td></tr>';
+        echo '            <tr><td class="no-border" style="height: 32px;">Согласовано: _________________</td><td class="no-border">/Жарков Ю.В./</td></tr>';
+        echo '            <tr><td class="no-border" style="height: 32px;">Согласовано: _________________</td><td class="no-border">/Михайличенко А.А./</td></tr>';
 
         if ( $objApplication->getResponsible() ) {
-            echo '            <tr><td class="no-border">Согласовано: _________________</td><td class="no-border">/'.$objApplication->getResponsible()->getShortUsername().'/</td></tr>';
+            echo '            <tr><td class="no-border" style="height: 32px;">Согласовано: _________________</td><td class="no-border">/'.$objApplication->getResponsible()->getShortUsername().'/</td></tr>';
         }
 
         echo '        </tbody>';
