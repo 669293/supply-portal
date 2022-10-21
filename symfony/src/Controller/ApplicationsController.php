@@ -1220,6 +1220,12 @@ HERE;
                 }
                 $application->setAuthor($author);
 
+                //Определяем ответственного
+                if ($request->request->get('responsible') !== null) { 
+                    $responsible = $usersRepository->findBy( array('id' => (int)$request->request->get('responsible')) )[0];
+                    $application->setResponsible($responsible);
+                }
+
                 $this->entityManager->persist($application);
                 $this->entityManager->flush(); //ID заявки в $application->getId();
 
@@ -1784,6 +1790,12 @@ HERE;
                 if ($request->request->get('user') !== null) { 
                     $author = $usersRepository->findBy( array('id' => (int)$request->request->get('user')) )[0];
                     $application->setAuthor($author);
+                }
+
+                //Определяем ответственного
+                if ($request->request->get('responsible') !== null) { 
+                    $responsible = $usersRepository->findBy( array('id' => (int)$request->request->get('responsible')) )[0];
+                    $application->setResponsible($responsible);
                 }
 
                 //Добавляем статус
@@ -3539,7 +3551,11 @@ HERE;
         echo '        <tbody>';
         echo '            <tr><td class="no-border">Согласовано: _________________</td><td class="no-border">/Жарков Ю.В./</td></tr>';
         echo '            <tr><td class="no-border">Согласовано: _________________</td><td class="no-border">/Михайличенко А.А./</td></tr>';
-        echo '            <tr><td class="no-border">Согласовано: _________________</td><td class="no-border">/'.$objApplication->getAuthor()->getShortUsername().'/</td></tr>';
+
+        if ( $objApplication->getResponsible() ) {
+            echo '            <tr><td class="no-border">Согласовано: _________________</td><td class="no-border">/'.$objApplication->getResponsible()->getShortUsername().'/</td></tr>';
+        }
+
         echo '        </tbody>';
         echo '    </table>';
         echo '</div>';

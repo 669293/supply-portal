@@ -81,6 +81,16 @@ class Applications
      */
     private $isYear = false;
 
+    /**
+     * @var \Users
+     *
+     * @ORM\ManyToOne(targetEntity="Users")
+     * @ORM\JoinColumns({
+     *   @ORM\JoinColumn(name="responsible", referencedColumnName="id")
+     * })
+     */
+    private $responsible;
+
     public function __construct()
     {
         $this->date_create = new \DateTime();
@@ -183,6 +193,18 @@ class Applications
     public function setIsYear(bool $isYear): self
     {
         $this->isYear = $isYear;
+
+        return $this;
+    }
+
+    public function getResponsible(): ?Users
+    {
+        return $this->responsible;
+    }
+
+    public function setResponsible(?Users $responsible): self
+    {
+        $this->responsible = $responsible;
 
         return $this;
     }

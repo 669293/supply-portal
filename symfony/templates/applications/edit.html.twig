@@ -145,20 +145,35 @@
             </div>
         </div>
 
-{% if users is defined %}
-    <div class="form-floating mb-3">
-        <select class="form-select" id="userSelect" name="user">
-    {% for user in users %}
-        {% if user.getId == application.getAuthor.getId %}
-            <option value="{{ user.getId }}" selected="selected">{{ user.getUsername }}</option>
-        {% else %}
-            <option value="{{ user.getId }}">{{ user.getUsername }}</option>
+        {% if users is defined %}
+            <div class="form-floating mb-3">
+                <select class="form-select" id="userSelect" name="user">
+            {% for user in users %}
+                {% if user.getId == application.getAuthor.getId %}
+                    <option value="{{ user.getId }}" selected="selected">{{ user.getUsername }}</option>
+                {% else %}
+                    <option value="{{ user.getId }}">{{ user.getUsername }}</option>
+                {% endif %}
+            {% endfor %}
+                </select>
+                <label for="userSelect">Пользователь, от имени которого добавляется заявка</label>
+            </div>
         {% endif %}
-    {% endfor %}
-        </select>
-        <label for="userSelect">Пользователь, от имени которого добавляется заявка</label>
-    </div>
-{% endif %}
+
+        {% if users is defined %}
+            <div class="form-floating mb-3">
+                <select class="form-select" id="responsibleSelect" name="responsible">
+            {% for user in users %}
+                {% if application.getResponsible and user.getId == application.getResponsible.getId %}
+                    <option value="{{ user.getId }}" selected="selected">{{ user.getUsername }}</option>
+                {% else %}
+                    <option value="{{ user.getId }}">{{ user.getUsername }}</option>
+                {% endif %}
+            {% endfor %}
+                </select>
+                <label for="responsibleSelect">Пользователь, от имени которого добавляется заявка</label>
+            </div>
+        {% endif %}
     </fieldset>
 
     <div class="clearfix"></div>

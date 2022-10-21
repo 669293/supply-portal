@@ -92,6 +92,12 @@
                         <td><i class="bi bi-person text-muted me-1"></i> <strong>Отправитель</strong></td>
                         <td>{{ application.getAuthor.getUsername }}</td>
                     </tr>
+                    {% if application.getResponsible %}
+                        <tr>
+                            <td><i class="bi bi-person text-muted me-1"></i> <strong>Согласовано</strong></td>
+                            <td>{{ application.getResponsible.getUsername }}</td>
+                        </tr>
+                    {% endif %}
                     <tr>
                         <td><i class="bi bi-people text-muted me-1"></i> <strong>Ответственные</strong></td>
                         <td>

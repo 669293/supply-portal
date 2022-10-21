@@ -44,5 +44,10 @@
         <join-column name="author" referenced-column-name="id"/>
       </join-columns>
     </many-to-one>
+    <many-to-one field="responsible" target-entity="Users" fetch="LAZY">
+      <join-columns>
+        <join-column name="responsible" referenced-column-name="id"/>
+      </join-columns>
+    </many-to-one>
   </entity>
 </doctrine-mapping>
