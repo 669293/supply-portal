@@ -8,6 +8,7 @@ parameters:
     bills_directory: '%kernel.project_dir%/public/upload/bills'
     documents_directory: '%kernel.project_dir%/public/upload/documents'
     photos_directory: '%kernel.project_dir%/public/upload/photos'
+    stock_directory: '%kernel.project_dir%/public/upload/stock'
 
 services:
     # default configuration for services in *this* file

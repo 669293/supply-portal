@@ -1,0 +1,69 @@
+{# templates/fragments/_bills-to-pick.html.twig #}
+
+{% if bills|length == 0 %}
+    {% if provider == '' %}
+        <p class="text-muted mb-0">Нет счетов в работе</p>
+    {% else %}
+        <p class="text-muted mb-0">Нет счетов в работе для поставщика {{ provider }}</p>
+    {% endif %}
+{% else %}
+    <div class="accordion">
+        {% for bill in bills %}
+            <div class="accordion-item{% if loop.last %} mb-3{% endif %}">
+                <h2 class="accordion-header" id="heading{{ bill.getId }}">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ bill.getId }}" aria-expanded="true" aria-controls="collapse{{ bill.getId }}">
+                        <div class="d-flex w-100">
+                            <div>
+                                {% if bill.provider is defined %}
+                                    {{ bill.provider.getTitle }}
+                                {% else %}
+                                    ИНН: {{ bill.getInn }}
+                                {% endif %}
+                                <br /><span class="text-muted text-small">№ {{ bill.getNum }}</span>
+                            </div>
+                            <div class="d-none d-sm-block ms-auto text-end">
+                                <span class="text-muted me-3 text-small">Сумма: {{ bill.sum|number_format(2, '.', ' ') }} {{ bill.currency }}</span><br />
+                                <span class="text-muted me-3 text-small">Ответственный: {{ bill.getUser.getShortUsername }}</span>
+                            </div>
+                        </div>
+                    </button>
+                </h2>
+                <div id="collapse{{ bill.getId }}" data-id="{{ bill.getId }}" class="accordion-collapse collapse show" aria-labelledby="heading{{ bill.getId }}">
+                    <div class="accordion-body">
+                        <div class="container-fluid w-100 overflow-scroll px-0">
+                            <a class="btn btn-link text-decoration-none p-0 m-1 mb-3" target="_blank" href="/applications/bills/in-work/view?id={{ bill.getId }}"><i class="bi bi-link"></i> Перейти к счету</a>
+                            <table class="table table-sm mb-0 table-hover table-striped table-bordered" style="min-width: 900px;">
+                                <thead>
+                                    <tr>
+                                        <th class="py-2 align-middle text-center text-xsmall" scope="col" style="width: 50px;">№</th>
+                                        <th class="py-2 align-middle text-center" scope="col" style="width: 50px;"><input type="checkbox" name="" value="" class="form-check-input material-select-all" /></th>
+                                        <th class="py-2 align-middle text-xsmall text-nowrap" scope="col" style="width: 150px;">К получению</th>
+                                        <th class="py-2 align-middle text-xsmall" scope="col">Наименование</th>
+                                        <th class="py-2 align-middle text-nowrap text-xsmall" scope="col">Заявка</th>
+                                        <th class="py-2 align-middle text-nowrap text-xsmall" scope="col">Вид техники</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for arr in bill.materials %}
+                                        <tr>
+                                            <td class="align-middle text-center text-xsmall">{{ loop.index }}</td>
+                                            <td class="py-2 align-middle text-center" scope="col">
+                                                <input type="checkbox" name="material[]" value="{{ arr.billmaterial }}" class="form-check-input material-select" />
+                                                <input type="hidden" class="application-input" name="application[]" value="{{ arr.material.getApplication.getId }}" />
+                                                <input type="hidden" class="bill-input" name="bill[]" value="{{ bill.getId }}" />
+                                            </td>
+                                            <td class="align-middle text-center"><input type="number" name="" value="{{ arr.count - arr.done }}" class="amount-input form-control form-control-sm" min="1" max="{{ arr.count - arr.done }}" /></td>
+                                            <td class="align-middle text-xsmall">{{ arr.material.getTitle }}{% if arr.material.getUrgency %} <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="Срочная позиция"></i> <span class="text-danger">Срочно</span>{% endif %}</td>
+                                            <td class="align-middle text-xsmall text-nowrap"><a href="/applications/view?number={{ arr.material.getApplication.getId }}">#{{ arr.material.getApplication.getId }}</a> <i class="bi bi-arrow-right"></i> {{ arr.material.getNum }} поз.</td>
+                                            <td class="align-middle text-xsmall">{% if arr.material.getTypeOfEquipment != null %}{{ arr.material.getTypeOfEquipment.getTitle() }}{% endif %}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}

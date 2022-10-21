@@ -409,5 +409,5 @@ $(document).ready(function() {
   //Загрузка заявки из шаблона
   $('#uploadBtn').click(function() {
     $('#templateForm').submit();
-  });    
+  });
 });

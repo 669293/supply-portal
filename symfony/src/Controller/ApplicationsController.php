@@ -3534,14 +3534,16 @@ HERE;
 
         ob_start();
 
-        echo '<table autosize="1" border="1" width="100%" style="overflow: wrap">';
-        echo '    <tbody>';
-        echo '        <tr>';
-        echo '            <td class="no-border"><h1>'.$objApplication->getTitle().'</h1></td>';
-        echo '            <td class="no-border" style="text-align: right;">Согласовано: _________________ /Жарков Ю.В./</td>';
-        echo '        </tr>';
-        echo '    </tbody>';
-        echo '</table>';
+        echo '<div style="float: right; width: 400px;">';
+        echo '    <table>';
+        echo '        <tbody>';
+        echo '            <tr><td class="no-border">Согласовано: _________________</td><td class="no-border">/Жарков Ю.В./</td></tr>';
+        echo '            <tr><td class="no-border">Согласовано: _________________</td><td class="no-border">/Михайличенко А.А./</td></tr>';
+        echo '            <tr><td class="no-border">Согласовано: _________________</td><td class="no-border">/'.$objApplication->getAuthor()->getShortUsername().'/</td></tr>';
+        echo '        </tbody>';
+        echo '    </table>';
+        echo '</div>';
+        echo '<h1>'.$objApplication->getTitle().'</h1>';
         echo '<h2>Заявка от '.$objApplication->getDateCreate()->format('d.m.Y').' № '.$objApplication->getId().(!empty($objApplication->getNumber()) ? ' ('.$objApplication->getNumber().')' : '').'</h2>';
         echo '<h2>Отправитель: '.$objApplication->getAuthor()->getUsername().'</h2>';
 

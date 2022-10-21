@@ -1,0 +1,272 @@
+{# templates/applications/add.html.twig #}
+{% extends 'default.html.twig' %}
+
+{# Заголовки #}
+{% block title %}{{ title }}{% endblock %}
+{% block caption %}{{ title }}{% endblock %}
+
+{# Контент #}
+{% block content %}
+    <form class="mb-2" action="/stock/add/pm" method="POST" id="add-pm-form">
+        <fieldset>
+            <input type="hidden" name="token" value="{{ csrf_token('add-pm') }}"/>
+            <input type="hidden" name="files" value=""/>
+            <div class="container-fluid w-100 overflow-scroll px-0 mb-2">
+                <table class="table table-borderless">
+                    <tbody>
+                        <tr>
+                            <td class="ps-0" style="width: 280px;"><label for="add-pm-sf">Счет фактура/товарная накладная</label></td>
+                            <td class="w-auto">
+                                <input id="add-pm-sf" type="text" name="add-pm-sf" class="form-control form-control-sm should-be-validated" data-sbv-expression="^.{2,}$" data-sbv-notification-target="sbv-sf" data-sbv-notification="Обязательное поле" />
+                                <div class="form-text mt-0" id="sbv-sf">Номер и дата документа</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ps-0"><label for="add-pm-provider">Поставщик</label></td>
+                            <td class="w-auto">
+                                <div class="input-group flex-nowrap">
+                                    <select id="add-pm-provider" name="add-pm-provider" class="selectpicker with-ajax form-control form-control-sm w-auto should-be-validated" data-live-search="true" data-sbv-expression="^\d{10,}$" data-sbv-notification-target="sbv-provider" data-sbv-notification="Обязательное поле"></select>
+                                    <button type="button" class="btn btn-sm btn-outline-success" data-bs-target="#providerModal" data-bs-toggle="modal" data-bs-dismiss="modal"><i class="bi bi-plus"></i></button>
+                                </div>
+                                <div class="form-text mt-0" id="sbv-provider">Выберите из списка или добавьте нового контрагента</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ps-0">Налоговая ставка</td>
+                            <td class="w-auto">
+                                <div class="input-group">
+                                    <input type="radio" class="btn-check" name="add-pm-tax_" id="tax0" autocomplete="off" value="0" />
+                                    <label class="btn btn-sm btn-outline-secondary" for="tax0" style="border-bottom-left-radius: 4px; border-top-left-radius: 4px;">0%</label>
+                                    <input type="radio" class="btn-check" name="add-pm-tax_" id="tax10" autocomplete="off" value="0.1" />
+                                    <label class="btn btn-sm btn-outline-secondary" for="tax10">10%</label>
+                                    <input type="radio" class="btn-check" name="add-pm-tax_" id="tax20" autocomplete="off" value="0.2" checked />
+                                    <label class="btn btn-sm btn-outline-secondary" for="tax20">20%</label>
+                                </div>
+                                <div class="form-text mt-0">Выберите наличный расчет, либо ставку НДС для юр. лиц</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ps-0">Тип поступления</td>
+                            <td class="w-auto">
+                                <select class="form-select form-select-sm" name="add-pm-type">
+                                    <option value="0" selected>Материалы</option>
+                                    <option value="1">Запчасти</option>
+                                    <option value="2">ГСМ</option>
+                                    <option value="3">Продукты</option>
+                                    <option value="4">Услуги</option>
+                                </select>
+                                <div class="form-text mt-0">Выберите тип поступления</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ps-0"><label for="add-pm-comment">Комментарий</label></td>
+                            <td class="w-auto">
+                                <input id="add-pm-comment" type="text" name="add-pm-comment" class="form-control form-control-sm" />
+                                <div class="form-text mt-0">Краткое описание содержимого приходного ордера</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ps-0"><label for="add-pm-note">Доп. информация</label></td>
+                            <td class="w-auto">
+                                <input id="add-pm-note" type="text" name="add-pm-note" class="form-control form-control-sm">
+                                <div class="form-text mt-0">Дополнительная информация каксательно документа</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ps-0"><label for="add-pm-date">Дата документа</label></td>
+                            <td class="w-auto">
+                                <input id="add-pm-date" name="add-pm-date" type="date" class="form-control form-control-sm should-be-validated" data-sbv-expression="^(\d{4})-(\d{1,2})-(\d{1,2})$" data-sbv-notification-target="sbv-date" data-sbv-notification="Неверный формат даты" />
+                                <div class="form-text mt-0" id="sbv-date">Дата прихода</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ps-0">Дополнительные параметры</td>
+                            <td class="w-auto">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="1" id="add-pm-transit" name="add-pm-transit" />
+                                    <label class="form-check-label" for="add-pm-transit">Транзитный груз</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="1" id="add-pm-direct" name="add-pm-direct" />
+                                    <label class="form-check-label" for="add-pm-direct">Прямая отгрузка</label>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ps-0">Привязка к заявкам</td>
+                            <td class="w-auto">
+                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-target="#applicationsModal" data-bs-toggle="modal" data-bs-dismiss="modal" id="pickBtn">Выбрать</button>
+                                <span id="countWarning" class="text-warning ms-2 text-xsmall" style="display: none;"><i class="bi bi-exclamation-triangle"></i> Количество в приходном ордере не совпадает с количеством выбранных элементов</span>
+                            </td>
+                        </tr>
+                </table>
+            </div>
+
+            <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-1 pb-3">
+                <table class="table table-sm table-bordered table-striped mb-0 us-none" style="min-width: 900px;" id="materialsTable">
+                    <thead>
+                        <tr>
+                            <th class="py-2 align-middle text-center text-xsmall" scope="col" style="width: 50px;">№</th>
+                            <th class="py-2 align-middle text-xsmall" scope="col">Наименование</th>
+                            <th class="py-2 align-middle text-nowrap text-xsmall" scope="col" style="width: 120px;">Ед.изм.</th>
+                            <th class="py-2 align-middle text-xsmall" scope="col" style="width: 100px;">Кол-во</th>
+                            <th class="py-2 align-middle text-nowrap text-xsmall" style="width: 100px;" scope="col">Цена</th>
+                            <th class="py-2 align-middle text-nowrap text-xsmall" style="width: 100px;" scope="col">Сумма</th>
+                            <th class="py-2 align-middle text-nowrap text-xsmall" style="width: 100px;" scope="col">НДС</th>
+                            <th class="py-2 align-middle text-nowrap text-xsmall" style="width: 100px;" scope="col">Всего</th>
+                            <th class="text-center align-middle" style="width: 50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set k = 10 %}
+                        {% for i in range(1, k) %}
+                            <tr class='sbv-parent'>
+                                <td class="align-middle text-center text-xsmall">{{ i }}</td>
+                                <td class="align-middle"><input class="form-control form-control-sm material-autocomplete should-be-validated" data-sbv-depence="true" data-sbv-expression="^.{2,}$" type="text" value="" name="add-pm-materials[]" /></td>
+                                <td class="align-middle text-center">
+                                    <select class="form-select form-select-sm" name="add-pm-units[]">
+                                    {% for unit in units %}
+                                        {% if unit.getTitle == 'шт' %}
+                                            <option value="{{ unit.getId }}" selected="selected">{{ unit.getTitle }}</option>
+                                        {% else %}
+                                            <option value="{{ unit.getId }}">{{ unit.getTitle }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                    </select>
+                                </td>
+                                <td class="align-middle"><input class="form-control form-control-sm should-be-validated" type="number" value="" name="add-pm-count[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" /></td>
+                                <td class="align-middle"><input class="form-control form-control-sm should-be-validated numbersOnly" type="text" value="" name="add-pm-price[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" /></td>
+                                <td class="align-middle"><input class="form-control form-control-sm should-be-validated numbersOnly" type="text" value="" name="add-pm-sum[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" /></td>
+                                <td class="align-middle"><input class="form-control form-control-sm should-be-validated numbersOnly" type="text" value="" name="add-pm-tax[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" /></td>
+                                <td class="align-middle"><input class="form-control form-control-sm should-be-validated numbersOnly" type="text" value="" name="add-pm-total[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" /></td>
+                                <td class="text-center align-middle"><i class="bi bi-trash text-danger fs-6 delete-row"></i></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm mb-4 me-2" id="addRowBtn"><i class="bi bi-plus-lg"></i> Добавить строку</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm mb-4" data-bs-toggle="modal" data-bs-target="#templateModal">Загрузить из шаблона</button>
+
+            <h5 class="mb-3">Дополнительные файлы</h5>
+
+            <div class="mb-4">
+                <div class="file-loading">
+                    <input id="attach" type="file" name="filesApp[]" multiple="multiple" />
+                </div>
+                <div class="clearfix"></div>
+            </div>
+        </fieldset>
+
+        <div class="clearfix"></div>
+
+        <button type="button" class="btn btn-outline-primary mb-5 me-2 sbv-submit" disabled id="sendBtn">Создать</button>
+        <button type="button" class="btn btn-outline-secondary mb-5 me-2" onclick="location.href='/applications/';">Отмена</button>
+        <div class="spinner-border text-primary d-none" role="status" style="margin-bottom: 0.8rem!important;"><span class="visually-hidden">Обработка...</span></div>
+    </form>
+{% endblock %}
+
+{# Модальные окна #}
+{% block modal %}
+    {# Добавление поставщика #}
+    <div class="modal fade" id="providerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="/applications/bills/provider" method="POST" id="providerForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Добавление поставщика</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="title" placeholder=" " value="" name="title" />
+                            <label for="title">Наименование поставщика</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="inn" placeholder=" " value="" name="inn" />
+                            <label for="inn">ИНН</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="address" placeholder=" " value="" name="address" />
+                            <label for="address">Почтовый адрес</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="phone" placeholder=" " value="" name="phone" />
+                            <label for="phone">Телефон</label>
+                        </div>
+                        <div class="form-floating">
+                            <textarea class="form-control" placeholder="Комментарий" id="commentTextarea" style="height: 100px" name="comment"></textarea>
+                            <label for="commentTextarea">Комментарий</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                      <button type="button" class="btn btn-primary" id="addProviderBtn">Добавить</button>
+                      <div class="spinner-border text-primary d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {# Загрузка позиций из шаблона #}
+    <div class="modal fade" id="templateModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <form action="/stock/add/pm/upload-template" method="POST" id="templateForm" enctype="multipart/form-data">
+                    <input type="hidden" name="token" class="freeze-ignore" value="{{ csrf_token('upload-template') }}"/>
+                    <div class="modal-header">
+                        <h5 class="modal-title">Загрузить позиции из шиблона</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="file" class="form-control freeze-ignore" id="templateUpload" name="template" />
+                        <button type="button" class="btn btn-outline-secondary btn-sm mt-3" id="download-template" onclick="location.href='/upload/Добавление приходного ордера.xlsx';"><i class="bi bi-download"></i> Скачать шаблон</button>
+                    </div>
+                    <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                    <button type="button" class="btn btn-primary" disabled id="uploadBtn">Загрузить</button>
+                    <div class="spinner-border text-primary d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {# Привязка к заявкам #}
+    <div class="modal fade" id="applicationsModal" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">Выбор материалов</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div><span class="text-muted ms-2">Загрузка...</span>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-target="#finishForm" data-bs-toggle="modal" data-bs-dismiss="modal" id="pickConfirmBtn" disabled>Готово</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{# Скрипты #}
+{% block scripts %}
+    <script src="{{ asset('js/jquery.autocomplete.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/bootstrap-select.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/ajax-bootstrap-select.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/ajax-bootstrap-select.ru-RU.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/fileinput.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/fileinput.ru.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/jquery.form.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/stock/add-pm.js') }}" type="text/javascript"></script>
+{% endblock %}
+
+{# Стили #}
+{% block css %}
+    <link href="{{ asset('css/bootstrap-select.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/ajax-bootstrap-select.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/fileinput.css') }}" rel="stylesheet">
+{% endblock %}
