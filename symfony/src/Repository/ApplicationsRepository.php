@@ -42,37 +42,47 @@ class ApplicationsRepository extends ServiceEntityRepository
         
         $query = $this->createQueryBuilder('a');
 
-        //Фильтр по отправителю
-        if ($filter->author != null) {
-            $query->andWhere('a.author = :author')->setParameter('author', $filter->author);
-        }
-
-        //Фильтр по ответственному
-        if ($filter->responsible != null) {
+        //Фильтр по отправителю и ответственному
+        if ($filter->author != null && $filter->responsible != null && $filter->author == $filter->responsible) {
             $query->join('App\Entity\Materials', 'm', 'WITH' ,'m.application=a.id')
-            ->andWhere('m.responsible = :responsible')
-            ->setParameter('responsible', $filter->responsible)
-            ;
-        }
-
-        //Фильтр по подразделению
-        //Получаем список ответственных в подразделении
-        if ($filter->office != null) {
-            $responsibles = $this->entityManager->getRepository(Users::class)->createQueryBuilder('u')
-            ->select('u.id')
-            ->where('u.office = :office')
-            ->setParameter('office', $filter->office->getId())
-            ->getQuery()
-            ->getResult();
-
-            $responsiblesIDs = [];
-            foreach ($responsibles as $responsible) {
-                $responsiblesIDs[] = $responsible['id'];
+                ->orWhere('m.responsible = :responsible')
+                ->orWhere('a.author = :author')
+                ->setParameter('responsible', $filter->responsible)
+                ->setParameter('author', $filter->author)
+                ;
+        } else {
+            //Фильтр по отправителю
+            if ($filter->author != null) {
+                $query->andWhere('a.author = :author')->setParameter('author', $filter->author);
             }
 
-            $query->join('App\Entity\Materials', 'm2', 'WITH' ,'m2.application=a.id')
-            ->andWhere('m2.responsible IN ('.implode(',', $responsiblesIDs).')')
-            ;
+            //Фильтр по ответственному
+            if ($filter->responsible != null) {
+                $query->join('App\Entity\Materials', 'm', 'WITH' ,'m.application=a.id')
+                ->andWhere('m.responsible = :responsible')
+                ->setParameter('responsible', $filter->responsible)
+                ;
+            }
+
+            //Фильтр по подразделению
+            //Получаем список ответственных в подразделении
+            if ($filter->office != null) {
+                $responsibles = $this->entityManager->getRepository(Users::class)->createQueryBuilder('u')
+                ->select('u.id')
+                ->where('u.office = :office')
+                ->setParameter('office', $filter->office->getId())
+                ->getQuery()
+                ->getResult();
+
+                $responsiblesIDs = [];
+                foreach ($responsibles as $responsible) {
+                    $responsiblesIDs[] = $responsible['id'];
+                }
+
+                $query->join('App\Entity\Materials', 'm2', 'WITH' ,'m2.application=a.id')
+                ->andWhere('m2.responsible IN ('.implode(',', $responsiblesIDs).')')
+                ;
+            }
         }
 
         //Подзапрос возвращает ID статуса

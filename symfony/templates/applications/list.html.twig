@@ -371,6 +371,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                     </div>
                     <div class="modal-body">
+                      {% if not ('ROLE_CREATOR' in roles and 'ROLE_EXECUTOR' in roles) %}
                         {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
                           <div class="form-floating mb-3">
                             <select class="form-select" id="authorSelect" name="filterAuthor">
@@ -425,54 +426,55 @@
                             <label for="responsibleSelect">Подразделение</label>
                           </div>
                         {% endif %}
-                        <div class="form-floating mb-3">
-                          <select class="form-select" id="statusSelect" name="filterStatus">
-                              {% if (filter is defined) and (filter.status != null) %}
-                                  <option value="-1">Выберите</option>
-                                  {% for status in statuses %}
-                                      <option value="{{ status.getId }}"{% if filter.status.getId == status.getId %} selected="selected"{% endif %}>{{ status.getTitle }}</option>
-                                  {% endfor %}
-                              {% else %}
-                                  <option value="-1" selected="selected" disabled="disabled">Выберите</option>
-                                  {% for status in statuses %}
-                                      <option value="{{ status.getId }}">{{ status.getTitle }}</option>
-                                  {% endfor %}
-                              {% endif %}
-                          </select>
-                          <label for="statusSelect">Статус</label>
-                        </div>
-                        <div class="form-floating mb-3">
-                          {% set title = '' %}
-                          {% if (filter is defined) and (filter.title != null) %}{% set title = filter.title %}{% endif %}
-                          <input type="text" class="form-control" id="titleInputValue" placeholder=" " value="{{ title }}" name="filterTitle" />
-                          <label for="titleInputValue">Название содержит</label>
-                        </div>
-                        <div class="form-floating mb-3">
-                          {% set dateFrom = '' %}
-                          {% if (filter is defined) and (filter.dateFrom != null) %}{% set dateFrom = filter.dateFrom|date('Y-m-d') %}{% endif %}
-                          <input type="date" class="form-control" id="dateFromInputValue" placeholder=" " value="{{ dateFrom }}" name="filterDateFrom" />
-                          <label for="dateFromInputValue">Дата поступления заявки с</label>
-                        </div>
-                        <div class="form-floating mb-3">
-                          {% set dateTo = '' %}
-                          {% if (filter is defined) and (filter.dateTo != null) %}{% set dateTo = filter.dateTo|date('Y-m-d') %}{% endif %}
-                          <input type="date" class="form-control" id="dateToInputValue" placeholder=" " value="{{ dateTo }}" name="filterDateTo" />
-                          <label for="dateToInputValue">Дата поступления заявки по</label>
-                        </div>
-                        <div class="form-floating">
-                          <select class="form-select" id="yearSelect" name="filterYear">
-                              {% if (filter is defined) %}
-                                  <option value="-1"{% if filter.year == -1 %} selected="selected"{% endif %}>Выберите</option>
-                                  <option value="1"{% if filter.year == 1 %} selected="selected"{% endif %}>Да</option>
-                                  <option value="0"{% if filter.year == 0 %} selected="selected"{% endif %}>Нет</option>
-                              {% else %}
-                                  <option value="-1">Выберите</option>
-                                  <option value="1">Да</option>
-                                  <option value="0">Нет</option>
-                              {% endif %}
-                          </select>
-                          <label for="statusSelect">Годовая заявка</label>
-                        </div>
+                      {% endif %}
+                      <div class="form-floating mb-3">
+                        <select class="form-select" id="statusSelect" name="filterStatus">
+                            {% if (filter is defined) and (filter.status != null) %}
+                                <option value="-1">Выберите</option>
+                                {% for status in statuses %}
+                                    <option value="{{ status.getId }}"{% if filter.status.getId == status.getId %} selected="selected"{% endif %}>{{ status.getTitle }}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option value="-1" selected="selected" disabled="disabled">Выберите</option>
+                                {% for status in statuses %}
+                                    <option value="{{ status.getId }}">{{ status.getTitle }}</option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                        <label for="statusSelect">Статус</label>
+                      </div>
+                      <div class="form-floating mb-3">
+                        {% set title = '' %}
+                        {% if (filter is defined) and (filter.title != null) %}{% set title = filter.title %}{% endif %}
+                        <input type="text" class="form-control" id="titleInputValue" placeholder=" " value="{{ title }}" name="filterTitle" />
+                        <label for="titleInputValue">Название содержит</label>
+                      </div>
+                      <div class="form-floating mb-3">
+                        {% set dateFrom = '' %}
+                        {% if (filter is defined) and (filter.dateFrom != null) %}{% set dateFrom = filter.dateFrom|date('Y-m-d') %}{% endif %}
+                        <input type="date" class="form-control" id="dateFromInputValue" placeholder=" " value="{{ dateFrom }}" name="filterDateFrom" />
+                        <label for="dateFromInputValue">Дата поступления заявки с</label>
+                      </div>
+                      <div class="form-floating mb-3">
+                        {% set dateTo = '' %}
+                        {% if (filter is defined) and (filter.dateTo != null) %}{% set dateTo = filter.dateTo|date('Y-m-d') %}{% endif %}
+                        <input type="date" class="form-control" id="dateToInputValue" placeholder=" " value="{{ dateTo }}" name="filterDateTo" />
+                        <label for="dateToInputValue">Дата поступления заявки по</label>
+                      </div>
+                      <div class="form-floating">
+                        <select class="form-select" id="yearSelect" name="filterYear">
+                            {% if (filter is defined) %}
+                                <option value="-1"{% if filter.year == -1 %} selected="selected"{% endif %}>Выберите</option>
+                                <option value="1"{% if filter.year == 1 %} selected="selected"{% endif %}>Да</option>
+                                <option value="0"{% if filter.year == 0 %} selected="selected"{% endif %}>Нет</option>
+                            {% else %}
+                                <option value="-1">Выберите</option>
+                                <option value="1">Да</option>
+                                <option value="0">Нет</option>
+                            {% endif %}
+                        </select>
+                        <label for="statusSelect">Годовая заявка</label>
+                      </div>
                     </div>
                     <div class="modal-footer">
                       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
