@@ -260,7 +260,7 @@ class ApplicationsController extends AbstractController
                     bills b 
                 WHERE 
                     res.bid = b.id AND 
-                    res.status <> 5 AND 
+                    res.status NOT IN (5, 9, 10) AND 
                     b.date_close < '".date('Y-m-d')."' AND
                     b.user = ".$this->security->getUser()->getId().";
             ";
@@ -2895,7 +2895,6 @@ HERE;
 
             //Выполняем поиск по материалам
             $materials = $materialsRepository->findLike($q, 'm.id', 'DESC');
-
             if (sizeof($materials) > 0) {
                 foreach ($materials as $material) {
                     $exists = false;

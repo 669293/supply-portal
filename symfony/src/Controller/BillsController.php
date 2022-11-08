@@ -955,6 +955,44 @@ class BillsController extends AbstractController
     }
 
     /**
+     * Изменение видимости счета в списке активных
+     * @Route("/applications/bills/set-state", methods={"GET"}))
+     * @Security("is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR')")
+     */
+    public function setBillState(
+        Request $request, 
+        BillsRepository $billsRepository, 
+        UsersRepository $usersRepository
+    ): Response
+    {
+        $state = $request->query->get('hidden');
+        $id = $request->query->get('id');
+        if ($id === null || !is_numeric($id) || $state === null || !is_numeric($state)) {
+            return new RedirectResponse('/applications');
+        }
+
+        //Получаем счет
+        $bill = $billsRepository->findBy(array('id' => $id));
+        if (is_array($bill)) {$bill = array_shift($bill);}
+
+        if ($bill === null) {
+            return new RedirectResponse('/applications');
+        }
+
+        //Проверяем права пользователя на счет
+        if ($bill->getUser()->getId() != $this->security->getUser()->getId()) {
+            return new RedirectResponse('/applications');
+        }
+
+        //Меняем статус счета
+        $bill->setIsHidden((bool)$state);
+        $this->entityManager->persist($bill);
+        $this->entityManager->flush();
+
+        return new RedirectResponse('/applications/bills/in-work');
+    }
+
+    /**
      * Просмотр активных счетов
      * @Route("/applications/bills/in-work", methods={"GET"}))
      * @Security("is_granted('ROLE_SUPERVISOR') or is_granted('ROLE_EXECUTOR')")

@@ -22,83 +22,198 @@
 {# Контент #}
 {% block content %}
     {% if bills|length > 0 %}
-        <fieldset>
-            <input type="hidden" name="token" value="{{ csrf_token('download-bills') }}"/>
-            <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-1 pb-3">
-                <table class="table table-sm table-hover table-bordered table-striped mb-0 us-none" id="billsTable">
-                    <thead>
-                        <tr>
-                            <th class="py-2 align-middle text-center text-small" scope="col" style="width: 40px;">№</th>
-                            <th class="py-2 align-middle text-small" scope="col">Заявка</th>
-                            <th class="py-2 align-middle text-small text-nowrap" scope="col">Отправитель<br />Ответственный <a role="button" class="text-primary" data-bs-toggle="modal" data-bs-target="#filterModal" id="toggleFilterModal"><i class="bi bi-funnel"></i></a></th>
-                            <th class="py-2 align-middle text-small" scope="col">Поставщик</th>
-                            <th class="py-2 align-middle text-small" scope="col">Сумма<br />Срочность</th>
-                            <th class="py-2 align-middle text-small" scope="col">Комментарии</th>
-                            <th class="py-2 align-middle text-small w-auto" scope="col"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {% set fileId = 0 %}
-                    {% for bill in bills %}
-                        <tr>
-                            <td class="align-middle text-center text-small">{{ loop.index }}</td>
-                            <td class="align-top text-small text-nowrap">
-                                {% for application in bill.applications %}
-                                    {% if loop.index > 1 %}<br />{% endif %}<a href="/applications/bills/in-work/view/?id={{ bill.obj.getId }}">{{ application.getTitle }}</a> <span class="text-muted text-small">№{{ application.getId }} от {{ application.getDateCreate|date('d.m.Y') }}</span>
-                                {% endfor %}
-                                <hr class="mt-1 mb-1" />
-                                <span class="text-muted text-small">{{ bill.obj.getNum }} на сумму {{ bill.obj.sum|number_format(2, '.', ' ') }} {{ bill.obj.currency }}</span>
-                            </td>
-                            <td class="align-middle text-xsmall text-nowrap">
-                                {% for application in bill.applications %}{% if loop.index > 1 %}<br />{% endif %}{{ application.getAuthor.getShortUsername }}{% endfor %}
-                                <hr class="mt-1 mb-1" /><span class="responsible">{{ bill.obj.getUser.getShortUsername }}</span>
-                            </td>
-                            <td class="align-top text-small text-nowrap">
-                                <table>
-                                    <tbody>
-                                        {% if bill.provider != null and bill.provider.getTitle != '' %}
-                                            <tr>
-                                                <td class="text-muted pe-2">Наименование:</td>
-                                                <td>{{ bill.provider.getTitle }}</td>
-                                            </tr>
-                                        {% endif %}
+        <ul class="nav nav-tabs mt-4 mb-4" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="visible-tab" data-bs-toggle="tab" data-bs-target="#visible" type="button" role="tab">Активные</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="invisible-tab" data-bs-toggle="tab" data-bs-target="#invisible" type="button" role="tab">Скрытые</button>
+            </li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="visible" role="tabpanel">
+                {% set cnt = 0 %}
+                {% for bill in bills %}
+                    {% if not bill.obj.getIsHidden %}{% set cnt = cnt + 1 %}{% endif %}
+                {% endfor %}
+                {% if cnt == 0 %}
+                    <p class="text-muted">Нет активных счетов</p>
+                {% else %}
+                    <fieldset>
+                        <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-1 pb-3">
+                            <table class="table table-sm table-hover table-bordered table-striped mb-0 us-none" id="billsTable">
+                                <thead>
+                                    <tr>
+                                        <th class="py-2 align-middle text-center text-small" scope="col" style="width: 40px;">№</th>
+                                        <th class="py-2 align-middle text-small" scope="col">Заявка</th>
+                                        <th class="py-2 align-middle text-small text-nowrap" scope="col">Отправитель<br />Ответственный <a role="button" class="text-primary" data-bs-toggle="modal" data-bs-target="#filterModal" id="toggleFilterModal"><i class="bi bi-funnel"></i></a></th>
+                                        <th class="py-2 align-middle text-small" scope="col">Поставщик</th>
+                                        <th class="py-2 align-middle text-small" scope="col">Сумма<br />Срочность</th>
+                                        <th class="py-2 align-middle text-small" scope="col">Комментарии</th>
+                                        <th class="py-2 align-middle text-small w-auto" scope="col"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {% set fileId = 0 %}
+                                {% for bill in bills %}
+                                    {% if not bill.obj.getIsHidden %}
                                         <tr>
-                                            <td class="text-muted pe-2">ИНН:</td>
-                                            <td>{{ bill.obj.getInn }}</td>
+                                            <td class="align-middle text-center text-small">{{ loop.index }}</td>
+                                            <td class="align-top text-small text-nowrap">
+                                                {% for application in bill.applications %}
+                                                    {% if loop.index > 1 %}<br />{% endif %}<a href="/applications/bills/in-work/view/?id={{ bill.obj.getId }}">{{ application.getTitle }}</a> <span class="text-muted text-small">№{{ application.getId }} от {{ application.getDateCreate|date('d.m.Y') }}</span>
+                                                {% endfor %}
+                                                <hr class="mt-1 mb-1" />
+                                                <span class="text-muted text-small">{{ bill.obj.getNum }} на сумму {{ bill.obj.sum|number_format(2, '.', ' ') }} {{ bill.obj.currency }}</span>
+                                            </td>
+                                            <td class="align-middle text-xsmall text-nowrap">
+                                                {% for application in bill.applications %}{% if loop.index > 1 %}<br />{% endif %}{{ application.getAuthor.getShortUsername }}{% endfor %}
+                                                <hr class="mt-1 mb-1" /><span class="responsible">{{ bill.obj.getUser.getShortUsername }}</span>
+                                            </td>
+                                            <td class="align-top text-small text-nowrap">
+                                                <table>
+                                                    <tbody>
+                                                        {% if bill.provider != null and bill.provider.getTitle != '' %}
+                                                            <tr>
+                                                                <td class="text-muted pe-2">Наименование:</td>
+                                                                <td>{{ bill.provider.getTitle }}</td>
+                                                            </tr>
+                                                        {% endif %}
+                                                        <tr>
+                                                            <td class="text-muted pe-2">ИНН:</td>
+                                                            <td>{{ bill.obj.getInn }}</td>
+                                                        </tr>
+                                                        {% if bill.provider != null and bill.provider.getPhone != '' %}
+                                                            <tr>
+                                                                <td class="text-muted pe-2">Телефон:</td>
+                                                                <td>{{ bill.provider.getPhone }}</td>
+                                                            </tr>
+                                                        {% endif %}
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                            <td class="align-middle text-xsmall text-nowrap">
+                                                {{ bill.obj.sum|number_format(2, '.', ' ') }} {{ bill.obj.currency }}
+                                                {% if bill.urgency %}<br /><i class="bi bi-exclamation-triangle text-danger"></i> <span class="text-danger">Срочно</span>{% endif %}
+                                            </td>
+                                            <td class="align-middle text-xsmall fs-8 align-justify" style="max-width: 300px!important;">
+                                                {% if bill.obj.getNote != '' %}
+                                                    {{ bill.obj.getNote }}
+                                                {% else %}
+                                                    <span class="text-muted">Нет комментариев</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="align-middle text-center text-nowrap">
+                                                {% if bill.obj.getUser.getId == app.user.getId %}
+                                                    <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-warning" title="Скрыть" href="/applications/bills/set-state?id={{ bill.id }}&hidden=1"><i class="bi-eye-slash"></i></a>
+                                                {% endif %}
+                                                <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-success" title="Распечатать на подпись" href="/applications/bills/download?id={{ bill.id }}" target="_blank"><i class="bi-printer"></i></a>
+                                                <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-secondary filePreview" data-id="thumb-attachments-init-{{ fileId }}" title="Просмотр" href="#?" target="_blank"><i class="bi-zoom-in"></i></a>
+                                                <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-secondary" title="Скачать файл" href="/upload/bills/{{ bill.obj.getPath }}" target="_blank"><i class="bi-download"></i></a>
+                                                {# <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-primary" title="Информация по счету" href="/applications/bills/in-work/view/?id={{ bill.obj.getId }}"><i class="bi bi-info-lg"></i></a> #}
+                                            </td>
                                         </tr>
-                                        {% if bill.provider != null and bill.provider.getPhone != '' %}
-                                            <tr>
-                                                <td class="text-muted pe-2">Телефон:</td>
-                                                <td>{{ bill.provider.getPhone }}</td>
-                                            </tr>
-                                        {% endif %}
-                                    </tbody>
-                                </table>
-                            </td>
-                            <td class="align-middle text-xsmall text-nowrap">
-                                {{ bill.obj.sum|number_format(2, '.', ' ') }} {{ bill.obj.currency }}
-                                {% if bill.urgency %}<br /><i class="bi bi-exclamation-triangle text-danger"></i> <span class="text-danger">Срочно</span>{% endif %}
-                            </td>
-                            <td class="align-middle text-xsmall fs-8 align-justify" style="max-width: 300px!important;">
-                                {% if bill.obj.getNote != '' %}
-                                    {{ bill.obj.getNote }}
-                                {% else %}
-                                    <span class="text-muted">Нет комментариев</span>
-                                {% endif %}
-                            </td>
-                            <td class="align-middle text-center text-nowrap">
-                                <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-success" title="Распечатать на подпись" href="/applications/bills/download?id={{ bill.id }}" target="_blank"><i class="bi-printer"></i></a>
-                                <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-secondary filePreview" data-id="thumb-attachments-init-{{ fileId }}" title="Просмотр" href="#?" target="_blank"><i class="bi-zoom-in"></i></a>
-                                <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-secondary" title="Скачать файл" href="/upload/bills/{{ bill.obj.getPath }}" target="_blank"><i class="bi-download"></i></a>
-                                {# <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-primary" title="Информация по счету" href="/applications/bills/in-work/view/?id={{ bill.obj.getId }}"><i class="bi bi-info-lg"></i></a> #}
-                            </td>
-                        </tr>
-                        {% set fileId = fileId + 1 %}
-                    {% endfor %}
-                    </tbody>
-                </table>
+                                        {% set fileId = fileId + 1 %}
+                                    {% endif %}
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </fieldset>
+                {% endif %}
             </div>
-        </fieldset>
+            <div class="tab-pane fade" id="invisible" role="tabpanel">
+                {% set cnt = 0 %}
+                {% for bill in bills %}
+                    {% if bill.obj.getIsHidden %}{% set cnt = cnt + 1 %}{% endif %}
+                {% endfor %}
+                {% if cnt == 0 %}
+                    <p class="text-muted">Нет скрытых счетов</p>
+                {% else %}
+                    <fieldset>
+                        <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-1 pb-3">
+                            <table class="table table-sm table-hover table-bordered table-striped mb-0 us-none" id="billsTable">
+                                <thead>
+                                    <tr>
+                                        <th class="py-2 align-middle text-center text-small" scope="col" style="width: 40px;">№</th>
+                                        <th class="py-2 align-middle text-small" scope="col">Заявка</th>
+                                        <th class="py-2 align-middle text-small text-nowrap" scope="col">Отправитель<br />Ответственный <a role="button" class="text-primary" data-bs-toggle="modal" data-bs-target="#filterModal" id="toggleFilterModal"><i class="bi bi-funnel"></i></a></th>
+                                        <th class="py-2 align-middle text-small" scope="col">Поставщик</th>
+                                        <th class="py-2 align-middle text-small" scope="col">Сумма<br />Срочность</th>
+                                        <th class="py-2 align-middle text-small" scope="col">Комментарии</th>
+                                        <th class="py-2 align-middle text-small w-auto" scope="col"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {% set fileId = 0 %}
+                                {% for bill in bills %}
+                                    {% if bill.obj.getIsHidden %}
+                                        <tr>
+                                            <td class="align-middle text-center text-small">{{ loop.index }}</td>
+                                            <td class="align-top text-small text-nowrap">
+                                                {% for application in bill.applications %}
+                                                    {% if loop.index > 1 %}<br />{% endif %}<a href="/applications/bills/in-work/view/?id={{ bill.obj.getId }}">{{ application.getTitle }}</a> <span class="text-muted text-small">№{{ application.getId }} от {{ application.getDateCreate|date('d.m.Y') }}</span>
+                                                {% endfor %}
+                                                <hr class="mt-1 mb-1" />
+                                                <span class="text-muted text-small">{{ bill.obj.getNum }} на сумму {{ bill.obj.sum|number_format(2, '.', ' ') }} {{ bill.obj.currency }}</span>
+                                            </td>
+                                            <td class="align-middle text-xsmall text-nowrap">
+                                                {% for application in bill.applications %}{% if loop.index > 1 %}<br />{% endif %}{{ application.getAuthor.getShortUsername }}{% endfor %}
+                                                <hr class="mt-1 mb-1" /><span class="responsible">{{ bill.obj.getUser.getShortUsername }}</span>
+                                            </td>
+                                            <td class="align-top text-small text-nowrap">
+                                                <table>
+                                                    <tbody>
+                                                        {% if bill.provider != null and bill.provider.getTitle != '' %}
+                                                            <tr>
+                                                                <td class="text-muted pe-2">Наименование:</td>
+                                                                <td>{{ bill.provider.getTitle }}</td>
+                                                            </tr>
+                                                        {% endif %}
+                                                        <tr>
+                                                            <td class="text-muted pe-2">ИНН:</td>
+                                                            <td>{{ bill.obj.getInn }}</td>
+                                                        </tr>
+                                                        {% if bill.provider != null and bill.provider.getPhone != '' %}
+                                                            <tr>
+                                                                <td class="text-muted pe-2">Телефон:</td>
+                                                                <td>{{ bill.provider.getPhone }}</td>
+                                                            </tr>
+                                                        {% endif %}
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                            <td class="align-middle text-xsmall text-nowrap">
+                                                {{ bill.obj.sum|number_format(2, '.', ' ') }} {{ bill.obj.currency }}
+                                                {% if bill.urgency %}<br /><i class="bi bi-exclamation-triangle text-danger"></i> <span class="text-danger">Срочно</span>{% endif %}
+                                            </td>
+                                            <td class="align-middle text-xsmall fs-8 align-justify" style="max-width: 300px!important;">
+                                                {% if bill.obj.getNote != '' %}
+                                                    {{ bill.obj.getNote }}
+                                                {% else %}
+                                                    <span class="text-muted">Нет комментариев</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="align-middle text-center text-nowrap">
+                                                {% if bill.obj.getUser.getId == app.user.getId %}
+                                                    <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-warning" title="Отобразить" href="/applications/bills/set-state?id={{ bill.id }}&hidden=0"><i class="bi-eye"></i></a>
+                                                {% endif %}
+                                                <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-success" title="Распечатать на подпись" href="/applications/bills/download?id={{ bill.id }}" target="_blank"><i class="bi-printer"></i></a>
+                                                <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-secondary filePreview" data-id="thumb-attachments-init-{{ fileId }}" title="Просмотр" href="#?" target="_blank"><i class="bi-zoom-in"></i></a>
+                                                <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-secondary" title="Скачать файл" href="/upload/bills/{{ bill.obj.getPath }}" target="_blank"><i class="bi-download"></i></a>
+                                                {# <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-primary" title="Информация по счету" href="/applications/bills/in-work/view/?id={{ bill.obj.getId }}"><i class="bi bi-info-lg"></i></a> #}
+                                            </td>
+                                        </tr>
+                                        {% set fileId = fileId + 1 %}
+                                    {% endif %}
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </fieldset>
+                {% endif %}
+            </div>
+        </div>
 
         {# Скрытый fileinput для инициализации предпросмотра #}
         <div class="d-none">

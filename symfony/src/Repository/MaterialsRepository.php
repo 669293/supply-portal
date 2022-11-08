@@ -28,7 +28,6 @@ class MaterialsRepository extends ServiceEntityRepository
             ->andWhere('LOWER(m.title) LIKE LOWER(:val)')
             ->setParameter('val', '%'.$value.'%')
             ->orderBy($orderBy, $orderDirection)
-            ->setMaxResults(10)
             ->getQuery()
             ->getResult()
         ;

@@ -96,6 +96,13 @@ class Bills
      */
     private $isPrinted = false;
 
+    /**
+     * @var bool
+     *
+     * @ORM\Column(name="is_hidden", type="boolean", nullable=false)
+     */
+    private $isHidden = false;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -225,6 +232,18 @@ class Bills
     public function setIsPrinted(bool $isPrinted): self
     {
         $this->isPrinted = $isPrinted;
+
+        return $this;
+    }
+
+    public function getIsHidden(): ?bool
+    {
+        return $this->isHidden;
+    }
+
+    public function setIsHidden(bool $isHidden): self
+    {
+        $this->isHidden = $isHidden;
 
         return $this;
     }
