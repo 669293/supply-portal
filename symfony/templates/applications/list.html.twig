@@ -371,7 +371,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                     </div>
                     <div class="modal-body">
-                      {% if not ('ROLE_CREATOR' in roles and 'ROLE_EXECUTOR' in roles) %}
+                      {% if 'ROLE_SUPERVISOR' in roles or (not ('ROLE_CREATOR' in roles and 'ROLE_EXECUTOR' in roles)) %}
                         {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
                           <div class="form-floating mb-3">
                             <select class="form-select" id="authorSelect" name="filterAuthor">
