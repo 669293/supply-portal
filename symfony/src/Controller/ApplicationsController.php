@@ -22,6 +22,7 @@ use App\Entity\BillsMaterials;
 use App\Entity\BillsStatuses;
 use App\Entity\Files;
 use App\Entity\TypesOfEquipment;
+use App\Entity\LogisticsMaterials;
 use App\Entity\Materials;
 use App\Entity\MaterialsComments;
 use App\Entity\ResponsibleLog;
@@ -1912,6 +1913,7 @@ HERE;
         BillsMaterialsRepository $billsMaterialsRepository, 
         BillsStatusesRepository $billsStatusesRepository,
         FilesRepository $filesRepository, 
+        LogisticsRepository $logisticsRepository,
         LogisticsMaterialsRepository $logisticsMaterialsRepository,
         MaterialsCommentsRepository $materialsCommentsRepository,
         MaterialsRepository $materialsRepository, 
@@ -2033,6 +2035,82 @@ HERE;
                 'currency' => $bill->getCurrency(),
                 'id' => $billId
             ];
+
+            //Получаем сколько осталось по счету
+            //Получаем список материалов по счету
+            $materials = $billsMaterialsRepository->findBy(array('bill' => $billId), array('id' => 'ASC'));
+
+            //Получаем массив заявок
+            $materialsIDs = []; //Массив ID заявок (пригодится для выборки по логистике)
+            foreach ($materials as $material) {
+                $materialsIDs[] = $material->getMaterial()->getId();
+            }
+
+            //Добавляем информацию по логистике
+            $arrLogistics = [];
+            $logistics = $this->entityManager->getRepository(LogisticsMaterials::class)->createQueryBuilder('lm')
+            ->select('IDENTITY(lm.logistic) AS logistic, COUNT(lm.material) AS cnt')
+            ->where('lm.material IN (:materials)')
+            ->join('App\Entity\Logistics', 'l', 'WITH' ,'lm.logistic=l.id')
+            ->andWhere('(l.bill = :bid) OR l.bill IS NULL')
+            ->groupBy('lm.logistic')
+            ->setParameter('materials', $materialsIDs)
+            ->setParameter('bid', $billId)
+            ->distinct()
+            ->getQuery()
+            ->getResult();
+
+            $tmpLogisticsDates = [];
+            $tmpLogisticsIDs = [];
+            $colors = ['alert-primary', 'alert-secondary', 'alert-success', 'alert-danger', 'alert-warning', 'alert-info', 'alert-light', 'alert-dark'];
+            $colorIndex = -1;
+            for ($i=0; $i<sizeof($logistics); $i++) {
+                $log = $logisticsRepository->findBy( array('id' => $logistics[$i]['logistic']) );
+                if (is_array($log)) {$log = array_shift($log);}
+                $tmp = new \stdClass;
+                $tmp->logistics = $log;
+                $tmp->materials = $logistics[$i]['cnt'];
+                $tmp->color = '';
+
+                //Получаем родителя
+                if (is_numeric($log->getParent())) {
+                    $logistics_ = $logisticsRepository->findBy( array('id' => $log->getParent()) );
+                    if (is_array($logistics_)) {$logistics_ = array_shift($logistics_);}
+                    $tmp->parent = $logistics_;
+                } else {
+                    $tmp->parent = null;    
+                }
+                
+                $arrLogistics[] = $tmp;
+                $tmpLogisticsDates[] = $log->getDate()->getTimestamp();
+                $tmpLogisticsIDs[] = $log->getId();
+            }
+
+            //Сортируем массив $arrLogistics
+            for ($i=0; $i<sizeof($tmpLogisticsDates); $i++) {
+                for ($j=$i; $j<sizeof($tmpLogisticsDates); $j++) {
+                    if ($tmpLogisticsDates[$i] > $tmpLogisticsDates[$j] || ($tmpLogisticsDates[$i] == $tmpLogisticsDates[$j] && $tmpLogisticsIDs[$i] > $tmpLogisticsIDs[$j])) {
+                        $tmp = $tmpLogisticsDates[$i];
+                        $tmpLogisticsDates[$i] = $tmpLogisticsDates[$j];
+                        $tmpLogisticsDates[$j] = $tmp;
+
+                        $tmp = $tmpLogisticsIDs[$i];
+                        $tmpLogisticsIDs[$i] = $tmpLogisticsIDs[$j];
+                        $tmpLogisticsIDs[$j] = $tmp;
+
+                        $tmp = $arrLogistics[$i];
+                        $arrLogistics[$i] = $arrLogistics[$j];
+                        $arrLogistics[$j] = $tmp;
+                    }
+                }    
+            }
+
+            $logSum = 0;
+            foreach ($arrLogistics as $log) {
+                $logSum += $log->logistics->getSum();
+            }
+            
+            $params['rest'] = $bill->getSum() - $logSum;
 
             //Определяем класс кнопки и иконку
             //Получаем статус счета

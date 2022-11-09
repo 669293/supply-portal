@@ -138,6 +138,7 @@
                                         <tr>
                                             <th>Счет</th>
                                             <th>Сумма</th>
+                                            <th>Осталось</th>
                                             <th>Статус</th>
                                         </tr>
                                     </thead>
@@ -156,6 +157,7 @@
                                             {% if bill.currency == 'руб.' %}{% set sumrub = sumrub + bill.sum %}{% endif %}
                                             {% if bill.currency == '$' %}{% set sumusd = sumusd + bill.sum %}{% endif %}
                                             {% if bill.currency == '€' %}{% set sumeur = sumeur + bill.sum %}{% endif %}
+                                            <td class="align-middle text-nowrap{% if bill.rest == 0 %} text-success{% endif %}">{{ bill.rest|number_format(2, '.', ' ') }} {{ bill.currency }}</td>
                                             <td class="align-middle text-nowrap">
                                                 {% if is_granted('ROLE_SUPERVISOR') and currentstatus not in ['Согласовать', 'Отменена', 'Выполнена'] %}
                                                     <div class="input-group input-group-sm" role="group">

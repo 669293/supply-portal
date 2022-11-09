@@ -41,12 +41,12 @@
                 {% else %}
                     <fieldset>
                         <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-1 pb-3">
-                            <table class="table table-sm table-hover table-bordered table-striped mb-0 us-none" id="billsTable">
+                            <table class="table table-sm table-hover table-bordered table-striped mb-0 us-none billsTable">
                                 <thead>
                                     <tr>
                                         <th class="py-2 align-middle text-center text-small" scope="col" style="width: 40px;">№</th>
                                         <th class="py-2 align-middle text-small" scope="col">Заявка</th>
-                                        <th class="py-2 align-middle text-small text-nowrap" scope="col">Отправитель<br />Ответственный <a role="button" class="text-primary" data-bs-toggle="modal" data-bs-target="#filterModal" id="toggleFilterModal"><i class="bi bi-funnel"></i></a></th>
+                                        <th class="py-2 align-middle text-small text-nowrap" scope="col">Отправитель<br />Ответственный {# <a role="button" class="text-primary" data-bs-toggle="modal" data-bs-target="#filterModal" id="toggleFilterModal"><i class="bi bi-funnel"></i></a> #}</th>
                                         <th class="py-2 align-middle text-small" scope="col">Поставщик</th>
                                         <th class="py-2 align-middle text-small" scope="col">Сумма<br />Срочность</th>
                                         <th class="py-2 align-middle text-small" scope="col">Комментарии</th>
@@ -55,10 +55,12 @@
                                 </thead>
                                 <tbody>
                                 {% set fileId = 0 %}
+                                {% set billNum = 0 %}
                                 {% for bill in bills %}
                                     {% if not bill.obj.getIsHidden %}
+                                        {% set billNum = billNum + 1 %}
                                         <tr>
-                                            <td class="align-middle text-center text-small">{{ loop.index }}</td>
+                                            <td class="align-middle text-center text-small">{{ billNum }}</td>
                                             <td class="align-top text-small text-nowrap">
                                                 {% for application in bill.applications %}
                                                     {% if loop.index > 1 %}<br />{% endif %}<a href="/applications/bills/in-work/view/?id={{ bill.obj.getId }}">{{ application.getTitle }}</a> <span class="text-muted text-small">№{{ application.getId }} от {{ application.getDateCreate|date('d.m.Y') }}</span>
@@ -105,7 +107,7 @@
                                             </td>
                                             <td class="align-middle text-center text-nowrap">
                                                 {% if bill.obj.getUser.getId == app.user.getId %}
-                                                    <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-warning" title="Скрыть" href="/applications/bills/set-state?id={{ bill.id }}&hidden=1"><i class="bi-eye-slash"></i></a>
+                                                    <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-warning bill-hide-btn" title="Скрыть" data-id="{{ bill.id }}" data-hidden="1" href="#?" /><i class="bi-eye-slash"></i></a>
                                                 {% endif %}
                                                 <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-success" title="Распечатать на подпись" href="/applications/bills/download?id={{ bill.id }}" target="_blank"><i class="bi-printer"></i></a>
                                                 <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-secondary filePreview" data-id="thumb-attachments-init-{{ fileId }}" title="Просмотр" href="#?" target="_blank"><i class="bi-zoom-in"></i></a>
@@ -132,12 +134,12 @@
                 {% else %}
                     <fieldset>
                         <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-1 pb-3">
-                            <table class="table table-sm table-hover table-bordered table-striped mb-0 us-none" id="billsTable">
+                            <table class="table table-sm table-hover table-bordered table-striped mb-0 us-none billsTable">
                                 <thead>
                                     <tr>
                                         <th class="py-2 align-middle text-center text-small" scope="col" style="width: 40px;">№</th>
                                         <th class="py-2 align-middle text-small" scope="col">Заявка</th>
-                                        <th class="py-2 align-middle text-small text-nowrap" scope="col">Отправитель<br />Ответственный <a role="button" class="text-primary" data-bs-toggle="modal" data-bs-target="#filterModal" id="toggleFilterModal"><i class="bi bi-funnel"></i></a></th>
+                                        <th class="py-2 align-middle text-small text-nowrap" scope="col">Отправитель<br />Ответственный {# <a role="button" class="text-primary" data-bs-toggle="modal" data-bs-target="#filterModal" id="toggleFilterModal"><i class="bi bi-funnel"></i></a> #}</th>
                                         <th class="py-2 align-middle text-small" scope="col">Поставщик</th>
                                         <th class="py-2 align-middle text-small" scope="col">Сумма<br />Срочность</th>
                                         <th class="py-2 align-middle text-small" scope="col">Комментарии</th>
@@ -145,11 +147,12 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                {% set fileId = 0 %}
+                                {% set billNum = 0 %}
                                 {% for bill in bills %}
                                     {% if bill.obj.getIsHidden %}
+                                        {% set billNum = billNum + 1 %}
                                         <tr>
-                                            <td class="align-middle text-center text-small">{{ loop.index }}</td>
+                                            <td class="align-middle text-center text-small">{{ billNum }}</td>
                                             <td class="align-top text-small text-nowrap">
                                                 {% for application in bill.applications %}
                                                     {% if loop.index > 1 %}<br />{% endif %}<a href="/applications/bills/in-work/view/?id={{ bill.obj.getId }}">{{ application.getTitle }}</a> <span class="text-muted text-small">№{{ application.getId }} от {{ application.getDateCreate|date('d.m.Y') }}</span>
@@ -196,7 +199,7 @@
                                             </td>
                                             <td class="align-middle text-center text-nowrap">
                                                 {% if bill.obj.getUser.getId == app.user.getId %}
-                                                    <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-warning" title="Отобразить" href="/applications/bills/set-state?id={{ bill.id }}&hidden=0"><i class="bi-eye"></i></a>
+                                                    <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-warning bill-hide-btn" title="Отобразить" data-id="{{ bill.id }}" data-hidden="0" href="#?" /><i class="bi-eye"></i></a>
                                                 {% endif %}
                                                 <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-success" title="Распечатать на подпись" href="/applications/bills/download?id={{ bill.id }}" target="_blank"><i class="bi-printer"></i></a>
                                                 <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-secondary filePreview" data-id="thumb-attachments-init-{{ fileId }}" title="Просмотр" href="#?" target="_blank"><i class="bi-zoom-in"></i></a>
@@ -319,6 +322,70 @@
                 $('#toggleFilterModal i').removeClass('bi-funnel-fill').addClass('bi-funnel');
                 filterModal.hide();
                 $('#filterCancelBtn').addClass('d-none');
+            });
+
+            //Скрытие и отображение счета
+            $('body').on('click', '.bill-hide-btn', function(event) {
+                event.preventDefault();
+                
+                var row = $(this).closest('tr').clone();
+                var tr = $(this).closest('tr');
+                var billId = $(this).data('id');
+                var isHidden = $(this).data('hidden');
+
+                $.get('/applications/bills/set-state?id=' + billId + '&hidden=' + isHidden, function() {
+                    tr.hide('fast', function() {
+                        tr.remove();
+                        if (isHidden == 1) {
+                            //Проверяем вдруг не осталось активных счетов
+                            if ($('#visible .billsTable tbody:first tr').length == 0) {
+                                $('#visible').html('<p class="text-muted">Нет активных счетов</p>');
+                            }
+                        } else {
+                            //Проверяем вдруг не осталось скрытых счетов
+                            if ($('#invisible .billsTable tbody:first tr').length == 0) {
+                                $('#invisible').html('<p class="text-muted">Нет скрытых счетов</p>');
+                            }
+                        }
+                    });
+
+                    if (isHidden == 1) {
+                        row.find('.bill-hide-btn').attr('data-hidden', 0).find('i').removeClass('bi-eye-slash').addClass('bi-eye');
+
+                        //Вдруг таблицы нет
+                        if ($('#invisible .billsTable').length == 0) {
+                            $('#invisible .text-muted').remove();
+                            $('#invisible').html('<fieldset><div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-1 pb-3"><table class="table table-sm table-hover table-bordered table-striped mb-0 us-none billsTable"><thead><tr><th class="py-2 align-middle text-center text-small" scope="col" style="width: 40px;">№</th><th class="py-2 align-middle text-small" scope="col">Заявка</th><th class="py-2 align-middle text-small text-nowrap" scope="col">Отправитель<br />Ответственный <a role="button" class="text-primary" data-bs-toggle="modal" data-bs-target="#filterModal" id="toggleFilterModal"><i class="bi bi-funnel"></i></a></th><th class="py-2 align-middle text-small" scope="col">Поставщик</th><th class="py-2 align-middle text-small" scope="col">Сумма<br />Срочность</th><th class="py-2 align-middle text-small" scope="col">Комментарии</th><th class="py-2 align-middle text-small w-auto" scope="col"></th></tr></thead><tbody></tbody></table></div></fieldset>');
+                        }
+
+                        $('#invisible .billsTable tbody:first').append(row);
+                    } else {
+                        row.find('.bill-hide-btn').attr('data-hidden', 1).find('i').removeClass('bi-eye').addClass('bi-eye-slash');
+
+                        //Вдруг таблицы нет
+                        if ($('#visible .billsTable').length == 0) {
+                            $('#visible .text-muted').remove();
+                            $('#visible').html('<fieldset><div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-1 pb-3"><table class="table table-sm table-hover table-bordered table-striped mb-0 us-none billsTable"><thead><tr><th class="py-2 align-middle text-center text-small" scope="col" style="width: 40px;">№</th><th class="py-2 align-middle text-small" scope="col">Заявка</th><th class="py-2 align-middle text-small text-nowrap" scope="col">Отправитель<br />Ответственный <a role="button" class="text-primary" data-bs-toggle="modal" data-bs-target="#filterModal" id="toggleFilterModal"><i class="bi bi-funnel"></i></a></th><th class="py-2 align-middle text-small" scope="col">Поставщик</th><th class="py-2 align-middle text-small" scope="col">Сумма<br />Срочность</th><th class="py-2 align-middle text-small" scope="col">Комментарии</th><th class="py-2 align-middle text-small w-auto" scope="col"></th></tr></thead><tbody></tbody></table></div></fieldset>');
+                        }
+
+                        $('#visible .billsTable tbody:first').append(row);
+                    }
+
+                    //Восстанавливаем нумерацию таблицы
+                    var num = 0; $('#visible .billsTable tbody:first tr').each(function() {
+                        if ($(this).closest('td').length == 0) {
+                            num++; 
+                            $(this).find('td:first').html(num);
+                        }
+                    });
+
+                    var num = 0; $('#invisible .billsTable tbody:first tr').each(function() {
+                        if ($(this).closest('td').length == 0) {
+                            num++; 
+                            $(this).find('td:first').html(num);
+                        }
+                    });
+                });
             });
         });
     </script>

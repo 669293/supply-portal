@@ -989,7 +989,7 @@ class BillsController extends AbstractController
         $this->entityManager->persist($bill);
         $this->entityManager->flush();
 
-        return new RedirectResponse('/applications/bills/in-work');
+        return new JsonResponse();
     }
 
     /**
@@ -1013,11 +1013,11 @@ class BillsController extends AbstractController
         $bills = [];
         $bills_ = [];
         
-        if (in_array('ROLE_SUPERVISOR', $roles)) {
-            $sql = "SELECT res.bid AS id FROM (SELECT bs.bill AS bid, (SELECT bs2.status FROM bills_statuses bs2 WHERE bs2.id = MAX(bs.id)) FROM bills_statuses bs GROUP BY bs.bill) res, bills b WHERE res.bid = b.id AND res.status <> 5 ORDER BY b.inn;";
-        } else {
-            $sql = "SELECT res.bid AS id FROM (SELECT bs.bill AS bid, (SELECT bs2.status FROM bills_statuses bs2 WHERE bs2.id = MAX(bs.id)) FROM bills_statuses bs GROUP BY bs.bill) res, bills b WHERE res.bid = b.id AND b.user = ".(int)$this->security->getUser()->getId()." AND res.status <> 5 ORDER BY b.inn;"; 
-        }
+        // if (in_array('ROLE_SUPERVISOR', $roles)) {
+            // $sql = "SELECT res.bid AS id FROM (SELECT bs.bill AS bid, (SELECT bs2.status FROM bills_statuses bs2 WHERE bs2.id = MAX(bs.id)) FROM bills_statuses bs GROUP BY bs.bill) res, bills b WHERE res.bid = b.id AND res.status NOT IN (5, 9, 10) ORDER BY b.inn;";
+        // } else {
+            $sql = "SELECT res.bid AS id FROM (SELECT bs.bill AS bid, (SELECT bs2.status FROM bills_statuses bs2 WHERE bs2.id = MAX(bs.id)) FROM bills_statuses bs GROUP BY bs.bill) res, bills b WHERE res.bid = b.id AND b.user = ".(int)$this->security->getUser()->getId()." AND res.status NOT IN (5, 9, 10) ORDER BY b.inn;"; 
+        // }
         $stmt = $this->entityManager->getConnection()->prepare($sql);
         $stmt->execute();
         $bills_ = $stmt->fetchAllAssociative();
