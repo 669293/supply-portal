@@ -21,6 +21,7 @@
 
 {# Контент #}
 {% block content %}
+    {% set fileId = 0 %}
     {% if bills|length > 0 %}
         <ul class="nav nav-tabs mt-4 mb-4" role="tablist">
             <li class="nav-item" role="presentation">
@@ -54,7 +55,6 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                {% set fileId = 0 %}
                                 {% set billNum = 0 %}
                                 {% for bill in bills %}
                                     {% if not bill.obj.getIsHidden %}
@@ -268,10 +268,21 @@
         var params = {
             initialPreview: [
             {% for bill in bills %}
-                {% if bill.obj.getFileType == 'image' %}
-                    '<img src="{{ url('index') }}upload/bills/{{ bill.obj.getPath }}" class="file-preview-image" alt="" />',
-                {% else %}
-                    '{{ url('index') }}upload/bills/{{ bill.obj.getPath }}',
+                {% if not bill.obj.getIsHidden %}
+                    {% if bill.obj.getFileType == 'image' %}
+                        '<img src="{{ url('index') }}upload/bills/{{ bill.obj.getPath }}" class="file-preview-image" alt="" />',
+                    {% else %}
+                        '{{ url('index') }}upload/bills/{{ bill.obj.getPath }}',
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+            {% for bill in bills %}
+                {% if bill.obj.getIsHidden %}
+                    {% if bill.obj.getFileType == 'image' %}
+                        '<img src="{{ url('index') }}upload/bills/{{ bill.obj.getPath }}" class="file-preview-image" alt="" />',
+                    {% else %}
+                        '{{ url('index') }}upload/bills/{{ bill.obj.getPath }}',
+                    {% endif %}
                 {% endif %}
             {% endfor %}
             ],
@@ -279,10 +290,21 @@
             hideThumbnailContent: true,
             initialPreviewConfig: [
             {% for bill in bills %}
-                {% if bill.obj.getFileType == 'image' %}
-                    {type: '{{ bill.obj.getFileType }}', caption: '{{ bill.obj.getFilename }}', downloadUrl: '{{ url('index') }}upload/bills/{{ bill.obj.getPath }}', previewAsData: false},
-                {% else %}
-                    {type: '{{ bill.obj.getFileType }}', caption: '{{ bill.obj.getFilename }}', downloadUrl: '{{ url('index') }}upload/bills/{{ bill.obj.getPath }}'},
+                {% if not bill.obj.getIsHidden %}
+                    {% if bill.obj.getFileType == 'image' %}
+                        {type: '{{ bill.obj.getFileType }}', caption: '{{ bill.obj.getFilename }}', downloadUrl: '{{ url('index') }}upload/bills/{{ bill.obj.getPath }}', previewAsData: false},
+                    {% else %}
+                        {type: '{{ bill.obj.getFileType }}', caption: '{{ bill.obj.getFilename }}', downloadUrl: '{{ url('index') }}upload/bills/{{ bill.obj.getPath }}'},
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+            {% for bill in bills %}
+                {% if bill.obj.getIsHidden %}
+                    {% if bill.obj.getFileType == 'image' %}
+                        {type: '{{ bill.obj.getFileType }}', caption: '{{ bill.obj.getFilename }}', downloadUrl: '{{ url('index') }}upload/bills/{{ bill.obj.getPath }}', previewAsData: false},
+                    {% else %}
+                        {type: '{{ bill.obj.getFileType }}', caption: '{{ bill.obj.getFilename }}', downloadUrl: '{{ url('index') }}upload/bills/{{ bill.obj.getPath }}'},
+                    {% endif %}
                 {% endif %}
             {% endfor %}
             ],
