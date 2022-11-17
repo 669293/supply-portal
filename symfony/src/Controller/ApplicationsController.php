@@ -2865,8 +2865,8 @@ HERE;
                 $result->comment = '';
                 $result->number = '';
                 $result->equipment = '';
-                $result->way = '';
-                $result->track = '';
+                $result->way = [];
+                $result->track = [];
                 $results[] = $result;
                 unset($result);
             }
@@ -2894,8 +2894,8 @@ HERE;
                     $result->comment = $application->getComment();
                     $result->number = '';
                     $result->equipment = '';
-                    $result->way = '';
-                    $result->track = '';
+                    $result->way = [];
+                    $result->track = [];
                     $results[] = $result;
                     unset($result);
                 }
@@ -2924,8 +2924,8 @@ HERE;
                     $result->comment = '';
                     $result->number = $application->getNumber();
                     $result->equipment = '';
-                    $result->way = '';
-                    $result->track = '';
+                    $result->way = [];
+                    $result->track = [];
                     $results[] = $result;
                     unset($result);
                 }
@@ -2960,8 +2960,8 @@ HERE;
                             $result->comment = '';
                             $result->number = '';
                             $result->equipment = $toe->getTitle();
-                            $result->way = '';
-                            $result->track = '';
+                            $result->way = [];
+                            $result->track = [];
                             $results[] = $result;
                             unset($result);
                         }
@@ -2992,8 +2992,8 @@ HERE;
                         $result->comment = '';
                         $result->number = '';
                         $result->equipment = '';
-                        $result->way = '';
-                        $result->track = '';
+                        $result->way = [];
+                        $result->track = [];
                         $results[] = $result;
                         unset($result);
                     }
@@ -3001,6 +3001,12 @@ HERE;
             }
 
             unset($materials);
+
+            //Дополняем массив логистики
+            foreach ($results as $result) {
+                while (sizeof($result->way) < sizeof($result->materials)) {$result->way[] = null;}
+                while (sizeof($result->track) < sizeof($result->materials)) {$result->track[] = null;}
+            }
 
             //Выполняем поиск по логистике
             $logistics = $logisticsRepository->findLike($q);
@@ -3024,18 +3030,18 @@ HERE;
                         //Добавляем заявку в результаты
                         $result = new \stdClass;
                         $result->application = $material->getApplication();
-                        $result->materials = [$material];
+                        $result->materials[] = $material;
                         $result->comment = '';
                         $result->number = '';
                         $result->equipment = '';
-                        $result->way = [$logistic->getWay()];
-                        $result->track = [$logistic->getTrack()];
+                        $result->way[] = $logistic->getWay();
+                        $result->track[] = $logistic->getTrack();
                         $results[] = $result;
                         unset($result);
                     }
                 }
             }
-
+            
             //Обрабатываем результаты
             for ($i=0; $i<sizeof($results); $i++) {
                 $results[$i]->applicationUrgency = $applicationsRepository->getUrgency($results[$i]->application->getId());
