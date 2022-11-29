@@ -42,7 +42,7 @@
                 {% else %}
                     <fieldset>
                         <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-1 pb-3">
-                            <table class="table table-sm table-hover table-bordered table-striped mb-0 us-none billsTable">
+                            <table class="table table-sm table-hover table-bordered table-striped mb-0 billsTable">
                                 <thead>
                                     <tr>
                                         <th class="py-2 align-middle text-center text-small" scope="col" style="width: 40px;">№</th>
@@ -105,7 +105,7 @@
                                                     <span class="text-muted">Нет комментариев</span>
                                                 {% endif %}
                                             </td>
-                                            <td class="align-middle text-center text-nowrap">
+                                            <td class="align-middle text-center text-nowrap us-none">
                                                 {% if bill.obj.getUser.getId == app.user.getId %}
                                                     <a class="kv-file-download btn btn-sm btn-kv btn-default btn-outline-warning bill-hide-btn" title="Скрыть" data-id="{{ bill.id }}" data-hidden="1" href="#?" /><i class="bi-eye-slash"></i></a>
                                                 {% endif %}

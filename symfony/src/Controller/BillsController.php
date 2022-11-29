@@ -460,11 +460,36 @@ class BillsController extends AbstractController
     }
 
     /**
+     * Проверка наличия контрагента в базе
+     * @Route("/applications/bills/upload/check-provider", methods={"POST"}))
+     */
+    public function checkProvider(Request $request, BillsRepository $billsRepository, ProvidersRepository $providersRepository,): JsonResponse
+    {
+        $providers = $providersRepository->findBy(array('inn' => $request->request->get('inn')));
+        if (sizeof($providers) > 0) {
+            return new JsonResponse(1);
+        } else {
+            $bills = $billsRepository->findBy(array('inn' => $request->request->get('inn')));
+            if (sizeof($providers) > 0) {
+                return new JsonResponse(1);
+            } else {
+                return new JsonResponse(0);
+            }
+        }
+    }
+
+    /**
      * Печать счетов (принимает данные из формы или из URL)
      * @Route("/applications/bills/download", methods={"GET", "POST"}))
      * @IsGranted("ROLE_SUPERVISOR")
      */
-    public function printBillForm(Request $request, BillsRepository $billsRepository, BillsMaterialsRepository $billsMaterialsRepository, BillsStatusesRepository $billsStatusesRepository, StatusesOfBillsRepository $statusesOfBillsRepository): \Mpdf\Mpdf
+    public function printBillForm(
+        Request $request, 
+        BillsRepository $billsRepository, 
+        BillsMaterialsRepository $billsMaterialsRepository, 
+        BillsStatusesRepository $billsStatusesRepository, 
+        StatusesOfBillsRepository $statusesOfBillsRepository
+    ): \Mpdf\Mpdf
     {
         $id = $request->query->get('id');
         if ($id === null) {
@@ -522,7 +547,7 @@ class BillsController extends AbstractController
                 
                 $titles = []; $title = '';
                 foreach ($applications as $application) {
-                    $titles[] = '<span style="font-weight: bold;">'.$application->getId().( !empty($application->getNumber()) ? ' ['.$application->getNumber().']' : '' ).'</span> ('.$application->getAuthor()->getShortUsername().')';
+                    $titles[] = '<span style="font-weight: bold;">'.$application->getId().( !empty($application->getNumber()) ? ' ['.$application->getNumber().']' : '' ).'</span> '.$application->getTitle().' ('.$application->getAuthor()->getShortUsername().')';
                     $title = $application->getId().( !empty($application->getNumber()) ? ' ['.$application->getNumber().']' : '' ).' ('.$application->getAuthor()->getShortUsername().')'; //Используется для формирования имени файла, если счет один
                 }
 

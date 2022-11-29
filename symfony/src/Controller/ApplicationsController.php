@@ -3271,6 +3271,12 @@ HERE;
                 if (is_array($filter->responsible)) {$filter->responsible = array_shift($filter->responsible);}
                 $filter->resultsPerPage = 0;
             }
+
+            if (in_array('ROLE_CREATOR', $roles) && !in_array('ROLE_SUPERVISOR', $roles)) {
+                $filter->author = $usersRepository->findBy(array('id' => $this->security->getUser()->getId()));
+                if (is_array($filter->author)) {$filter->author = array_shift($filter->author);}
+                $filter->resultsPerPage = 0;
+            }
         }
         $filter->done = true;
 

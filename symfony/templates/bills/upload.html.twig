@@ -257,6 +257,19 @@
     <script src="{{ asset('js/ajax-bootstrap-select.ru-RU.min.js') }}" type="text/javascript"></script>
     <script src="{{ asset('js/bills/upload.js') }}" type="text/javascript"></script>
     <script type="text/javascript">
+        //Проверка поставщика (новый или нет)
+        $('input[name="innInput"]').focusout(function() {
+            var input = $(this);
+            input.closest('td').find('.form-text').removeClass('text-success').removeClass('text-warning').text('ИНН поставщика');
+            $.post('/applications/bills/upload/check-provider', { inn: input.val() }).done(function(data) {
+                if (data == 0) {
+                    input.closest('td').find('.form-text').addClass('text-warning').text('Первая сделка с данным поставщиком');
+                } else {
+                    input.closest('td').find('.form-text').addClass('text-success');
+                }
+            });
+        });
+
         //Правка вставляемого значения суммы
         window.onload = function() {
             var billSumInput = document.getElementById('billSumInput');
