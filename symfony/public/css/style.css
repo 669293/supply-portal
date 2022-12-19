@@ -152,3 +152,7 @@ html.dark .bootstrap-select .dropdown-toggle {
 html.dark .btn-light {
     border-color: #515151;
 }
+
+.container-lg {
+    max-width: 1600px;
+}
