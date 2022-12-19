@@ -224,152 +224,154 @@
                 </div>
             {% endif %}
 
-            {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
-                <h5 class="mb-3">Отгрузка/получение материалов по счету</h5>
-            {% else %}
-                <h5 class="mb-3">Материалы в счете</h5>
-            {% endif %}
-            <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-0">
-                <table class="table table-sm table-bordered table-striped table-hover mb-0" style="min-width: 900px;">
-                    <thead>
-                        <tr>
-                            <th class="py-2 align-middle text-center text-small" scope="col" style="width: 50px;">№</th>
-                            {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
-                                <th class="py-2 align-middle text-center" scope="col" style="width: 50px;"><input class="form-check-input material-select-all" type="checkbox" name="" value="" /></th>
-                                <th class="py-2 align-middle text-small text-nowrap" scope="col" style="width: 150px;">К отгрузке/получению</th>
-                            {% endif %}
-                            <th class="py-2 align-middle text-small" scope="col">Наименование</th>
-                            <th class="py-2 align-middle text-center text-small text-nowrap" scope="col" style="width: 150px;">Получено / В заявке</th>
-                            <th class="align-middle text-small">Ответственный</th>
-                            <th class="align-middle text-small">Заявка</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {% for material in materials %}
-                        {% set checked = '' %}
-                        {% if material.amount <= material.recieved %}{% set checked = ' checked' %}{% endif %}
-                        {% if material.getMaterial.getIsDeleted %}
-                            <tr class="text-muted">
-                                <td class="align-middle text-center text-xsmall text-decoration-line-through">{{ loop.index }}</td>
+            {% if materials|length > 0 %}
+                {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
+                    <h5 class="mb-3">Отгрузка/получение материалов по счету</h5>
+                {% else %}
+                    <h5 class="mb-3">Материалы в счете</h5>
+                {% endif %}
+                <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-0">
+                    <table class="table table-sm table-bordered table-striped table-hover mb-0" style="min-width: 900px;">
+                        <thead>
+                            <tr>
+                                <th class="py-2 align-middle text-center text-small" scope="col" style="width: 50px;">№</th>
                                 {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
-                                    <td class="align-middle text-center"><input class="form-check-input freeze-ignore" type="checkbox" name="" value="" disabled{{ checked }} /></td>
-                                    <td class="align-middle text-center"><input type="number" name="" value="{{ material.amount - material.recieved }}" class="amount-input form-control form-control-sm freeze-ignore" min="1" max="{{ material.amount - material.recieved }}" disabled /></td>
+                                    <th class="py-2 align-middle text-center" scope="col" style="width: 50px;"><input class="form-check-input material-select-all" type="checkbox" name="" value="" /></th>
+                                    <th class="py-2 align-middle text-small text-nowrap" scope="col" style="width: 150px;">К отгрузке/получению</th>
                                 {% endif %}
-                                <td class="align-middle text-decoration-line-through text-xsmall">{{ material.getMaterial.getTitle }}</td>
-                                <td class="align-middle text-start text-decoration-line-through text-xsmall">{{ material.recieved }} {{ material.getMaterial.getUnit.getTitle }} / {{ material.getMaterial.getAmount }} {{ material.getMaterial.getUnit.getTitle }}</td>
-                                <td class="align-middle text-decoration-line-through text-xsmall">{% if material.getMaterial.getResponsible != null %}{{ material.getMaterial.getResponsible.getShortUserName }}{% else %}Не назначен{% endif %}</td>
-                                <td class="align-middle text-decoration-line-through text-xsmall"><a href="/applications/view?number={{ material.getMaterial.getApplication.getId }}">#{{ material.getMaterial.getApplication.getId }}</a> <i class="bi bi-arrow-right"></i> {{ material.getMaterial.getNum }} поз.</td>
+                                <th class="py-2 align-middle text-small" scope="col">Наименование</th>
+                                <th class="py-2 align-middle text-center text-small text-nowrap" scope="col" style="width: 150px;">Получено / В заявке</th>
+                                <th class="align-middle text-small">Ответственный</th>
+                                <th class="align-middle text-small">Заявка</th>
                             </tr>
-                        {% else %}
-                            {% if is_granted('ROLE_SUPERVISOR') or material.getMaterial.getResponsible.getId == app.user.id %}
-                                {# Пользователь может отмечать материал как полученный #}
-                                {% set avalibleMaterials = avalibleMaterials + 1 %}
-                                <tr class="">
-                                    <td class="align-middle text-center text-xsmall">{{ loop.index }}</td>
-                                    {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
-                                        <td class="align-middle text-center"><input class="form-check-input{% if checked != '' %} is-valid freeze-ignore{% else %} material-select{% endif %}" type="checkbox" name="material[]" value="{{ material.getId }}" {% if checked != '' %} checked disabled{% endif %} /></td>
-                                        <td class="align-middle text-center"><input type="number" name="" value="{{ material.amount - material.recieved }}" class="amount-input form-control form-control-sm{% if checked != '' %} freeze-ignore{% endif %}" min="1" max="{{ material.amount - material.recieved }}"{% if checked != '' %} disabled{% endif %} /></td>
-                                    {% endif %}
-                                    <td class="align-middle text-xsmall">{{ material.getMaterial.getTitle }}</td>
-                                    <td class="align-middle text-start text-xsmall">{{ material.recieved }} {{ material.getMaterial.getUnit.getTitle }} / {{ material.getMaterial.getAmount }} {{ material.getMaterial.getUnit.getTitle }}</td>
-                                    <td class="align-middle text-xsmall">{% if material.getMaterial.getResponsible != null %}{{ material.getMaterial.getResponsible.getShortUserName }}{% else %}Не назначен{% endif %}</td>
-                                    <td class="align-middle text-xsmall"><a href="/applications/view?number={{ material.getMaterial.getApplication.getId }}">#{{ material.getMaterial.getApplication.getId }}</a> <i class="bi bi-arrow-right"></i> {{ material.getMaterial.getNum }} поз.</td>
-                                </tr>
-                            {% else %}
+                        </thead>
+                        <tbody>
+                        {% for material in materials %}
+                            {% set checked = '' %}
+                            {% if material.amount <= material.recieved %}{% set checked = ' checked' %}{% endif %}
+                            {% if material.getMaterial.getIsDeleted %}
                                 <tr class="text-muted">
-                                    <td class="align-middle text-center text-xsmall">{{ loop.index }}</td>
+                                    <td class="align-middle text-center text-xsmall text-decoration-line-through">{{ loop.index }}</td>
                                     {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
-                                        <td class="align-middle text-center"><input class="form-check-input freeze-ignore{% if checked != '' %} is-valid{% endif %}" type="checkbox" name="" value="" disabled{{ checked }} /></td>
+                                        <td class="align-middle text-center"><input class="form-check-input freeze-ignore" type="checkbox" name="" value="" disabled{{ checked }} /></td>
                                         <td class="align-middle text-center"><input type="number" name="" value="{{ material.amount - material.recieved }}" class="amount-input form-control form-control-sm freeze-ignore" min="1" max="{{ material.amount - material.recieved }}" disabled /></td>
                                     {% endif %}
-                                    <td class="align-middle text-xsmall">{{ material.getMaterial.getTitle }}</td>
-                                    <td class="align-middle text-start text-xsmall">{{ material.recieved }} {{ material.getMaterial.getUnit.getTitle }} / {{ material.getMaterial.getAmount }} {{ material.getMaterial.getUnit.getTitle }}</td>
-                                    <td class="align-middle text-xsmall">{% if material.getMaterial.getResponsible != null %}{{ material.getMaterial.getResponsible.getShortUserName }}{% else %}Не назначен{% endif %}</td>
-                                    <td class="align-middle text-xsmall"><a href="/applications/view?number={{ material.getMaterial.getApplication.getId }}">#{{ material.getMaterial.getApplication.getId }}</a> <i class="bi bi-arrow-right"></i> {{ material.getMaterial.getNum }} поз.</td>
+                                    <td class="align-middle text-decoration-line-through text-xsmall">{{ material.getMaterial.getTitle }}</td>
+                                    <td class="align-middle text-start text-decoration-line-through text-xsmall">{{ material.recieved }} {{ material.getMaterial.getUnit.getTitle }} / {{ material.getMaterial.getAmount }} {{ material.getMaterial.getUnit.getTitle }}</td>
+                                    <td class="align-middle text-decoration-line-through text-xsmall">{% if material.getMaterial.getResponsible != null %}{{ material.getMaterial.getResponsible.getShortUserName }}{% else %}Не назначен{% endif %}</td>
+                                    <td class="align-middle text-decoration-line-through text-xsmall"><a href="/applications/view?number={{ material.getMaterial.getApplication.getId }}">#{{ material.getMaterial.getApplication.getId }}</a> <i class="bi bi-arrow-right"></i> {{ material.getMaterial.getNum }} поз.</td>
                                 </tr>
+                            {% else %}
+                                {% if is_granted('ROLE_SUPERVISOR') or material.getMaterial.getResponsible.getId == app.user.id %}
+                                    {# Пользователь может отмечать материал как полученный #}
+                                    {% set avalibleMaterials = avalibleMaterials + 1 %}
+                                    <tr class="">
+                                        <td class="align-middle text-center text-xsmall">{{ loop.index }}</td>
+                                        {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
+                                            <td class="align-middle text-center"><input class="form-check-input{% if checked != '' %} is-valid freeze-ignore{% else %} material-select{% endif %}" type="checkbox" name="material[]" value="{{ material.getId }}" {% if checked != '' %} checked disabled{% endif %} /></td>
+                                            <td class="align-middle text-center"><input type="number" name="" value="{{ material.amount - material.recieved }}" class="amount-input form-control form-control-sm{% if checked != '' %} freeze-ignore{% endif %}" min="1" max="{{ material.amount - material.recieved }}"{% if checked != '' %} disabled{% endif %} /></td>
+                                        {% endif %}
+                                        <td class="align-middle text-xsmall">{{ material.getMaterial.getTitle }}</td>
+                                        <td class="align-middle text-start text-xsmall">{{ material.recieved }} {{ material.getMaterial.getUnit.getTitle }} / {{ material.getMaterial.getAmount }} {{ material.getMaterial.getUnit.getTitle }}</td>
+                                        <td class="align-middle text-xsmall">{% if material.getMaterial.getResponsible != null %}{{ material.getMaterial.getResponsible.getShortUserName }}{% else %}Не назначен{% endif %}</td>
+                                        <td class="align-middle text-xsmall"><a href="/applications/view?number={{ material.getMaterial.getApplication.getId }}">#{{ material.getMaterial.getApplication.getId }}</a> <i class="bi bi-arrow-right"></i> {{ material.getMaterial.getNum }} поз.</td>
+                                    </tr>
+                                {% else %}
+                                    <tr class="text-muted">
+                                        <td class="align-middle text-center text-xsmall">{{ loop.index }}</td>
+                                        {% if 'ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles %}
+                                            <td class="align-middle text-center"><input class="form-check-input freeze-ignore{% if checked != '' %} is-valid{% endif %}" type="checkbox" name="" value="" disabled{{ checked }} /></td>
+                                            <td class="align-middle text-center"><input type="number" name="" value="{{ material.amount - material.recieved }}" class="amount-input form-control form-control-sm freeze-ignore" min="1" max="{{ material.amount - material.recieved }}" disabled /></td>
+                                        {% endif %}
+                                        <td class="align-middle text-xsmall">{{ material.getMaterial.getTitle }}</td>
+                                        <td class="align-middle text-start text-xsmall">{{ material.recieved }} {{ material.getMaterial.getUnit.getTitle }} / {{ material.getMaterial.getAmount }} {{ material.getMaterial.getUnit.getTitle }}</td>
+                                        <td class="align-middle text-xsmall">{% if material.getMaterial.getResponsible != null %}{{ material.getMaterial.getResponsible.getShortUserName }}{% else %}Не назначен{% endif %}</td>
+                                        <td class="align-middle text-xsmall"><a href="/applications/view?number={{ material.getMaterial.getApplication.getId }}">#{{ material.getMaterial.getApplication.getId }}</a> <i class="bi bi-arrow-right"></i> {{ material.getMaterial.getNum }} поз.</td>
+                                    </tr>
+                                {% endif %}
                             {% endif %}
-                        {% endif %}
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            {% if ('ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles) and avalibleMaterials > 0 %}
-                {# Добавление информации об отгрузке/получению #}
-                <input type="hidden" name="type" value="0" />
-                <div id="meta-info" style="display: none">
-                    <ul class="nav nav-tabs mt-4" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="reciept-tab" data-bs-toggle="tab" data-bs-target="#reciept" type="button" role="tab">Получение</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="ship-tab" data-bs-toggle="tab" data-bs-target="#ship" type="button" role="tab">Отгрузка</button>
-                        </li>
-                    </ul>
-                    <div class="tab-content">
-                        <div class="tab-pane fade show active" id="reciept" role="tabpanel">
-                            <input type="hidden" id="userOfficeReciept" name="userOfficeReciept" value="{{ app.user.getOffice.getId }}" />
-                            <div class="form-floating mb-3 mt-4">
-                                <input type="date" class="form-control is-valid" id="dateReciept" placeholder=" " value="{{ 'now'|date('Y-m-d') }}" name="dateReciept" />
-                                <label for="dateReciept">Дата операции</label>
-                            </div>
-                            <div class="form-floating mb-3 mt-4">
-                                <select class="form-control" placeholder="Структурное подразделение, в котором получены материалы" disabled>
-                                    <option value="-1">Нет</option>
-                                    {% for office in offices %}
-                                        <option value="{{ office.getId }}" {% if app.user.getOffice.getId == office.getId %} selected{% endif %}>{{ office.getTitle }}</option>
-                                    {% endfor %}
-                                </select>
-                                <label for="userOfficeReciept">Структурное подразделение, в котором получены материалы</label>
-                            </div>
-                        </div>
-                        <div class="tab-pane fade" id="ship" role="tabpanel">
-                            <div class="form-floating mb-3 mt-4">
-                                <input type="date" class="form-control is-valid" id="dateShip" placeholder=" " value="{{ 'now'|date('Y-m-d') }}" name="dateShip" />
-                                <label for="dateShip">Дата операции</label>
-                            </div>
-                            <div class="form-floating mb-3 mt-4">
-                                <input type="text" class="form-control" id="way" name="way" placeholder="Способ отправки" />
-                                <label for="way">Способ отправки</label>
-                                <div class="invalid-feedback d-none"></div>
-                            </div>
-                            <div class="form-floating mb-3 mt-4">
-                                <input type="text" class="form-control" id="track" name="track" placeholder="Номер для отслеживания" />
-                                <label for="track">Номер для отслеживания</label>
-                                <div class="invalid-feedback d-none"></div>
-                            </div>
-                            <div class="form-floating mb-3 mt-4">
-                                <select class="form-control" id="userOfficeShip" name="userOfficeShip" placeholder="Структурное подразделение, в адрес которого произведена отгрузка">
-                                    {% for office in offices %}
-                                        <option value="{{ office.getId }}" {% if app.user.getOffice.getId == office.getId %} selected{% endif %}>{{ office.getTitle }}</option>
-                                    {% endfor %}
-                                </select>
-                                <label for="userOfficeShip">Структурное подразделение, в адрес которого произведена отгрузка</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-floating mb-3 mt-4">
-                        <input type="text" class="form-control" id="docinfo" name="docinfo" placeholder="Номер УПД, спецификации, дата документа" />
-                        <label for="docinfo">Информация по документам</label>
-                        <div class="invalid-feedback d-none"></div>
-                    </div>
-                    <div class="form-floating mb-3 mt-4">
-                        <input type="text" class="form-control numbersOnly" id="sum" name="sum" placeholder="Сумма материалов по отгрузке/получению в валюте счета" />
-                        <label for="sum">Сумма</label>
-                        <div class="invalid-feedback d-none"></div>
-                    </div>
-
-                    <div id="photosInput">
-                        <h5 class="mb-3 mt-4">Фотографии и документы касательно получения/отгрузки</h5>
-                        <div class="mb-4">
-                            <div class="file-loading">
-                                <input id="photos" type="file" name="photos[]" multiple="multiple" />
-                            </div>
-                            <div class="clearfix"></div>
-                        </div>
-                    </div>
+                        {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
+
+                {% if ('ROLE_SUPERVISOR' in roles or 'ROLE_EXECUTOR' in roles) and avalibleMaterials > 0 %}
+                    {# Добавление информации об отгрузке/получению #}
+                    <input type="hidden" name="type" value="0" />
+                    <div id="meta-info" style="display: none">
+                        <ul class="nav nav-tabs mt-4" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="reciept-tab" data-bs-toggle="tab" data-bs-target="#reciept" type="button" role="tab">Получение</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="ship-tab" data-bs-toggle="tab" data-bs-target="#ship" type="button" role="tab">Отгрузка</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="reciept" role="tabpanel">
+                                <input type="hidden" id="userOfficeReciept" name="userOfficeReciept" value="{{ app.user.getOffice.getId }}" />
+                                <div class="form-floating mb-3 mt-4">
+                                    <input type="date" class="form-control is-valid" id="dateReciept" placeholder=" " value="{{ 'now'|date('Y-m-d') }}" name="dateReciept" />
+                                    <label for="dateReciept">Дата операции</label>
+                                </div>
+                                <div class="form-floating mb-3 mt-4">
+                                    <select class="form-control" placeholder="Структурное подразделение, в котором получены материалы" disabled>
+                                        <option value="-1">Нет</option>
+                                        {% for office in offices %}
+                                            <option value="{{ office.getId }}" {% if app.user.getOffice.getId == office.getId %} selected{% endif %}>{{ office.getTitle }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <label for="userOfficeReciept">Структурное подразделение, в котором получены материалы</label>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="ship" role="tabpanel">
+                                <div class="form-floating mb-3 mt-4">
+                                    <input type="date" class="form-control is-valid" id="dateShip" placeholder=" " value="{{ 'now'|date('Y-m-d') }}" name="dateShip" />
+                                    <label for="dateShip">Дата операции</label>
+                                </div>
+                                <div class="form-floating mb-3 mt-4">
+                                    <input type="text" class="form-control" id="way" name="way" placeholder="Способ отправки" />
+                                    <label for="way">Способ отправки</label>
+                                    <div class="invalid-feedback d-none"></div>
+                                </div>
+                                <div class="form-floating mb-3 mt-4">
+                                    <input type="text" class="form-control" id="track" name="track" placeholder="Номер для отслеживания" />
+                                    <label for="track">Номер для отслеживания</label>
+                                    <div class="invalid-feedback d-none"></div>
+                                </div>
+                                <div class="form-floating mb-3 mt-4">
+                                    <select class="form-control" id="userOfficeShip" name="userOfficeShip" placeholder="Структурное подразделение, в адрес которого произведена отгрузка">
+                                        {% for office in offices %}
+                                            <option value="{{ office.getId }}" {% if app.user.getOffice.getId == office.getId %} selected{% endif %}>{{ office.getTitle }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <label for="userOfficeShip">Структурное подразделение, в адрес которого произведена отгрузка</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-floating mb-3 mt-4">
+                            <input type="text" class="form-control" id="docinfo" name="docinfo" placeholder="Номер УПД, спецификации, дата документа" />
+                            <label for="docinfo">Информация по документам</label>
+                            <div class="invalid-feedback d-none"></div>
+                        </div>
+                        <div class="form-floating mb-3 mt-4">
+                            <input type="text" class="form-control numbersOnly" id="sum" name="sum" placeholder="Сумма материалов по отгрузке/получению в валюте счета" />
+                            <label for="sum">Сумма</label>
+                            <div class="invalid-feedback d-none"></div>
+                        </div>
+
+                        <div id="photosInput">
+                            <h5 class="mb-3 mt-4">Фотографии и документы касательно получения/отгрузки</h5>
+                            <div class="mb-4">
+                                <div class="file-loading">
+                                    <input id="photos" type="file" name="photos[]" multiple="multiple" />
+                                </div>
+                                <div class="clearfix"></div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
             {% endif %}
         </fieldset>
         <div class="clearfix"></div>
