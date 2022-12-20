@@ -336,6 +336,7 @@ class StockController extends AbstractController
      */
     public function addPM(
         Request $request,
+        StockFilesRepository $stockFilesRepository,
         UnitsRepository $unitsRepository,
         UsersRepository $usersRepository
     ): JsonResponse
@@ -423,7 +424,7 @@ class StockController extends AbstractController
                     foreach ($arrFiles as $file) {
                         $objFile = $stockFilesRepository->findBy( array('id' => $file) );
                         if (is_array($objFile)) {$objFile = array_shift($objFile);}
-                        $objFile->setApplication($stock);
+                        $objFile->setStock($stock);
                         $this->entityManager->persist($objFile);
                     }
                 }

@@ -75,7 +75,7 @@
                         <tr>
                             <td class="ps-0"><label for="add-pm-date">Дата документа</label></td>
                             <td class="w-auto">
-                                <input id="add-pm-date" name="add-pm-date" type="date" class="form-control form-control-sm should-be-validated" data-sbv-expression="^(\d{4})-(\d{1,2})-(\d{1,2})$" data-sbv-notification-target="sbv-date" data-sbv-notification="Неверный формат даты" />
+                                <input id="add-pm-date" name="add-pm-date" type="date" class="form-control form-control-sm should-be-validated" data-sbv-expression="^(\d{4})-(\d{1,2})-(\d{1,2})$" data-sbv-notification-target="sbv-date" data-sbv-notification="Неверный формат даты" value="{{ 'now'|date('Y-m-d') }}" />
                                 <div class="form-text mt-0" id="sbv-date">Дата прихода</div>
                             </td>
                         </tr>
