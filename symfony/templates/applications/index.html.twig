@@ -223,13 +223,19 @@
                 <tr>
                     <td class="align-middle text-center text-small">{{ loop.index }}</td>
                     <td class="align-middle text-small text-nowrap">
-                    {% for application in bill.applications %}
-                        {% if loop.index > 1 %}<br />{% endif %}<a href="/applications/bills/in-work/view?id={{ bill.obj.getId }}">{{ application.getTitle }}</a> <span class="text-muted text-small">№{{ application.getId }} от {{ application.getDateCreate|date('d.m.Y') }}</span>
-                    {% endfor %}
+                      {% if bill.applications|length > 0 %}
+                        {% for application in bill.applications %}
+                            {% if loop.index > 1 %}<br />{% endif %}<a href="/applications/bills/in-work/view?id={{ bill.obj.getId }}">{{ application.getTitle }}</a> <span class="text-muted text-small">№{{ application.getId }} от {{ application.getDateCreate|date('d.m.Y') }}</span>
+                        {% endfor %}
+                      {% else %}
+                        <a href="/applications/bills/in-work/view?id={{ bill.obj.getId }}" class="text-warning">Счет без заявки</a>
+                      {% endif %}
                     </td>
                     <td class="align-middle text-xsmall text-nowrap">
-                        {% for application in bill.applications %}{% if loop.index > 1 %}, {% endif %}{{ application.getAuthor.getShortUsername }}{% endfor %}
-                        <br />{{ bill.obj.getUser.getShortUsername }}
+                        {% if bill.applications|length > 0 %}
+                          {% for application in bill.applications %}{% if loop.index > 1 %}, {% endif %}{{ application.getAuthor.getShortUsername }}{% endfor %}<br />
+                        {% endif %}
+                        {{ bill.obj.getUser.getShortUsername }}
                     </td>
                     <td class="align-middle text-xsmall text-nowrap">
                         {{ bill.obj.sum|number_format(2, '.', ' ') }} {{ bill.obj.currency }}

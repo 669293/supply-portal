@@ -265,6 +265,7 @@ class ApplicationsController extends AbstractController
                     b.date_close < '".date('Y-m-d')."' AND
                     b.user = ".$this->security->getUser()->getId().";
             ";
+            
             $stmt = $this->entityManager->getConnection()->prepare($sql);
             $stmt->execute();
             $bills_ = $stmt->fetchAllAssociative();
@@ -292,7 +293,7 @@ class ApplicationsController extends AbstractController
                 //Проверяем статусы заявок
                 $stopFlag = false;
                 foreach ($applications as $application) {
-                    if (in_array($applicationsRepository->getStatus($application->getId()), [3,4,5])) {
+                    if (in_array($applicationsRepository->getStatus($application->getId()), [3,4,5,9,10])) {
                         $stopFlag = true; break;
                     }
                 }

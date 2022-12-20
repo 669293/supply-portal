@@ -63,7 +63,7 @@ class StockController extends AbstractController
         }
 
         // Получаем список счетов в работе подразделения текущего пользователя
-        $sql = "SELECT res.bid AS id FROM (SELECT bs.bill AS bid, (SELECT bs2.status FROM bills_statuses bs2 WHERE bs2.id = MAX(bs.id)) FROM bills_statuses bs GROUP BY bs.bill) res, bills b WHERE res.bid = b.id AND b.user IN (SELECT u.id FROM users u WHERE u.office = (SELECT office FROM users WHERE id = ".(int)$this->security->getUser()->getId().")) AND res.status <> 5 ORDER BY b.inn;";
+        $sql = "SELECT res.bid AS id FROM (SELECT bs.bill AS bid, (SELECT bs2.status FROM bills_statuses bs2 WHERE bs2.id = MAX(bs.id)) FROM bills_statuses bs GROUP BY bs.bill) res, bills b WHERE res.bid = b.id AND b.user IN (SELECT u.id FROM users u WHERE u.office = (SELECT office FROM users WHERE id = ".(int)$this->security->getUser()->getId().")) AND res.status NOT IN (5,9,10) ORDER BY b.inn;";
         $stmt = $this->entityManager->getConnection()->prepare($sql);
         $stmt->execute();
         $bills_ = $stmt->fetchAllAssociative();
@@ -101,7 +101,9 @@ class StockController extends AbstractController
                 $objBill->provider = $objProvider;
             }
 
-            $bills[] = $objBill;
+            if (sizeof($applications) > 0) {
+                $bills[] = $objBill;
+            }
         }
 
         $params['title'] = 'Выбор материалов';
@@ -267,7 +269,7 @@ class StockController extends AbstractController
 
         // Получаем список счетов в работе подразделения текущего пользователя
         $needToFilterByInn = ''; if ($inn && !empty($inn)) {$needToFilterByInn = " AND b.inn = '".pg_escape_string($inn)."'";}
-        $sql = "SELECT res.bid AS id FROM (SELECT bs.bill AS bid, (SELECT bs2.status FROM bills_statuses bs2 WHERE bs2.id = MAX(bs.id)) FROM bills_statuses bs GROUP BY bs.bill) res, bills b WHERE res.bid = b.id".$needToFilterByInn." AND b.user IN (SELECT u.id FROM users u WHERE u.office = (SELECT office FROM users WHERE id = ".(int)$this->security->getUser()->getId().")) AND res.status <> 5 ORDER BY b.inn;";
+        $sql = "SELECT res.bid AS id FROM (SELECT bs.bill AS bid, (SELECT bs2.status FROM bills_statuses bs2 WHERE bs2.id = MAX(bs.id)) FROM bills_statuses bs GROUP BY bs.bill) res, bills b WHERE res.bid = b.id".$needToFilterByInn." AND b.user IN (SELECT u.id FROM users u WHERE u.office = (SELECT office FROM users WHERE id = ".(int)$this->security->getUser()->getId().")) AND res.status NOT IN (5,9,10) ORDER BY b.inn;";
         $stmt = $this->entityManager->getConnection()->prepare($sql);
         $stmt->execute();
         $bills_ = $stmt->fetchAllAssociative();
@@ -309,7 +311,9 @@ class StockController extends AbstractController
                 $objBill->provider = $objProvider;
             }
 
-            $bills[] = $objBill;
+            if (sizeof($objBill->applications) > 0) {
+                $bills[] = $objBill;
+            }
         }
 
         // Получаем поставщика

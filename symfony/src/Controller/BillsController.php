@@ -470,7 +470,7 @@ class BillsController extends AbstractController
             return new JsonResponse(1);
         } else {
             $bills = $billsRepository->findBy(array('inn' => $request->request->get('inn')));
-            if (sizeof($providers) > 0) {
+            if (sizeof($bills) > 0) {
                 return new JsonResponse(1);
             } else {
                 return new JsonResponse(0);
