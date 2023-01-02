@@ -2,12 +2,185 @@
 {% extends 'default.html.twig' %}
 
 {# Заголовки #}
-{% block title %}{{ title }}{% endblock %}
-{% block caption %}{{ title }}{% endblock %}
+{% block title %}{{ title }} №{{ stock.getId }}{% endblock %}
+{% block caption %}{{ title }} №{{ stock.getId }}{% endblock %}
 
 {# Контент #}
 {% block content %}
+    {% set fileId = 0 %}
+    <fieldset>
+        <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-4">
+            <table class="table" style="min-width: 900px;">
+                <tbody>
+                    <tr>
+                        <td style="width: 200px!important;"><i class="bi bi-person-fill text-muted me-1"></i> <strong>Автор</strong></td>
+                        <td>{{ stock.getUser.getUsername }}</td>
+                    </tr>
+                    <tr>
+                        <td style="width: 200px!important;"><i class="bi bi-calendar3 text-muted me-1"></i> <strong>Дата создания</strong></td>
+                        <td>{{ stock.getDate|date('d.m.Y') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="width: 200px!important;"><i class="bi bi-hash text-muted me-1"></i> <strong>Номер документа</strong></td>
+                        <td>{{ stock.getInvoice }}</td>
+                    </tr>
+                    <tr>
+                        <td style="width: 200px!important;"><i class="bi bi-tags text-muted me-1"></i> <strong>Тип поступления</strong></td>
+                        <td>
+                            {% if stock.getType == 0 %}Материалы{% endif %}
+                            {% if stock.getType == 1 %}Запчасти{% endif %}
+                            {% if stock.getType == 2 %}ГСМ{% endif %}
+                            {% if stock.getType == 3 %}Продукты{% endif %}
+                            {% if stock.getType == 4 %}Услуги{% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 200px!important;"><i class="bi bi-people-fill text-muted me-1"></i> <strong>Поставщик</strong></td>
+                        <td>
+                            {% if stock.getProvider == 0 %}
+                                <span class="text-muted">Наличный расчет</span>
+                            {% else %}
+                                {% if provider is defined %}
+                                    {{ provider.getTitle }} (ИНН: {{ stock.getProvider }})
+                                {% else %}
+                                    <span class="text-muted">ИНН: {{ stock.getProvider }}</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 200px!important;"><i class="bi bi-percent text-muted me-1"></i> <strong>Налоговая ставка</strong></td>
+                        <td>{{ stock.getTax }}%</td>
+                    </tr>
+                    {% if stock.getComment != '' %}
+                        <tr>
+                            <td style="width: 200px!important;"><i class="bi bi-chat-right-text text-muted me-1"></i> <strong>Комментарий</strong></td>
+                            <td>{{ stock.getComment }}</td>
+                        </tr>
+                    {% endif %}
+                    {% if stock.getNote != '' %}
+                        <tr>
+                            <td style="width: 200px!important;"><i class="bi bi-chat-right-text text-muted me-1"></i> <strong>Доп. информация</strong></td>
+                            <td>{{ stock.getNote }}</td>
+                        </tr>
+                    {% endif %}
+                    {# Получаем бинарную запись параметров #}
+                    {% set n = stock.getParams %}
+                    {% set binary = '' %}
+                    {% set power = 2 %}
+                    {% for i in range(0, 1) %}
+                    {%    if n >= power %}
+                    {%        set binary = binary ~ '1' %}
+                    {%        set n = n - power %}
+                    {%    else %}
+                    {%        set binary = binary ~ '0' %}
+                    {%    endif %}
+                    {%    set power = power // 2 %}
+                    {% endfor %}
+                    {% if binary|slice(0,1) == '1' or binary|slice(1,1) == '1' %}
+                        <tr>
+                            <td style="width: 200px!important;"><i class="bi bi-gear text-muted me-1"></i> <strong>Доп. параметры</strong></td>
+                            <td>
+                                {% if binary|slice(1,1) == '1' %}<span class="badge bg-primary">Транзитный груз</span>{% endif %}
+                                {% if binary|slice(0,1) == '1' %}<span class="badge bg-warning">Прямая отправка</span>{% endif %}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if materials|length > 0 %}
+                        <tr>
+                            <td style="width: 200px!important;"><i class="bi bi-diagram-3 text-muted me-1"></i> <strong>Заявки</strong></td>
+                            <td>
+                                {% for application in applications %}
+                                    <a href="/applications/view?number={{ application.getId }}&stock={{ stock.getId }}" target="_blank"><span class="badge bg-primary">Завяка №{{ application.getId }} ({{ application.getAuthor.getShortUserName }})</span></a>
+                                {% endfor %}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    <tr>
+                        <td><i class="bi bi-file-earmark text-muted me-1"></i> <strong>Файлы</strong></td>
+                        <td class="pe-0">
+                        {% if files is empty %}
+                            <span class="text-muted">Нет файлов</span>
+                        {% else %}
+                            <table class="table table-sm table-borderless mb-0 text-xsmall">
+                                <tbody>
+                                {% for file in files %}
+                                    <div class="btn-group{% if not loop.first %} mt-1{% endif %}" role="group">
+                                        <button type="button" data-id="thumb-attachments-init-{{ fileId }}" class="btn btn-sm {{ file.class }} filePreview text-start"><i class="bi {{ file.icon }}"></i> {{ file.title }}</button>
+                                        <a class="kv-file-download btn btn-sm btn-kv btn-default {{ file.class }}" title="Скачать файл" href="/upload/stock/{{ file.path }}" target="_blank"><i class="bi-download"></i></a>
+                                    </div><div class="clearfix"></div>
+                                    {% set fileId = fileId + 1 %}
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
 
+            <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-1 pb-3">
+                <table class="table table-sm table-bordered table-striped mb-0 us-none" style="min-width: 900px;" id="materialsTable">
+                    <thead>
+                        <tr>
+                            <th class="py-2 align-middle text-center text-xsmall" scope="col" style="width: 50px;">№</th>
+                            <th class="py-2 align-middle text-xsmall" scope="col">Наименование</th>
+                            <th class="py-2 align-middle text-nowrap text-xsmall" scope="col" style="width: 120px;">Ед.изм.</th>
+                            <th class="py-2 align-middle text-xsmall" scope="col" style="width: 100px;">Кол-во</th>
+                            <th class="py-2 align-middle text-nowrap text-xsmall" style="width: 100px;" scope="col">Цена</th>
+                            <th class="py-2 align-middle text-nowrap text-xsmall" style="width: 100px;" scope="col">Сумма</th>
+                            <th class="py-2 align-middle text-nowrap text-xsmall" style="width: 100px;" scope="col">НДС</th>
+                            <th class="py-2 align-middle text-nowrap text-xsmall" style="width: 100px;" scope="col">Всего</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set sPrice = 0 %}
+                        {% set sSum = 0 %}
+                        {% set sTax = 0 %}
+                        {% set sTotal = 0 %}
+                        {% for material in materials %}
+                            {% set sPrice = sPrice + material.getPrice %}
+                            {% set sSum = sSum + material.getSum %}
+                            {% set sTax = sTax + material.getTax %}
+                            {% set sTotal = sTotal + material.getTotal %}
+                            <tr>
+                                <td class="align-middle text-center text-xsmall">{{ loop.index }}</td>
+                                <td class="align-middle text-xsmall">{{ material.getTitle }}</td>
+                                <td class="align-middle text-center text-xsmall">{{ material.getUnit.getTitle }}</td>
+                                <td class="align-middle text-center text-xsmall">{{ material.getCount }}</td>
+                                <td class="align-middle text-xsmall">{{ material.getPrice|number_format(2, '.', ' ') }}</td>
+                                <td class="align-middle text-xsmall">{{ material.getSum|number_format(2, '.', ' ') }}</td>
+                                <td class="align-middle text-xsmall">{{ material.getTax|number_format(2, '.', ' ') }}</td>
+                                <td class="align-middle text-xsmall">{{ material.getTotal|number_format(2, '.', ' ') }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" class="align-middle text-end text-xsmall">Итого</td>
+                            <td class="align-middle text-xsmall">{{ sPrice|number_format(2, '.', ' ') }}</td>
+                            <td class="align-middle text-xsmall">{{ sSum|number_format(2, '.', ' ') }}</td>
+                            <td class="align-middle text-xsmall">{{ sTax|number_format(2, '.', ' ') }}</td>
+                            <td class="align-middle text-xsmall">{{ sTotal|number_format(2, '.', ' ') }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="mb-3 mt-4">
+            {% if is_granted('ROLE_STOCK') %}
+                <button type="button" class="btn btn-outline-primary mb-2 me-2" onclick="location.href='/stock/edit/pm?number={{ stock.id }}';">Редактировать</button>
+            {% endif %}
+            <button type="button" class="btn btn-outline-secondary mb-2 me-2" onclick="location.href='/';">Закрыть</button>
+            <button type="button" class="btn btn-outline-secondary mb-2 me-2" onclick="location.href='/stock/print/pm?number={{ stock.id }}';"><i class="bi bi-printer"></i> Распечатать</button>
+        </div>
+    </fieldset>
+
+    {# Скрытый fileinput для инициализации предпросмотра #}
+    <div class="d-none">
+        <input id="attachments" type="file" name="" multiple="multiple" />
+    </div>
 {% endblock %}
 
 {# Модальные окна #}
@@ -17,10 +190,45 @@
 
 {# Скрипты #}
 {% block scripts %}
+    <script src="{{ asset('js/fileinput.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/fileinput.ru.js') }}" type="text/javascript"></script>
+    <script type="text/javascript">
+        var params = {
+            initialPreview: [
+            {% if files|length > 0 %}
+                {% for file in files %}
+                {% if file.type == 'image' %}
+                    '<img src="{{ url('index') }}upload/applications/{{ file.path }}" class="file-preview-image" alt="" />',
+                {% else %}
+                    '{{ url('index') }}upload/applications/{{ file.path }}',
+                {% endif %}
+                {% endfor %}
+            {% endif %}
+            ],
+            initialPreviewAsData: true,
+            hideThumbnailContent: true,
+            initialPreviewConfig: [
+            {% if files|length > 0 %}
+                {% for file in files %}
+                {% if file.type == 'image' %}
+                    {type: '{{ file.type }}', caption: '{{ file.name }}', downloadUrl: '{{ url('index') }}upload/applications/{{ file.path }}', previewAsData: false},
+                {% else %}
+                    {type: '{{ file.type }}', caption: '{{ file.name }}', downloadUrl: '{{ url('index') }}upload/applications/{{ file.path }}'},
+                {% endif %}
+                {% endfor %}
+            {% endif %}
+            ],
+            language: 'ru'
+        };
+    </script>
+    <script src="{{ asset('js/stock/view-pm.js') }}" type="text/javascript"></script>
 
+    {% if scripts is defined %}
+{{ scripts|raw }}
+    {% endif %}
 {% endblock %}
 
 {# Стили #}
 {% block css %}
-
+    <link href="{{ asset('css/fileinput.css') }}" rel="stylesheet">
 {% endblock %}

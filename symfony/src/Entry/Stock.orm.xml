@@ -46,6 +46,21 @@
         <option name="unsigned"/>
       </options>
     </field>
+    <field name="parent" type="integer" column="parent" nullable="true">
+      <options>
+        <option name="unsigned"/>
+      </options>
+    </field>
+    <field name="doctype" type="integer" column="doctype" nullable="false">
+      <options>
+        <option name="unsigned"/>
+      </options>
+    </field>
+    <field name="logistic" type="string" column="logistic" length="255" nullable="true">
+      <options>
+        <option name="fixed"/>
+      </options>
+    </field>
     <many-to-one field="&quot;user&quot;" target-entity="Users" fetch="LAZY">
       <join-columns>
         <join-column name="&quot;user&quot;" referenced-column-name="id"/>

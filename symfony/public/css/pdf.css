@@ -1,0 +1,56 @@
+﻿.block {
+    margin-bottom: 10px;
+    position: relative;
+    width: 100%;
+    }
+
+h1 {
+    font-size: 1.2em;
+    font-weight: bold;
+    }
+
+.bordered {
+    border: 1px solid #000;
+    }
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    }
+
+table tr td {
+    padding: 3px;
+    text-align: center;
+    }
+
+#plContainer .pl {
+    float: left;
+    position: relative;
+    width: 520px;
+    }
+
+#plContainer .subBlock {
+    float: left;
+    position: relative;
+    width: 250px;
+    }
+
+#plContainer .subBlockG {
+    float: left;
+    position: relative;
+    width: 535px;
+    }
+
+.small tr td {
+    font-size: 0.9em;
+    padding: 1px;
+    }
+
+table.track thead tr th {
+    background: #ccc;
+    border: 1px solid #000;
+    }
+
+table.track tbody tr td {
+    border: 1px solid #000;
+    }

@@ -52,7 +52,7 @@
                                                 <input type="hidden" class="application-input" name="application[]" value="{{ arr.material.getApplication.getId }}" />
                                                 <input type="hidden" class="bill-input" name="bill[]" value="{{ bill.getId }}" />
                                             </td>
-                                            <td class="align-middle text-center"><input type="number" name="" value="{{ arr.count - arr.done }}" class="amount-input form-control form-control-sm" min="1" max="{{ arr.count - arr.done }}" /></td>
+                                            <td class="align-middle text-center"><input type="number" name="amount[]" value="{{ arr.count - arr.done }}" class="amount-input form-control form-control-sm" min="1" max="{{ arr.count - arr.done }}" /></td>
                                             <td class="align-middle text-xsmall">{{ arr.material.getTitle }}{% if arr.material.getUrgency %} <i class="bi bi-exclamation-triangle text-danger" data-bs-toggle="tooltip" data-bs-placement="right" title="Срочная позиция"></i> <span class="text-danger">Срочно</span>{% endif %}</td>
                                             <td class="align-middle text-xsmall text-nowrap"><a href="/applications/view?number={{ arr.material.getApplication.getId }}">#{{ arr.material.getApplication.getId }}</a> <i class="bi bi-arrow-right"></i> {{ arr.material.getNum }} поз.</td>
                                             <td class="align-middle text-xsmall">{% if arr.material.getTypeOfEquipment != null %}{{ arr.material.getTypeOfEquipment.getTitle() }}{% endif %}</td>

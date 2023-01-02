@@ -1,4 +1,20 @@
 $(document).ready(function() {
+  //Скрытие выбора поставщика при наличном расчете
+  $('input[name="add-pm-tax_"]').change(function() {
+    if ($(this).val() == -1) {
+      $('#provider-row').hide('fast');
+      $('#add-pm-provider option:selected').removeAttr('selected');
+      $('#add-pm-provider').append('<option value="0" selected></option>');
+    } else {
+      $('#provider-row').show('fast');
+      if ($('#add-pm-provider').val() == '0') {
+        $('#add-pm-provider option:selected').removeAttr('selected');
+      }
+      $('#add-pm-provider').selectpicker('render');
+
+    }
+  });
+
   //Инициализация поля для поиска поставщика
   $('#add-pm-provider').selectpicker().ajaxSelectPicker({
       ajax: {
@@ -196,6 +212,17 @@ $(document).ready(function() {
 
   $('#pickConfirmBtn').click(function() {
     applicationsModal.hide();
+
+    //Добавляем скрытые инпуты с данными
+    $('.log-input').remove(); //Удаляем все старые
+    $('#applicationsModal input[name="material[]"]:checked').each(function() {
+      var tr = $(this).closest('tr');
+
+      $('#add-pm-form').append('<input type="hidden" class="log-input" name="material[]" value="' + tr.find('input[name="material[]"]').val() + '" />');
+      $('#add-pm-form').append('<input type="hidden" class="log-input" name="amount[]" value="' + tr.find('input[name="amount[]"]').val() + '" />');
+      $('#add-pm-form').append('<input type="hidden" class="log-input" name="bill[]" value="' + tr.find('input[name="bill[]"]').val() + '" />');
+    });
+
     $('#pickBtn').removeClass('btn-outline-primary').addClass('btn-outline-success').text('Выбрано: ' + $('input[name="material[]"]:checked').length);
     checkIsCountWarning();
   });
@@ -384,6 +411,7 @@ $(document).ready(function() {
       if ( el.data('sbv-depence-of') === undefined ) {
         if ( (el.data('sbv-depence') !== undefined && el.val() != '') || el.data('sbv-depence') === undefined ) {
           var tmp = checkElement(el, quiet);
+          if (!tmp) {console.log(el.attr('name'));}
           valid = valid && tmp;  
         }
       } else {

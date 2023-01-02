@@ -41,6 +41,7 @@ use App\Repository\ProvidersRepository;
 use App\Repository\ResponsibleLogRepository;
 use App\Repository\StatusesOfApplicationsRepository;
 use App\Repository\StatusesOfBillsRepository;
+use App\Repository\StockApplicationsMaterialsRepository;
 use App\Repository\TypesOfEquipmentRepository;
 use App\Repository\UnitsRepository;
 use App\Repository\UsersRepository;
@@ -1921,6 +1922,7 @@ HERE;
         ResponsibleLogRepository $responsibleLogRepository,
         StatusesOfBillsRepository $statusesOfBillsRepository,
         StatusesOfApplicationsRepository $statusesOfApplicationsRepository,
+        StockApplicationsMaterialsRepository $stockApplicationsMaterialsRepository,
         UsersRepository $usersRepository,
         UnitsRepository $unitsRepository
         ): Response
@@ -1932,6 +1934,20 @@ HERE;
         if ($id === null || empty($id) || !is_numeric($id)) {
             return new RedirectResponse('/applications');
         }
+
+        //Возможно переход из прихода
+        $stock = $request->query->get('stock');
+        $materialsToHighlight = [];
+        if ($stock !== null) {
+            $objSOMs = $stockApplicationsMaterialsRepository->findBy( array('stock' => (int)$stock) );
+            if (is_array($objSOMs) && sizeof($objSOMs) > 0 ) {
+                foreach ($objSOMs as $objSOM) {
+                    $materialsToHighlight[] = $objSOM->getMaterial()->getId();
+                }
+                $materialsToHighlight = array_unique($materialsToHighlight);
+            }
+        }
+        unset($stock);
 
         //Проверяем наличие заявки
         $objApplication = $applicationsRepository->findBy( array('id' => $id) );
@@ -2261,7 +2277,8 @@ HERE;
             'materials' => $arrMaterials,
             'users' => $users,
             'units' => $unitsRepository->findAll(),
-            'messages' => $messages
+            'messages' => $messages,
+            'materials2highlight' => $materialsToHighlight
         ]);
     }
 

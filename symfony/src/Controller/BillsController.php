@@ -1593,7 +1593,7 @@ class BillsController extends AbstractController
     /**
      * Отгрузка/получение материалов
      */
-    private function recieveMaterials($type, $billId, $materials, $amounts, $params) {
+    public function recieveMaterials($type, $billId, $materials, $amounts, $params) {
         //Получаем необходимые репозитории
         $billsRepository = $this->entityManager->getRepository(Bills::class);
         $billsMaterialsRepository = $this->entityManager->getRepository(BillsMaterials::class);

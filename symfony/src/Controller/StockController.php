@@ -17,6 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Stock;
 use App\Entity\StockFiles;
 use App\Entity\StockMaterials;
+use App\Entity\StockApplicationsMaterials;
 use App\Repository\ApplicationsRepository;
 use App\Repository\BillsRepository;
 use App\Repository\BillsMaterialsRepository;
@@ -29,6 +30,7 @@ use App\Repository\ProvidersRepository;
 use App\Repository\StockRepository;
 use App\Repository\StockFilesRepository;
 use App\Repository\StockMaterialsRepository;
+use App\Repository\StockApplicationsMaterialsRepository;
 use App\Repository\UnitsRepository;
 use App\Repository\UsersRepository;
 
@@ -336,6 +338,7 @@ class StockController extends AbstractController
      */
     public function addPM(
         Request $request,
+        MaterialsRepository $materialsRepository,
         StockFilesRepository $stockFilesRepository,
         UnitsRepository $unitsRepository,
         UsersRepository $usersRepository
@@ -380,13 +383,14 @@ class StockController extends AbstractController
 
                 //Начинаем запись, пишем данные в таблицу stock
                 $stock = new Stock;
-                $stock->setProvider( $request->request->get('add-pm-comment') ); //Поставщик
-                $stock->setComment( $request->request->get('add-pm-provider') ); //Наименование документа
+                $stock->setProvider( $request->request->get('add-pm-provider') ); //Поставщик
+                $stock->setComment( $request->request->get('add-pm-comment') ); //Комментарий
                 $stock->setDate( new \DateTime($request->request->get('add-pm-date').' 00:00:00') ); //Дата документа
                 $stock->setDatetime( new \DateTime() ); //Реальная дата документа
                 $stock->setInvoice( $request->request->get('add-pm-sf') ); //Номер документа
                 if ($request->request->get('add-pm-note')) {$stock->setNote( $request->request->get('add-pm-note') );} //Дополнительный комментарий
                 $stock->setTax( $request->request->get('add-pm-tax_') ); //Налоговая ставка
+                if ( $request->request->get('add-pm-provider') == '0' ) {$stock->setTax(0);}
                 $stock->setType( $request->request->get('add-pm-type') ); //Тип поступления
 
                 $parameters = 0; //Дополнительные параметры
@@ -398,6 +402,57 @@ class StockController extends AbstractController
                 $author = $usersRepository->findBy( array('id' => $this->security->getUser()->getId()) );
                 if (is_array($author)) {$author = array_shift($author);}
                 $stock->setUser($author);
+
+                //Сумма всех материалов
+                $sumTotal = 0;
+                for ($i = 0; $i < sizeof($arrTitles); $i++) {
+                    $sumTotal += $arrTotal[$i];
+                }
+
+                //Привязываем логистику к позициям в заявках
+                $params['docinfo'] = $request->request->get('add-pm-sf'); //Дополнительная информация
+                $params['sum'] = $sumTotal; //Сумма
+                $params['dateReciept'] = $request->request->get('add-pm-date'); //Дата операции
+                $params['photos'] = $request->request->get('files'); //Фотографии
+                $params['files'] = '[]';
+                
+                $type = 0; //Получение
+                $materials = $request->request->get('material');
+                $amounts = $request->request->get('amount');
+
+                $billsIds = $request->request->get('bill');
+                $resultArray = [];
+                if ($billsIds !== null) {
+                    foreach ($billsIds as $billId) {
+                        $exist = false;
+                        foreach ($resultArray as $row) {if ($row['billId'] == $billId) {$exist = true; break;}}
+
+                        if (!$exist) {
+                            //Добавляем
+                            $tmp = [];
+                            $tmp['billId'] = $billId;
+                            $tmp['materials'] = [];
+                            $tmp['amounts'] = [];
+
+                            for ($i=0; $i < sizeof($billsIds); $i++) {
+                                if ($billsIds[$i] == $billId) {
+                                    $tmp['materials'][] = $materials[$i];
+                                    $tmp['amounts'][] = $amounts[$i];
+                                }
+                            }
+
+                            $resultArray[] = $tmp; unset($tmp);
+                        }
+                    }
+                }
+
+                $logistics = []; //Возвращаемое значение при успешном выполнении
+                foreach ($resultArray as $bill) {
+                    $billsController = new BillsController($this->security, $this->entityManager);
+                    $logistics[] = $billsController->recieveMaterials($type, $bill['billId'], $bill['materials'], $bill['amounts'], $params);
+                }
+                $logistics = json_encode($logistics);
+                $stock->setLogistic($logistics);
 
                 $this->entityManager->persist($stock);
                 $this->entityManager->flush(); //ID документа в $stock->getId();
@@ -416,6 +471,22 @@ class StockController extends AbstractController
                     );
 
                     $this->entityManager->persist($material);
+                }
+
+                //Создаем связь прихода с материалами
+                if (is_array($materials) && sizeof($materials) > 0) {
+                    for ($i=0; $i<sizeof($materials); $i++) {
+                        $objMaterial = $materialsRepository->findBy( array('id' => (int)$materials[$i]) );
+                        if (is_array($objMaterial)) {$objMaterial = array_shift($objMaterial);}
+
+                        $SAM = new StockApplicationsMaterials(
+                            $objMaterial, //Materials::class
+                            $stock, //Stock::class
+                            $amounts[$i]
+                        );
+
+                        $this->entityManager->persist($SAM);
+                    }
                 }
 
                 //Добавляем файлы
@@ -770,8 +841,10 @@ class StockController extends AbstractController
      */
     public function viewPM(
         Request $request,
+        ProvidersRepository $providersRepository,
         StockRepository $stockRepository,
         StockFilesRepository $stockFilesRepository,
+        StockApplicationsMaterialsRepository $stockApplicationsMaterialsRepository,
         StockMaterialsRepository $stockMaterialsRepository
     ): Response
     {
@@ -781,8 +854,9 @@ class StockController extends AbstractController
         }
 
         //Проверяем наличие документа
-        $objStock = $stockRepository->findBy( array('id' => (int)$id) );
+        $objStock = $stockRepository->findBy( array('id' => (int)$id, 'doctype' => 0) );
         if (sizeof($objStock) == 0) {
+            dd(2);
             return new RedirectResponse('/applications');
         }
         if (is_array($objStock)) {$objStock = array_shift($objStock);}
@@ -790,8 +864,54 @@ class StockController extends AbstractController
         //Получаем материалы
         $objMaterials = $stockMaterialsRepository->findBy( array('stock' => (int)$id) );
 
-        //Получаем файлы
-        $objFiles = $stockFilesRepository->findBy( array('stock' => (int)$id) );
+        //Получаем список файлов
+        $files = [];
+        $arrFiles = $stockFilesRepository->findBy(array('stock' => (int)$id));
+        foreach ($arrFiles as $file) {                
+            $tmp = explode('.', basename($file->getPath())); $ext = end($tmp); unset($tmp);
+
+            $params = [
+                'path' => $file->getPath(),
+                'name' => basename($file->getPath()),
+                'title' => pathinfo($file->getPath())['filename'],
+                'ext' => $ext,
+                'type' => $file->getFileType()
+            ];
+
+            //Определяем класс кнопки и иконку
+            $params['class'] = 'btn-outline-secondary'; $params['icon'] = 'bi-file-image';
+            if (in_array($ext, ['doc', 'docx'])) {$params['class'] = 'btn-outline-primary'; $params['bi-file-richtext'] = '';}
+            if (in_array($ext, ['xls', 'xlsx'])) {$params['class'] = 'btn-outline-success'; $params['icon'] = 'bi-file-bar-graph';}
+            if (in_array($ext, ['pdf'])) {$params['class'] = 'btn-outline-danger'; $params['icon'] = 'bi-file-pdf';}
+            if (in_array($ext, ['txt'])) {$params['class'] = 'btn-outline-secondary'; $params['icon'] = 'bi-file-text';}
+            if (in_array($ext, ['htm', 'html'])) {$params['class'] = 'btn-outline-secondary'; $params['icon'] = 'bi-file-code';}
+
+            $files[] = $params; unset($params);
+        }
+
+        //Получаем поставщика
+        $objProvider = $providersRepository->findBy( array('inn' => (int)$objStock->getProvider()) );
+        if (sizeof($objProvider) > 0) {
+            if (is_array($objProvider)) {$objProvider = array_shift($objProvider);}
+            $params['provider'] = $objProvider;
+        }
+
+        //Получаем привязанные материалы
+        $SAP = $stockApplicationsMaterialsRepository->findBy( array('stock' => $id) );
+        $applications = [];
+        foreach ($SAP as $SAP_row) {
+            $objApplication = $SAP_row->getMaterial()->getApplication();
+            $exist = false;
+            foreach ($applications as $application) {
+                if ($objApplication->getId() == $application->getId()) {
+                    $exist = true; break;
+                }
+            }
+
+            if (!$exist) {
+                $applications[] = $objApplication;
+            }
+        }
         
         //Хлебные крошки
         $breadcrumbs = [];
@@ -806,8 +926,334 @@ class StockController extends AbstractController
         $params['breadcrumbs'] = $breadcrumbs;
         $params['stock'] = $objStock;
         $params['materials'] = $objMaterials;
-        $params['files'] = $objFiles;
+        $params['files'] = $files;
+        $params['applications'] = $applications;
 
         return $this->render('stock/view-pm.html.twig', $params);
+    }
+
+    /**
+     * @Route("/stock/print/pm", methods={"GET"})
+     * @Security("is_granted('ROLE_STOCK') or is_granted('ROLE_BUH')")
+     */
+    public function printPM(
+        Request $request,
+        ProvidersRepository $providersRepository,
+        StockRepository $stockRepository,
+        StockFilesRepository $stockFilesRepository,
+        StockApplicationsMaterialsRepository $stockApplicationsMaterialsRepository,
+        StockMaterialsRepository $stockMaterialsRepository
+    ): Response
+    {
+        $id = $request->query->get('number');
+        if ($id === null || empty($id) || !is_numeric($id)) {
+            return new RedirectResponse('/applications');
+        }
+
+        //Проверяем наличие документа
+        $objStock = $stockRepository->findBy( array('id' => (int)$id, 'doctype' => 0) );
+        if (sizeof($objStock) == 0) {
+            dd(2);
+            return new RedirectResponse('/applications');
+        }
+        if (is_array($objStock)) {$objStock = array_shift($objStock);}
+
+        //Получаем материалы
+        $objMaterials = $stockMaterialsRepository->findBy( array('stock' => (int)$id) );
+
+        //Получаем список файлов
+        $files = [];
+        $arrFiles = $stockFilesRepository->findBy(array('stock' => (int)$id));
+        foreach ($arrFiles as $file) {                
+            $tmp = explode('.', basename($file->getPath())); $ext = end($tmp); unset($tmp);
+
+            $params = [
+                'path' => $file->getPath(),
+                'name' => basename($file->getPath()),
+                'title' => pathinfo($file->getPath())['filename'],
+                'ext' => $ext,
+                'type' => $file->getFileType()
+            ];
+
+            //Определяем класс кнопки и иконку
+            $params['class'] = 'btn-outline-secondary'; $params['icon'] = 'bi-file-image';
+            if (in_array($ext, ['doc', 'docx'])) {$params['class'] = 'btn-outline-primary'; $params['bi-file-richtext'] = '';}
+            if (in_array($ext, ['xls', 'xlsx'])) {$params['class'] = 'btn-outline-success'; $params['icon'] = 'bi-file-bar-graph';}
+            if (in_array($ext, ['pdf'])) {$params['class'] = 'btn-outline-danger'; $params['icon'] = 'bi-file-pdf';}
+            if (in_array($ext, ['txt'])) {$params['class'] = 'btn-outline-secondary'; $params['icon'] = 'bi-file-text';}
+            if (in_array($ext, ['htm', 'html'])) {$params['class'] = 'btn-outline-secondary'; $params['icon'] = 'bi-file-code';}
+
+            $files[] = $params; unset($params);
+        }
+
+        //Получаем поставщика
+        $objProvider = $providersRepository->findBy( array('inn' => (int)$objStock->getProvider()) );
+        if (sizeof($objProvider) > 0) {
+            if (is_array($objProvider)) {$objProvider = array_shift($objProvider);}
+            $params['provider'] = $objProvider;
+        }
+
+        //Получаем привязанные материалы
+        $SAP = $stockApplicationsMaterialsRepository->findBy( array('stock' => $id) );
+        $applications = [];
+        foreach ($SAP as $SAP_row) {
+            $objApplication = $SAP_row->getMaterial()->getApplication();
+            $exist = false;
+            foreach ($applications as $application) {
+                if ($objApplication->getId() == $application->getId()) {
+                    $exist = true; break;
+                }
+            }
+
+            if (!$exist) {
+                $applications[] = $objApplication;
+            }
+        }
+
+        //Печатаем
+        ob_start();
+
+        if (!empty($objStock->getNote())) {
+            echo '<div class="block" style="text-align: left; color: #777;">'.$objStock->getNote().'</div>'."\n";
+        }
+        
+        echo <<<HERE
+    <div class="block" style="text-align: right;">Типовая межотраслевая форма № М-4<br />Утверждена постановление Госкомстата России от 30.10.97 № 71а</div>
+HERE;
+        echo "<div class=\"block\" style=\"text-align: center;\"><h1>ПРИХОДНЫЙ ОРДЕР № ".$objStock->getId()."</h1></div>\n";
+        echo <<<HERE
+    <div class="block">
+        <table>
+            <tr>
+                <td colspan="3">&nbsp;</td>
+                <td class="bordered">Коды</td>
+            </tr>
+            <tr>
+                <td colspan="2">&nbsp;</td>
+                <td style="text-align: right;">Форма по ОКУД</td>
+                <td class="bordered" style="border-left-width: 2px; border-right-width: 2px; border-top-width: 2px;">0315003</td>
+            </tr>
+            <tr>
+                <td style="text-align: left; width: 160px;">Организация:</td>
+                <td style="border-bottom: 1px solid #000; text-align: left;">ЗАО «Артель старателей «Витим»</td>
+                <td style="text-align: right; width: 100px;">по ОКПО</td>
+                <td class="bordered" style="border-left-width: 2px; border-bottom-width: 2px; border-right-width: 2px; width: 150px;">33288542</td>
+            </tr>
+            <tr>
+                <td style="text-align: left;">Структурное подразделение:</td>
+                <td colspan="3" style="border-bottom: 1px solid #000; text-align: left;">База Иркутск</td>
+            </tr>
+        </table>
+    </div>
+    <div class="block" style="margin-top: 20px;">
+        <table>
+            <tr>
+                <td rowspan="2" class="bordered">Дата составления</td>
+                <td rowspan="2" class="bordered">Код вида операции</td>
+                <td rowspan="2" class="bordered">Склад</td>
+                <td colspan="2" class="bordered">Поставщик</td>
+                <td rowspan="2" class="bordered">Страховая компания</td>
+                <td colspan="2" class="bordered">Корреспондирующий счет</td>
+                <td colspan="2" class="bordered">Номер документа</td>
+            </tr>
+            <tr>
+                <td class="bordered">наименование</td>
+                <td class="bordered">код</td>
+                <td class="bordered">счет, субсчет</td>
+                <td class="bordered">код аналитического учета</td>
+                <td class="bordered">сопроводительного</td>
+                <td class="bordered">платежного</td>
+            </tr>
+            <tr style="border: 2px solid #000;">
+HERE;
+    
+        echo "            <td class=\"bordered\">".$objStock->getDate()->format('d.m.Y')."</td>\n";
+        echo "            <td class=\"bordered\"></td>\n";
+        echo "            <td class=\"bordered\">База Иркутск</td>\n";
+    
+        if ($objStock->getProvider() == 0) {
+            echo "            <td class=\"bordered\" colspan=\"2\">Наличный расчет</td>\n";
+        } else {        
+            echo "            <td class=\"bordered\">".$objProvider->getTitle()."</td>\n";
+            echo "            <td class=\"bordered\">".$objProvider->getInn()."</td>\n";
+        }
+    
+        echo <<<HERE
+                <td class="bordered"></td>
+                <td class="bordered">60.1</td>
+                <td class="bordered"></td>
+                <td class="bordered"></td>
+                <td class="bordered"></td>
+            </tr>
+        </table>
+    </div>
+    <div class="block" style="margin-top: 20px;">
+        <table>
+            <tr>
+                <td colspan="2" class="bordered">Материальные ценности</td>
+                <td colspan="2" class="bordered">Единица измерения</td>
+                <td colspan="2" class="bordered">Количество</td>
+                <td rowspan="2" class="bordered">Цена, руб. коп.</td>
+                <td rowspan="2" class="bordered">Сумма без учета НДС, руб. коп.</td>
+                <td rowspan="2" class="bordered">Сумма НДС, руб. коп.</td>
+                <td rowspan="2" class="bordered">Всего с учетом НДС, руб. коп.</td>
+                <td rowspan="2" class="bordered">Номер паспорта</td>
+                <td rowspan="2" class="bordered">Порядковый номер по складской картотеке</td>
+            </tr>
+            <tr>
+                <td class="bordered">наименование, сорт, марка, размер</td>
+                <td class="bordered">номенклатурный номер</td>
+                <td class="bordered">код</td>
+                <td class="bordered">наименование</td>
+                <td class="bordered">по документу</td>
+                <td class="bordered">принято</td>
+            </tr>
+            <tr>
+                <td class="bordered">1</td>
+                <td class="bordered" style="border-bottom-width: 2px;">2</td>
+                <td class="bordered" style="border-bottom-width: 2px;">3</td>
+                <td class="bordered">4</td>
+                <td class="bordered">5</td>
+                <td class="bordered" style="border-bottom-width: 2px;">6</td>
+                <td class="bordered" style="border-bottom-width: 2px;">7</td>
+                <td class="bordered" style="border-bottom-width: 2px;">8</td>
+                <td class="bordered" style="border-bottom-width: 2px;">9</td>
+                <td class="bordered" style="border-bottom-width: 2px;">10</td>
+                <td class="bordered">11</td>
+                <td class="bordered">12</td>
+            </tr>
+HERE;
+    
+        $sCount = 0; $sSum = 0; $sTax = 0; $sTotal = 0;
+        foreach ($objMaterials as $material) {
+            echo "        <tr>\n";
+            echo "            <td class=\"bordered\" style=\"text-align: left;\">".$material->getTitle()."</td>\n";
+    
+            $mid = $material->getId(); while (strlen($mid) < 6) {$mid = '0'.$mid;}
+    
+            echo "            <td class=\"bordered\" style=\"border-left-width: 2px;\">".$mid."</td>\n";
+    
+            $uid = $material->getUnit()->getId(); while (strlen($uid) < 6) {$uid = '0'.$uid;}
+    
+            echo "            <td class=\"bordered\" style=\"border-right-width: 2px;\">".$uid."</td>\n";
+            echo "            <td class=\"bordered\">".$material->getUnit()->getTitle()."</td>\n";
+            echo "            <td class=\"bordered\"></td>\n";
+            echo "            <td class=\"bordered\" style=\"border-left-width: 2px;\">".number_format($material->getCount(), 2, ".", "")."</td>\n";
+            echo "            <td class=\"bordered\">".number_format($material->getPrice(), 2, ".", " ")."</td>\n";
+            echo "            <td class=\"bordered\">".number_format($material->getSum(), 2, ".", " ")."</td>\n";
+            echo "            <td class=\"bordered\">".number_format($material->getTax(), 2, ".", " ")."</td>\n";
+            echo "            <td class=\"bordered\" style=\"border-right-width: 2px;\">".number_format($material->getTotal(), 2, ".", " ")."</td>\n";
+            echo "            <td class=\"bordered\"></td>\n";
+            echo "            <td class=\"bordered\"></td>\n";
+            echo "        </tr>\n";
+
+            $sCount += $material->getCount(); 
+            $sSum += $material->getSum(); 
+            $sTax += $material->getTax(); 
+            $sTotal += $material->getTotal();
+        }
+    
+        echo <<<HERE
+            <tr>
+                <td></td>
+                <td colspan="2" style="border-top: 2px solid #000;">&nbsp;</td>
+                <td></td>
+                <td style="text-align: right;">Итого</td>
+HERE;
+        
+        echo "            <td class=\"bordered\" style=\"border-left-width: 2px;\">".number_format($sCount, 2, ".", "")."</td>\n";
+        echo "            <td class=\"bordered\">Х</td>\n";
+        echo "            <td class=\"bordered\">".number_format($sSum, 2, ".", " ")."</td>\n";
+        echo "            <td class=\"bordered\">".number_format($sTax, 2, ".", " ")."</td>\n";
+        echo "            <td class=\"bordered\" style=\"border-right-width: 2px;\">".number_format($sTotal, 2, ".", " ")."</td>\n";
+    
+        echo <<<HERE
+                <td colspan="2"></td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="block">
+HERE;
+        echo '        <img src="'.getcwd().'/img/signatures/signature_0.png" alt="" style="height: 75px; position: absolute; margin-left: 210px; margin-bottom: -40px; width: 180px;" />'."\n";
+        echo <<<HERE
+        <table>
+            <tr>
+                <td style="width: 70px; text-align: right;">Принял</td>
+                <td style="border-bottom: 1px solid #000; width: 13%;">зав. базой</td>
+                <td style="width: 5px;"></td>
+                <td style="border-bottom: 1px solid #000; width: 13%;"></td>
+                <td style="width: 5px;"></td>
+                <td style="border-bottom: 1px solid #000; width: 13%;">Ю.Н. Жарков</td>
+                <td></td>
+                <td style="width: 70px; text-align: right;">Сдал</td>
+                <td style="border-bottom: 1px solid #000; width: 13%;"></td>
+                <td style="width: 5px;"></td>
+                <td style="border-bottom: 1px solid #000; width: 13%;"></td>
+                <td style="width: 5px;"></td>
+                <td style="border-bottom: 1px solid #000; width: 13%;"></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td style="font-size: 0.9em;">должность</td>
+                <td></td>
+                <td style="font-size: 0.9em;">подпись</td>
+                <td></td>
+                <td style="font-size: 0.9em;">расшифровка подписи</td>
+                <td></td>
+                <td></td>
+                <td style="font-size: 0.9em;">должность</td>
+                <td></td>
+                <td style="font-size: 0.9em;">подпись</td>
+                <td></td>
+                <td style="font-size: 0.9em;">расшифровка подписи</td>
+            </tr>
+        </table>
+    </div>
+HERE;
+
+        $content = ob_get_contents();
+        ob_end_clean();
+
+        $css = file_get_contents('css/pdf.css');
+
+        require_once $this->getParameter('kernel.project_dir').'/../vendor/autoload.php';
+
+        $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
+        $fontDirs = $defaultConfig['fontDir'];
+        
+        $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
+        $fontData = $defaultFontConfig['fontdata'];
+
+        $mpdf = new \Mpdf\Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4-L',
+            'orientation' => 'L',
+            'margin_left' => 10,
+            'margin_right' => 10,
+            'margin_top' => 7,
+            'margin_bottom' => 7,
+            'margin_header' => 10,
+            'margin_footer' => 10,
+            'default_font_size' => 8,
+
+            'fontDir' => array_merge($fontDirs, ['fonts']),
+            'fontdata' => $fontData + [
+                'tahoma' => [
+                    'R' => 'tahoma.ttf',
+                    'B' => 'tahoma-bold.ttf',
+                ],
+            ],
+            'default_font' => 'tahoma'
+        ]);
+        $mpdf->debug = true;
+
+        $mpdf->keep_table_proportions = TRUE;
+        $mpdf->shrink_tables_to_fit=1;
+        $mpdf->SetTitle('Просмотр приходного ордера'.$objStock->getId());
+        $mpdf->WriteHTML($css, \Mpdf\HTMLParserMode::HEADER_CSS);
+        $mpdf->WriteHTML($content, \Mpdf\HTMLParserMode::HTML_BODY);
+        
+        $mpdf->Output('Приходный ордер'.$objStock->getId().'.pdf', 'I');
     }
 }

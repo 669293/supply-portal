@@ -95,6 +95,27 @@ class Stock
      */
     private $user;
 
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="parent", type="integer", nullable=true)
+     */
+    private $parent;
+
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="doctype", type="integer", nullable=false, options={"default"="0"})
+     */
+    private $doctype = 0;
+
+    /**
+     * @var string|null
+     *
+     * @ORM\Column(name="logistic", type="string", length=255, nullable=true)
+     */
+    private $logistic;
+
     public function __construct()
     {
         $this->datetime = new \DateTime();
@@ -221,6 +242,42 @@ class Stock
     public function setUser(?Users $user): self
     {
         $this->user = $user;
+
+        return $this;
+    }
+
+    public function getParent(): ?int
+    {
+        return $this->parent;
+    }
+
+    public function setParent(?int $parent): self
+    {
+        $this->parent = $parent;
+
+        return $this;
+    }
+
+    public function getDoctype(): ?int
+    {
+        return $this->doctype;
+    }
+
+    public function setDoctype(?int $doctype): self
+    {
+        $this->doctype = $doctype;
+
+        return $this;
+    }
+
+    public function getLogistic(): ?string
+    {
+        return $this->logistic;
+    }
+
+    public function setLogistic(string $logistic): self
+    {
+        $this->logistic = $logistic;
 
         return $this;
     }
