@@ -1,0 +1,117 @@
+{# templates/stock/add-sm.html.twig #}
+{% extends 'default.html.twig' %}
+
+{# Заголовки #}
+{% block title %}{{ title }}{% endblock %}
+{% block caption %}{{ title }}{% endblock %}
+
+{# Контент #}
+{% block content %}
+    {% set materialsCount = 0 %}
+    {% for material in materials %}
+        {% if material.count > 0 %}
+            {% set materialsCount = materialsCount + 1 %}
+        {% endif %}
+    {% endfor %}
+
+    {% if materialsCount == 0 %}
+        <p class="text-small text-warning"><i class="bi bi-exclamation-triangle"></i> На складе нет материалов, доступных к списанию на основании данного поступления</p>
+    {% else %}
+        <form class="mb-2" action="/stock/add/sm" method="POST" id="add-sm-form">
+            <fieldset>
+                <input type="hidden" name="token" value="{{ csrf_token('add-sm') }}"/>
+                <input type="hidden" name="files" value=""/>
+                <input type="hidden" name="add-sm-parnet" value="{{ stock.getId }}"/>
+                <div class="container-fluid w-100 overflow-scroll px-0 mb-2">
+                    <table class="table table-borderless">
+                        <tbody>
+                            <tr>
+                                <td class="ps-0" style="width: 180px;">Склад списания</td>
+                                <td class="w-auto">
+                                    <select class="form-select form-select-sm" name="add-sm-office">
+                                        {% for office in offices %}
+                                            {% if office.getId in [3, 5] %}
+                                                <option value="{{ office.getId }}"{% if office.getId == 3 %} selected{% endif %}>{{ office.getTitle }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text mt-0">Выберите склад в который производится списание</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-1 pb-3">
+                    <table class="table table-sm table-bordered table-striped mb-0 us-none" style="min-width: 900px;" id="materialsTable">
+                        <thead>
+                            <tr>
+                                <th class="py-2 align-middle text-center text-xsmall" scope="col" style="width: 50px;">№</th>
+                                <th class="py-2 align-middle text-xsmall" scope="col">Наименование</th>
+                                <th class="py-2 align-middle text-nowrap text-xsmall" scope="col" style="width: 120px;">Ед.изм.</th>
+                                <th class="py-2 align-middle text-xsmall" scope="col" style="width: 100px;">Кол-во</th>
+                                <th class="py-2 align-middle text-nowrap text-xsmall" style="width: 100px;" scope="col">Цена</th>
+                                <th class="py-2 align-middle text-nowrap text-xsmall" style="width: 100px;" scope="col">Сумма</th>
+                                <th class="py-2 align-middle text-nowrap text-xsmall" style="width: 100px;" scope="col">НДС</th>
+                                <th class="py-2 align-middle text-nowrap text-xsmall" style="width: 100px;" scope="col">Всего</th>
+                                <th class="text-center align-middle" style="width: 50px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for material in materials %}
+                                {% if material.count > 0 %}
+                                    <tr class="sbv-parent">
+                                        <td class="align-middle text-center text-xsmall">{{ loop.index }}</td>
+                                        <td class="align-middle text-xsmall">{{ material.obj.getTitle }}</td>
+                                        <td class="align-middle text-center text-xsmall">{{ material.obj.getUnit.getTitle }}</td>
+                                        <td class="align-middle">
+                                            <input type="hidden" name="add-sm-material-id[]" value="{{ material.obj.getId }}" />
+                                            <input class="form-control form-control-sm should-be-validated" type="number" max="{{ material.count }}" value="{{ material.count }}" name="add-sm-count[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" />
+                                        </td>
+                                        <td class="align-middle text-xsmall">{{ material.obj.getPrice|number_format(2, '.', ' ') }}</td>
+                                        <td class="align-middle text-xsmall">{{ material.obj.getSum|number_format(2, '.', ' ') }}</td>
+                                        <td class="align-middle text-xsmall">{{ material.obj.getTax|number_format(2, '.', ' ') }}</td>
+                                        <td class="align-middle text-xsmall">{{ material.obj.getTotal|number_format(2, '.', ' ') }}</td>
+                                        <td class="text-center align-middle"><i class="bi bi-trash text-danger fs-6 delete-row"></i></td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <h5 class="mb-3">Дополнительные файлы</h5>
+
+                <div class="mb-4">
+                    <div class="file-loading">
+                        <input id="attach" type="file" name="filesApp[]" multiple="multiple" />
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+            </fieldset>
+
+            <div class="clearfix"></div>
+
+            <button type="button" class="btn btn-outline-primary mb-5 me-2 sbv-submit" id="sendBtn">Создать</button>
+            <button type="button" class="btn btn-outline-secondary mb-5 me-2" onclick="location.href='/applications/';">Отмена</button>
+            <div class="spinner-border text-primary d-none" role="status" style="margin-bottom: 0.8rem!important;"><span class="visually-hidden">Обработка...</span></div>
+        </form>
+    {% endif %}
+{% endblock %}
+
+{# Модальные окна #}
+{% block modal %}
+{% endblock %}
+
+{# Скрипты #}
+{% block scripts %}
+    <script src="{{ asset('js/fileinput.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/fileinput.ru.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/jquery.form.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/stock/add-sm.js') }}" type="text/javascript"></script>
+{% endblock %}
+
+{# Стили #}
+{% block css %}
+    <link href="{{ asset('css/fileinput.css') }}" rel="stylesheet">
+{% endblock %}

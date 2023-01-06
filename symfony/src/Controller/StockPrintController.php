@@ -671,4 +671,294 @@ HERE;
         
         $mpdf->Output('Приходный ордер'.$objStock->getId().'.pdf', 'I');
     }
+
+    /**
+     * @Route("/stock/print/sm", methods={"GET"})
+     * @Security("is_granted('ROLE_STOCK') or is_granted('ROLE_BUH')")
+     */
+    public function printSM(
+        Request $request,
+        ProvidersRepository $providersRepository,
+        StockRepository $stockRepository,
+        StockMaterialsRepository $stockMaterialsRepository,
+        StockStockMaterialsRepository $stockStockMaterialsRepository,
+        StockApplicationsMaterialsRepository $stockApplicationsMaterialsRepository
+    ): Response
+    {
+        $id = $request->query->get('number');
+        if ($id === null || empty($id) || !is_numeric($id)) {
+            return new RedirectResponse('/applications');
+        }
+
+        //Проверяем наличие документа
+        $objStock = $stockRepository->findBy( array('id' => (int)$id, 'doctype' => 2) );
+        if (sizeof($objStock) == 0) {
+            return new RedirectResponse('/applications');
+        }
+        if (is_array($objStock)) {$objStock = array_shift($objStock);}
+
+        //Получаем материалы
+        $objSSMaterials = $stockStockMaterialsRepository->findBy( array('stock' => (int)$id) );
+        $objMaterials = [];
+        foreach ($objSSMaterials as $objSSMaterial) {
+            $tmp = new \stdClass;
+            $tmp->obj = $objSSMaterial->getStockMaterial();
+            $tmp->count = $objSSMaterial->getCount();
+            $tmp->id = $objSSMaterial->getId();
+            $objMaterials[] = $tmp;
+        }
+
+        //Проверяем наличие документа
+        $objStockParent = $stockRepository->findBy( array('id' => (int)$objStock->getParent()) );
+        if (is_array($objStockParent)) {$objStockParent = array_shift($objStockParent);}
+
+        //Получаем поставщика
+        $objProvider = $providersRepository->findBy( array('inn' => (int)$objStockParent->getProvider()) );
+        if (sizeof($objProvider) > 0) {
+            if (is_array($objProvider)) {$objProvider = array_shift($objProvider);}
+        }
+
+        //Печатаем
+        ob_start();
+
+        $num = $objStock->getId(); while (strlen($num) < 6) {$num = '0'.$num;}
+        echo '<div class="block" style="text-align: right;">Типовая межотраслевая форма № М-11<br />Утверждена постановление Госкомстата России от 30.10.97 № 71а</div>'."\n";
+        
+        if ($objStockParent->getType() == 3) {
+            echo "<div class=\"block\" style=\"text-align: center;\"><h1>АКТ СПИСАНИЯ ПРОДУКТОВ № ".$num."</h1></div>\n";
+        } else {
+            echo "<div class=\"block\" style=\"text-align: center;\"><h1>АКТ СПИСАНИЯ МАТЕРИАЛОВ № ".$num."</h1></div>\n";
+        }
+        
+        echo <<<HERE
+        <div class="block">
+            <table>
+                <tr>
+                    <td colspan="3">&nbsp;</td>
+                    <td class="bordered">Коды</td>
+                </tr>
+                <tr>
+                    <td colspan="2">&nbsp;</td>
+                    <td style="text-align: right;">Форма по ОКУД</td>
+                    <td class="bordered" style="border-left-width: 2px; border-right-width: 2px; border-top-width: 2px;">0315006</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left; width: 160px;">Организация:</td>
+                    <td style="border-bottom: 1px solid #000; text-align: left;">ЗАО «Артель старателей «Витим»</td>
+                    <td style="text-align: right; width: 100px;">по ОКПО</td>
+                    <td class="bordered" style="border-left-width: 2px; border-bottom-width: 2px; border-right-width: 2px; width: 150px;">33288542</td>
+                </tr>
+                <tr>
+                    <td style="text-align: left;">Структурное подразделение:</td>
+HERE;
+        echo "            <td colspan=\"3\" style=\"border-bottom: 1px solid #000; text-align: left;\">".$objStock->getOffice()->getTitle()."</td>\n";
+        echo <<<HERE
+                </tr>
+            </table>
+        </div>
+        <div class="block" style="margin-top: 20px;">
+            <table>
+                <tr>
+                    <td class="bordered">Дата составления</td>
+                    <td class="bordered">Код вида операции</td>
+                    <td class="bordered">Списано со склада</td>
+                </tr>
+                <tr style="border: 2px solid #000;">
+HERE;
+        
+        echo "            <td class=\"bordered\">".$objStock->getDate()->format('d.m.Y')."</td>\n";
+        echo <<<HERE
+                    <td class="bordered"></td>
+HERE;
+        
+        echo "            <td class=\"bordered\">".$objStock->getOffice()->getTitle()."</td>\n";
+    
+        echo <<<HERE
+                </tr>
+            </table>
+        </div>
+        <div class="block" style="margin-top: 10px;">
+            <table>
+                <tr>
+                    <td colspan="2" class="bordered">Материальные ценности</td>
+                    <td colspan="2" class="bordered">Единица изменения</td>
+                    <td class="bordered">Количество</td>
+                    <td rowspan="2" class="bordered">Цена, руб. коп.</td>
+                    <td rowspan="2" class="bordered">Сумма буз учета НДС, руб. коп.</td>
+                    <td rowspan="2" class="bordered">Порядковый номер по складской картотеке</td>
+                </tr>
+                <tr>
+                    <td class="bordered">наименование, сорт, марка, размер</td>
+                    <td class="bordered">номенклатурный номер</td>
+                    <td class="bordered">код</td>
+                    <td class="bordered">наименование</td>
+                    <td class="bordered">списано</td>
+                </tr>
+                <tr>
+                    <td class="bordered">1</td>
+                    <td class="bordered">2</td>
+                    <td class="bordered">3</td>
+                    <td class="bordered">4</td>
+                    <td class="bordered">5</td>
+                    <td class="bordered">6</td>
+                    <td class="bordered">7</td>
+                    <td class="bordered">8</td>
+                </tr>
+HERE;
+        
+        $sum=0;
+        foreach ($objMaterials as $material) {
+            $sum += $material->obj->getTotal();
+    
+            echo "        <tr>\n";
+            echo "            <td class=\"bordered\" style=\"text-align: left;\">".$material->obj->getTitle()."</td>\n";
+    
+            $mid = $material->obj->getId(); while (strlen($mid) < 6) {$mid = '0'.$mid;}
+    
+            echo "            <td class=\"bordered\">".$mid."</td>\n";
+    
+            $uid = $material->obj->getUnit()->getId(); while (strlen($uid) < 6) {$uid = '0'.$uid;}
+    
+            echo "            <td class=\"bordered\">".$uid."</td>\n";
+            echo "            <td class=\"bordered\">".$material->obj->getUnit()->getTitle()."</td>\n";
+            echo "            <td class=\"bordered\">".number_format($material->count, 3, ".", "")."</td>\n";
+            echo "            <td class=\"bordered\">".number_format($material->obj->getPrice(), 2, ".", ",")."</td>\n";
+            echo "            <td class=\"bordered\">".number_format($material->obj->getTotal(), 2, ".", ",")."</td>\n";
+            echo "            <td class=\"bordered\"></td>\n";
+            echo "        </tr>\n";
+        }
+    
+        echo <<<HERE
+                <tr>                                                                                                                                                                                                                             
+                    <td colspan="6" style="font-weight: bold; padding-top: 10px; text-align: right;">Всего по акту списано материалов на сумму, руб:</td>
+HERE;
+        
+        echo "            <td style=\"font-weight: bold; padding-top: 10px;\">".number_format($sum, 2, ".", ",")."</td>\n";
+    
+        echo <<<HERE
+                    <td style="padding-top: 10px;"></td>
+                </tr>
+            </table>
+        </div>
+        <div class="block" style="margin-top: 40px; position: relative;">
+HERE;
+            
+        echo '<img src="'.getcwd().'/img/signatures/signature_2.png" alt="" style="height: 75px; position: absolute; margin-left: 440px;  width: 90px;" />'."\n";
+        echo '<img src="'.getcwd().'/img/signatures/signature_1.png" alt="" style="height: 75px; position: absolute; margin-left: 370px; margin-top: -30px; width: 90px;" />'."\n";
+        echo '<img src="'.getcwd().'/img/signatures/signature_0.png" alt="" style="height: 75px; position: absolute; margin-left: 370px; margin-top: -40px; width: 150px;" />'."\n";
+        
+        echo <<<HERE
+            <table style="margin-top: -150px; position: absolute;">
+                <tr>
+                    <td style="width: 100px; text-align: right;">Председатель комиссии</td>
+                    <td style="border-bottom: 1px solid #000; width: 130px;"></td>
+                    <td style="width: 5px;"></td>
+                    <td style="border-bottom: 1px solid #000; width: 130px;"></td>
+                    <td style="width: 5px;"></td>
+                    <td style="border-bottom: 1px solid #000; width: 130px;"></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td style="font-size: 0.9em; vertical-align: top;">должность</td>
+                    <td></td>
+                    <td style="font-size: 0.9em; vertical-align: top;">подпись</td>
+                    <td></td>
+                    <td style="font-size: 0.9em; vertical-align: top;">расшифровка подписи</td>
+                </tr>
+                <tr>
+                    <td style="width: 100px; text-align: right;">Члены комиссии</td>
+                    <td style="border-bottom: 1px solid #000; width: 130px;"></td>
+                    <td style="width: 5px;"></td>
+                    <td style="border-bottom: 1px solid #000; width: 130px;"></td>
+                    <td style="width: 5px;"></td>
+                    <td style="border-bottom: 1px solid #000; width: 130px;">В.Н. Жарков</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td style="font-size: 0.9em; vertical-align: top;">должность</td>
+                    <td></td>
+                    <td style="font-size: 0.9em; vertical-align: top;">подпись</td>
+                    <td></td>
+                    <td style="font-size: 0.9em; vertical-align: top;">расшифровка подписи</td>
+                </tr>
+                <tr>
+                    <td style="color: #fff; width: 100px; text-align: right;">Члены комиссии</td>
+                    <td style="border-bottom: 1px solid #000; width: 130px;"></td>
+                    <td style="width: 5px;"></td>
+                    <td style="border-bottom: 1px solid #000; width: 130px;"></td>
+                    <td style="width: 5px;"></td>
+                    <td style="border-bottom: 1px solid #000; width: 130px;">А.В. Авраменко</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td style="font-size: 0.9em; vertical-align: top;">должность</td>
+                    <td></td>
+                    <td style="font-size: 0.9em; vertical-align: top;">подпись</td>
+                    <td></td>
+                    <td style="font-size: 0.9em; vertical-align: top;">расшифровка подписи</td>
+                </tr>
+                <tr>
+                    <td style="width: 100px; text-align: right;">Материально-ответственное лицо</td>
+                    <td style="border-bottom: 1px solid #000; width: 130px;"></td>
+                    <td style="width: 5px;"></td>
+                    <td style="border-bottom: 1px solid #000; width: 130px;"></td>
+                    <td style="width: 5px;"></td>
+                    <td style="border-bottom: 1px solid #000; width: 130px;">Ю.Н. Жарков</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td style="font-size: 0.9em; vertical-align: top;">должность</td>
+                    <td></td>
+                    <td style="font-size: 0.9em; vertical-align: top;">подпись</td>
+                    <td></td>
+                    <td style="font-size: 0.9em; vertical-align: top;">расшифровка подписи</td>
+                </tr>
+            </table>
+        </div>
+HERE;        
+
+        $content = ob_get_contents();
+        ob_end_clean();
+
+        $css = file_get_contents('css/pdf.css');
+
+        require_once $this->getParameter('kernel.project_dir').'/../vendor/autoload.php';
+
+        $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
+        $fontDirs = $defaultConfig['fontDir'];
+        
+        $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
+        $fontData = $defaultFontConfig['fontdata'];
+
+        $mpdf = new \Mpdf\Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'orientation' => 'P',
+            'margin_left' => 10,
+            'margin_right' => 10,
+            'margin_top' => 7,
+            'margin_bottom' => 7,
+            'margin_header' => 10,
+            'margin_footer' => 10,
+            'default_font_size' => 8,
+
+            'fontDir' => array_merge($fontDirs, ['fonts']),
+            'fontdata' => $fontData + [
+                'tahoma' => [
+                    'R' => 'tahoma.ttf',
+                    'B' => 'tahoma-bold.ttf',
+                ],
+            ],
+            'default_font' => 'tahoma'
+        ]);
+        $mpdf->debug = true;
+
+        $mpdf->keep_table_proportions = TRUE;
+        $mpdf->shrink_tables_to_fit=1;
+        $mpdf->SetTitle('Просмотр приходного ордера'.$objStock->getId());
+        $mpdf->WriteHTML($css, \Mpdf\HTMLParserMode::HEADER_CSS);
+        $mpdf->WriteHTML($content, \Mpdf\HTMLParserMode::HTML_BODY);
+        
+        $mpdf->Output('Приходный ордер'.$objStock->getId().'.pdf', 'I');
+    }
 }

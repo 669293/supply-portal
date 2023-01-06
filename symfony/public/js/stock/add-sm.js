@@ -1,62 +1,4 @@
 $(document).ready(function() {
-  //Автозаполнение поля "Перевозка"
-  function wayAutocomplete() {
-    $('.way-autocomplete').autocomplete({
-        serviceUrl: '/autocomplete/way'
-    });
-  }
-  wayAutocomplete();
-
-  //Выделение всех позиций в заявке
-  $('body').on('change', '.material-select-all', function() {
-    $(this).closest('table').find('.material-select').prop('checked', $(this).prop('checked'));
-    $(this).closest('table').find('.material-select:last').trigger('change');
-  });
-
-  //Выделение позиций с клавишей Shift
-  $('body').on('click', '.material-select', function(e) {
-      //Сбрасываем галочку "Выделить все", если выделение снято
-      if (!$(this).prop('checked')) {
-      $(this).closest('table').find('.material-select-all').prop('checked', false);
-      }
-
-      if (lastChecked && lastChecked.closest('table') != this.closest('table')) {lastChecked = null;}
-
-      if (!lastChecked) {lastChecked = this; return;}
-
-      if (e.shiftKey) {
-          var start = $('.material-select').index(this);
-          var end = $('.material-select').index(lastChecked);
-
-          $('.material-select').slice(Math.min(start,end), Math.max(start,end)+ 1).prop('checked', lastChecked.checked);
-      }
-
-      lastChecked = this;
-  });
-
-  //Получаем instance модального окна
-  const applicationsModal = new bootstrap.Modal(document.getElementById('applicationsModal'));
-
-  $('#pickConfirmBtn').click(function() {
-    applicationsModal.hide();
-
-    //Добавляем скрытые инпуты с данными
-    $('.log-input').remove(); //Удаляем все старые
-    $('#applicationsModal input[name="material[]"]:checked').each(function() {
-      var tr = $(this).closest('tr');
-
-      $('#add-pm-form').append('<input type="hidden" class="log-input" name="material[]" value="' + tr.find('input[name="material[]"]').val() + '" />');
-      $('#add-pm-form').append('<input type="hidden" class="log-input" name="amount[]" value="' + tr.find('input[name="amount[]"]').val() + '" />');
-      $('#add-pm-form').append('<input type="hidden" class="log-input" name="bill[]" value="' + tr.find('input[name="bill[]"]').val() + '" />');
-    });
-
-    $('#pickBtn').removeClass('btn-outline-primary').addClass('btn-outline-success').text('Выбрано: ' + $('input[name="material[]"]:checked').length);
-  });
-
-  $('#pickBtn').click(function() {
-    $(this).removeClass('btn-outline-success').addClass('btn-outline-primary').text('Выбрать');
-  });
-
   //Удаление позиций из заявки
   $('body').on('click', '.delete-row', function() {
     if (!$(this).prop('disabled')) {
@@ -64,7 +6,7 @@ $(document).ready(function() {
 
       //Проверяем, вдруг осталась одна строка
       if ($('#materialsTable tbody tr:visible').length == 1) {
-        showFormAlert(addTnForm, 'Нельзя удалить последнюю строку');
+        showFormAlert(addSmForm, 'Нельзя удалить последнюю строку');
       } else {
         row.hide('fast', function() {row.remove(); enumerate();});
       }
@@ -205,12 +147,12 @@ $(document).ready(function() {
 
   //Отправка формы
   $('#sendBtn').click(function() {
-    addTnForm = $(this).closest('form');
+    addSmForm = $(this).closest('form');
 
-    if (addTnForm.find('.form-message').length == 0) {
+    if (addSmForm.find('.form-message').length == 0) {
       prepareForm();
     } else {
-      addTnForm.find('.form-message').hide('fast', function() {
+      addSmForm.find('.form-message').hide('fast', function() {
         $(this).remove();
         prepareForm();
       });
@@ -218,20 +160,20 @@ $(document).ready(function() {
   });
 
   function prepareForm() {
-    if (checkForm(addTnForm)) {
+    if (checkForm(addSmForm)) {
       //Вызываем загрузку всех файлов
       if ($('.file-preview-thumbnails .kv-preview-thumb').not('.file-preview-success').not('.file-preview-initial').length > 0) {
         fileUploadError = false;
         $('#attach').fileinput('upload');
       } else {
         //Загружать нечего/все загружено, отправляем форму
-        formData = addTnForm.serialize();
-        freezeForm(addTnForm);
+        formData = addSmForm.serialize();
+        freezeForm(addSmForm);
         $('#attach').fileinput('disable');
         sendForm();
       }
     } else {
-      showFormAlert(addTnForm, 'Не заполнены необходимые поля');
+      showFormAlert(addSmForm, 'Не заполнены необходимые поля');
       return false;
     }
   }
@@ -273,8 +215,8 @@ $(document).ready(function() {
         $('input[name="files"]').val('');
       }
 
-      formData = addTnForm.serialize();
-      freezeForm(addTnForm);
+      formData = addSmForm.serialize();
+      freezeForm(addSmForm);
       $('#attach').fileinput('disable');
       sendForm();
     }
@@ -284,21 +226,21 @@ $(document).ready(function() {
 
   function sendForm() {
     $.ajax({
-      type: addTnForm.attr('method'),
-      url: addTnForm.attr('action'),
+      type: addSmForm.attr('method'),
+      url: addSmForm.attr('action'),
       data: formData
     }).done(function(data) {
       if ($.isArray(data) && data[0] == 1) {
         //Все хорошо
-        if (addTnForm.attr('id') == 'add-tn-form') {
+        if (addSmForm.attr('id') == 'add-sm-form') {
           alert('All good!');
           // $.redirectPost('/applications', {'msg': 'Заявка №' + data[1] + ' успешно добавлена', 'bg-color': 'bg-success', 'text-color': 'text-white'});
         } else {
           location.reload();
         }
       } else {
-        showFormAlert(addTnForm, data[1]);
-        freezeForm(addTnForm, false);
+        showFormAlert(addSmForm, data[1]);
+        freezeForm(addSmForm, false);
         $('#attach').fileinput('enable');
       }
     });

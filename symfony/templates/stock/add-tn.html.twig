@@ -1,4 +1,4 @@
-{# templates/stock/add-pm.html.twig #}
+{# templates/stock/add-tn.html.twig #}
 {% extends 'default.html.twig' %}
 
 {# Заголовки #}
@@ -17,7 +17,7 @@
     {% if materialsCount == 0 %}
         <p class="text-small text-warning"><i class="bi bi-exclamation-triangle"></i> На складе нет материалов, доступных к перемещению на основании данного поступления</p>
     {% else %}
-        <form class="mb-2" action="/stock/add/tn" method="POST" id="add-pm-form">
+        <form class="mb-2" action="/stock/add/tn" method="POST" id="add-tn-form">
             <fieldset>
                 <input type="hidden" name="token" value="{{ csrf_token('add-tn') }}"/>
                 <input type="hidden" name="files" value=""/>

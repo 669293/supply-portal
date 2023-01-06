@@ -1695,7 +1695,7 @@ class StockController extends AbstractController
         $breadcrumbs[2]->href = '/stock/view/tn?number='.$request->query->get('number');
         $breadcrumbs[2]->title = 'Требование-накладная №'.$request->query->get('number');
 
-        $params['title'] = 'Требование-накладная';
+        $params['title'] = 'Требование-накладная №'.$request->query->get('number');
         $params['breadcrumbs'] = $breadcrumbs;
         $params['stock'] = $objStock;
         $params['materials'] = $objMaterials;
@@ -1703,5 +1703,304 @@ class StockController extends AbstractController
         $params['applications'] = $applications;
 
         return $this->render('stock/view-tn.html.twig', $params);
+    }
+
+    /**
+     * Создание списания материалов на основе прихода
+     * @Route("/stock/add/sm", methods={"GET"})
+     * @IsGranted("ROLE_STOCK")
+     */
+    public function addSMForm(
+        Request $request,
+        OfficesRepository $officesRepository,
+        StockRepository $stockRepository,
+        StockApplicationsMaterialsRepository $stockApplicationsMaterialsRepository,
+        StockMaterialsRepository $stockMaterialsRepository,
+        StockStockMaterialsRepository $stockStockMaterialsRepository
+    ): Response
+    {
+        $stock = $stockRepository->findBy( array('id' => $request->query->get('number'), 'doctype' => 0) );
+        if ($stock === null || empty($stock)) {
+            return new RedirectResponse('/applications');
+        }
+        if (sizeof($stock) > 0) {$stock = array_shift($stock);}
+
+        //Получаем материалы
+        $objSSMaterials = $stockStockMaterialsRepository->findBy( array('stock' => (int)$stock->getId()) );
+        $objMaterials = [];
+        foreach ($objSSMaterials as $objSSMaterial) {
+            $tmp = new \stdClass;
+            $tmp->obj = $objSSMaterial->getStockMaterial();
+            $tmp->count = $objSSMaterial->getCount();
+            $tmp->id = $objSSMaterial->getId();
+            $objMaterials[] = $tmp;
+        }
+
+        //Ищем подчиненные документы
+        $childMaterials = [];
+        $objChildStock = $stockRepository->findBy( array('parent' => $stock->getId()) );
+        foreach ($objChildStock as $child) {
+            $objChildMaterials = $stockStockMaterialsRepository->findBy( array('stock' => $child->getId()) );
+            foreach ($objChildMaterials as $material_) {
+                $exist = false;
+                foreach ($childMaterials as $childMaterial) {
+                    if ($childMaterial[0] == $material_->getStockMaterial()->getId()) {
+                        $exist = true;
+                        $childMaterial[1] += $material_->getCount();
+                        break;
+                    }
+                }
+                if (!$exist) {
+                    $childMaterials[] = array($material_->getStockMaterial()->getId(), $material_->getCount());
+                }
+            }
+        }
+
+        $materials = [];
+        //Определяем количество каждого материала
+        foreach ($objMaterials as $material) {
+            $tmp = new \stdClass();
+            $tmp->obj = $material->obj;
+            $tmp->count = $material->count;
+
+            foreach ($childMaterials as $childMaterial) {
+                if ($childMaterial[0] == $material->obj->getId()) {
+                    $tmp->count = (float)$tmp->count - (float)$childMaterial[1];
+                    if ($tmp->count < 0) {$tmp->count = 0;}
+                    break;
+                }
+            }
+
+            $materials[] = $tmp;
+        }
+
+        //Хлебные крошки
+        $breadcrumbs = [];
+        $breadcrumbs[0] = new \stdClass();
+        $breadcrumbs[0]->href = '/';
+        $breadcrumbs[0]->title = 'Склад';
+        $breadcrumbs[1] = new \stdClass();
+        $breadcrumbs[1]->href = '/stock/view/pm?number='.$request->query->get('number');
+        $breadcrumbs[1]->title = 'Приходный ордер №'.$request->query->get('number');
+        $breadcrumbs[2] = new \stdClass();
+        $breadcrumbs[2]->href = '/stock/add/sm?number='.$request->query->get('number');
+        $breadcrumbs[2]->title = 'Создание списания материалов';
+
+        $params['title'] = 'Создание списания материалов';
+        $params['breadcrumbs'] = $breadcrumbs;
+        $params['materials'] = $materials;
+        $params['stock'] = $stock;
+        $params['offices'] = $officesRepository->findAll();
+        $params['appmaterials'] = $stockApplicationsMaterialsRepository->findBy( array( 'stock' => (int)$stock->getId() ) );
+
+        return $this->render('stock/add-sm.html.twig', $params);
+    }
+
+    /**
+     * Создание списания материалов на основе прихода (принимает данные из формы)
+     * @Route("/stock/add/sm", methods={"POST"})
+     * @IsGranted("ROLE_STOCK")
+     */
+    public function addSM(
+        Request $request,
+        BillsMaterialsRepository $billsMaterialsRepository,
+        OfficesRepository $officesRepository,
+        StockMaterialsRepository $stockMaterialsRepository,
+        StockFilesRepository $stockFilesRepository,
+        UsersRepository $usersRepository
+    ): JsonResponse
+    {
+        $result = [];
+
+        $submittedToken = $request->request->get('token');
+
+        if ($this->isCsrfTokenValid('add-sm', $submittedToken)) {
+            //Готовим данные
+            $this->entityManager->getConnection()->beginTransaction(); //Начинаем транзакцию
+
+            try {
+                //Получаем склад приемник
+                $officeTo = $officesRepository->findBy( array( 'id' => (int)$request->request->get('add-sm-office') ) );
+                if (is_array($officeTo)) {$officeTo = array_shift($officeTo);}
+
+                //Получаем массив наименований
+                $arrMaterialsIDs = $request->request->get('add-sm-material-id');
+                $rowsCount = sizeof($arrMaterialsIDs); //Определяем полезное количество строк
+                while ($rowsCount > 0) {if (empty($arrMaterialsIDs[$rowsCount - 1])) {$rowsCount--;} else {break;}}
+                $arrMaterialsIDs = array_slice($arrMaterialsIDs, 0, $rowsCount);
+
+                //Получаем массив единиц измерения
+                $arrCount = array_slice($request->request->get('add-sm-count'), 0, $rowsCount);
+
+                $arrMaterials = [];
+                foreach ($arrMaterialsIDs as $materialId) {
+                    $objStockMaterial = $stockMaterialsRepository->findBy( array( 'id' => $materialId ) );
+                    if (is_array($objStockMaterial) && sizeof($objStockMaterial) == 0) {throw $e;}
+                    if (is_array($objStockMaterial)) {$objStockMaterial = array_shift($objStockMaterial);}
+                    $arrMaterials[] = $objStockMaterial;
+                }
+
+                //Начинаем запись, пишем данные в таблицу stock
+                $stock = new Stock;
+                $stock->setDoctype(2); //Списание
+                $stock->setOffice( $officeTo ); //Склад в адрес которого идет списание
+                $stock->setDate( new \DateTime($request->request->get('add-tn-date').' 00:00:00') ); //Дата документа
+                $stock->setDatetime( new \DateTime() ); //Реальная дата документа
+                $stock->setParent( $request->request->get('add-sm-parnet') ); //Определяем родителя
+
+                //Определяем авторство
+                $author = $usersRepository->findBy( array('id' => $this->security->getUser()->getId()) );
+                if (is_array($author)) {$author = array_shift($author);}
+                $stock->setUser($author);
+
+                $this->entityManager->persist($stock);
+                $this->entityManager->flush(); //ID документа в $stock->getId();
+
+                //Добавляем материалы к заявке
+                for ($i = 0; $i < sizeof($arrMaterialsIDs); $i++) {
+                    if ($arrCount[$i] > 0) {
+                        //Добавляем связь
+                        $ssm = new StockStockMaterials(
+                            $stock,
+                            $arrMaterials[$i],
+                            $arrCount[$i]
+                        );
+
+                        $this->entityManager->persist($ssm);
+                    }
+                }
+
+                $this->entityManager->flush();
+
+                //Добавляем файлы
+                $arrFiles = json_decode($request->request->get('files'));
+                if ($arrFiles !== null ) {
+                    foreach ($arrFiles as $file) {
+                        $objFile = $stockFilesRepository->findBy( array('id' => $file) );
+                        if (is_array($objFile)) {$objFile = array_shift($objFile);}
+                        $objFile->setStock($stock);
+                        $this->entityManager->persist($objFile);
+                    }
+                }
+            
+                $this->entityManager->flush();    
+
+                $this->entityManager->getConnection()->commit();
+
+                $result[] = 1;
+                $result[] = $stock->getId();
+            } catch (Exception $e) {
+                $this->entityManager->getConnection()->rollBack();
+
+                $result[] = 0;
+                $result[] = $e;
+                //throw $e;
+            }
+
+            $this->entityManager->clear();
+
+            return new JsonResponse($result);
+        } else {
+            $result[] = 0;
+            $result[] = 'Недействительный токен CSRF.';
+            return new JsonResponse($result);
+        }
+    }
+
+    /**
+     * @Route("/stock/view/sm", methods={"GET"})
+     * @Security("is_granted('ROLE_STOCK') or is_granted('ROLE_BUH')")
+     */
+    public function viewSM(
+        Request $request,
+        ProvidersRepository $providersRepository,
+        StockRepository $stockRepository,
+        StockFilesRepository $stockFilesRepository,
+        StockApplicationsMaterialsRepository $stockApplicationsMaterialsRepository,
+        StockMaterialsRepository $stockMaterialsRepository,
+        StockStockMaterialsRepository $stockStockMaterialsRepository
+    ): Response
+    {
+        $id = $request->query->get('number');
+        if ($id === null || empty($id) || !is_numeric($id)) {
+            return new RedirectResponse('/applications');
+        }
+
+        //Проверяем наличие документа
+        $objStock = $stockRepository->findBy( array('id' => (int)$id, 'doctype' => 2) );
+        if (sizeof($objStock) == 0) {
+            dd(2);
+            return new RedirectResponse('/applications');
+        }
+        if (is_array($objStock)) {$objStock = array_shift($objStock);}
+
+        //Получаем материалы
+        $objSSMaterials = $stockStockMaterialsRepository->findBy( array('stock' => (int)$id) );
+        $objMaterials = [];
+        foreach ($objSSMaterials as $objSSMaterial) {
+            $tmp = new \stdClass;
+            $tmp->obj = $objSSMaterial->getStockMaterial();
+            $tmp->count = $objSSMaterial->getCount();
+            $tmp->id = $objSSMaterial->getId();
+            $objMaterials[] = $tmp;
+        }
+
+        //Получаем список файлов
+        $files = [];
+        $arrFiles = $stockFilesRepository->findBy(array('stock' => (int)$id));
+        foreach ($arrFiles as $file) {                
+            $tmp = explode('.', basename($file->getPath())); $ext = end($tmp); unset($tmp);
+
+            $params = [
+                'path' => $file->getPath(),
+                'name' => basename($file->getPath()),
+                'title' => pathinfo($file->getPath())['filename'],
+                'ext' => $ext,
+                'type' => $file->getFileType()
+            ];
+
+            //Определяем класс кнопки и иконку
+            $params['class'] = 'btn-outline-secondary'; $params['icon'] = 'bi-file-image';
+            if (in_array($ext, ['doc', 'docx'])) {$params['class'] = 'btn-outline-primary'; $params['bi-file-richtext'] = '';}
+            if (in_array($ext, ['xls', 'xlsx'])) {$params['class'] = 'btn-outline-success'; $params['icon'] = 'bi-file-bar-graph';}
+            if (in_array($ext, ['pdf'])) {$params['class'] = 'btn-outline-danger'; $params['icon'] = 'bi-file-pdf';}
+            if (in_array($ext, ['txt'])) {$params['class'] = 'btn-outline-secondary'; $params['icon'] = 'bi-file-text';}
+            if (in_array($ext, ['htm', 'html'])) {$params['class'] = 'btn-outline-secondary'; $params['icon'] = 'bi-file-code';}
+
+            $files[] = $params; unset($params);
+        }
+
+        //Проверяем наличие документа
+        $objStockParent = $stockRepository->findBy( array('id' => (int)$objStock->getParent()) );
+        if (is_array($objStockParent)) {$objStockParent = array_shift($objStockParent);}
+
+        //Получаем поставщика
+        $objProvider = $providersRepository->findBy( array('inn' => (int)$objStockParent->getProvider()) );
+        if (sizeof($objProvider) > 0) {
+            if (is_array($objProvider)) {$objProvider = array_shift($objProvider);}
+            $params['provider'] = $objProvider;
+        } else {
+            $params['provider'] = 0;
+        }
+        
+        //Хлебные крошки
+        $breadcrumbs = [];
+        $breadcrumbs[0] = new \stdClass();
+        $breadcrumbs[0]->href = '/';
+        $breadcrumbs[0]->title = 'Склад';
+        $breadcrumbs[1] = new \stdClass();
+        $breadcrumbs[1]->href = '/stock/view/pm?number='.$objStockParent->getId();
+        $breadcrumbs[1]->title = 'Приходный ордер №'.$objStockParent->getId();
+        $breadcrumbs[2] = new \stdClass();
+        $breadcrumbs[2]->href = '/stock/view/tn?number='.$request->query->get('number');
+        $breadcrumbs[2]->title = 'Списание материалов №'.$request->query->get('number');
+
+        $params['title'] = 'Списание материалов №'.$request->query->get('number');
+        $params['breadcrumbs'] = $breadcrumbs;
+        $params['stock'] = $objStock;
+        $params['materials'] = $objMaterials;
+        $params['files'] = $files;
+
+        return $this->render('stock/view-sm.html.twig', $params);
     }
 }
