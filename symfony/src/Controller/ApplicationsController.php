@@ -41,6 +41,7 @@ use App\Repository\ProvidersRepository;
 use App\Repository\ResponsibleLogRepository;
 use App\Repository\StatusesOfApplicationsRepository;
 use App\Repository\StatusesOfBillsRepository;
+use App\Repository\StockRepository;
 use App\Repository\StockApplicationsMaterialsRepository;
 use App\Repository\TypesOfEquipmentRepository;
 use App\Repository\UnitsRepository;
@@ -1328,6 +1329,29 @@ HERE;
                 if ($suggestions[$i] == $material->getTitle()) {$exists = true; break;}
             }
             if (!$exists) {$suggestions[] = $material->getTitle();}
+        }
+
+        $result = new \stdClass;
+        $result->suggestions = $suggestions;
+
+        return new JsonResponse($result);
+    }
+
+    /**
+     * Автозаполнение поля "Перевозка"
+     * @Route("/autocomplete/way", methods={"GET"})
+     * @IsGranted("ROLE_STOCK")
+     */
+    public function wayAutocomplete(Request $request, StockRepository $stockRepository): JsonResponse
+    {
+        $stocks = $stockRepository->findLike($request->query->get('query'));
+        $suggestions = [];
+        foreach ($stocks as $stock) {
+            $exists = false;
+            for ($i=0; $i<sizeof($suggestions); $i++) {
+                if ($suggestions[$i] == $stock->getWay()) {$exists = true; break;}
+            }
+            if (!$exists) {$suggestions[] = $stock->getWay();}
         }
 
         $result = new \stdClass;

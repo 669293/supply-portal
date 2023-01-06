@@ -33,9 +33,9 @@ class StockApplicationsMaterials
     private $stock;
 
     /**
-     * @var \Materials
+     * @var \BillsMaterials
      *
-     * @ORM\ManyToOne(targetEntity="Materials")
+     * @ORM\ManyToOne(targetEntity="BillsMaterials")
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="material", referencedColumnName="id")
      * })
@@ -50,7 +50,7 @@ class StockApplicationsMaterials
     private $amount = '0.0';
 
     public function __construct(
-        $material = null, //Materials::class
+        $material = null, //BillsMaterials::class
         $stock = null, //Stock::class
         $amount = null
         )
@@ -65,12 +65,12 @@ class StockApplicationsMaterials
         return $this->id;
     }
 
-    public function getMaterial(): ?Materials
+    public function getMaterial(): ?BillsMaterials
     {
         return $this->material;
     }
 
-    public function setMaterial(?Materials $material): self
+    public function setMaterial(?BillsMaterials $material): self
     {
         $this->material = $material;
 

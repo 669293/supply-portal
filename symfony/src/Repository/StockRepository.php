@@ -23,4 +23,18 @@ class StockRepository extends ServiceEntityRepository
         parent::__construct($registry, Stock::class);
         $this->entityManager = $entityManager;
     }
+
+    /**
+     * @return Stock[] Returns an array of Materials objects
+     */
+    public function findLike($value, $orderBy = 's.way', $orderDirection = 'ASC')
+    {
+        return $this->createQueryBuilder('s')
+            ->andWhere('LOWER(s.way) LIKE LOWER(:val)')
+            ->setParameter('val', '%'.$value.'%')
+            ->orderBy($orderBy, $orderDirection)
+            ->getQuery()
+            ->getResult()
+        ;
+    }
 }

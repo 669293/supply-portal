@@ -17,6 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Stock;
 use App\Entity\StockFiles;
 use App\Entity\StockMaterials;
+use App\Entity\StockStockMaterials;
 use App\Entity\StockApplicationsMaterials;
 use App\Repository\ApplicationsRepository;
 use App\Repository\BillsRepository;
@@ -30,6 +31,7 @@ use App\Repository\ProvidersRepository;
 use App\Repository\StockRepository;
 use App\Repository\StockFilesRepository;
 use App\Repository\StockMaterialsRepository;
+use App\Repository\StockStockMaterialsRepository;
 use App\Repository\StockApplicationsMaterialsRepository;
 use App\Repository\UnitsRepository;
 use App\Repository\UsersRepository;
@@ -231,6 +233,7 @@ class StockController extends AbstractController
     }
 
     /**
+     * Добавление приходного ордера
      * @Route("/stock/add/pm", methods={"GET"})
      * @IsGranted("ROLE_STOCK")
      */
@@ -333,12 +336,13 @@ class StockController extends AbstractController
     }
 
     /**
+     * Добавление приходного ордера (принимает данные из формы)
      * @Route("/stock/add/pm", methods={"POST"})
      * @IsGranted("ROLE_STOCK")
      */
     public function addPM(
         Request $request,
-        MaterialsRepository $materialsRepository,
+        BillsMaterialsRepository $billsMaterialsRepository,
         StockFilesRepository $stockFilesRepository,
         UnitsRepository $unitsRepository,
         UsersRepository $usersRepository
@@ -445,7 +449,7 @@ class StockController extends AbstractController
                         }
                     }
                 }
-
+                
                 $logistics = []; //Возвращаемое значение при успешном выполнении
                 foreach ($resultArray as $bill) {
                     $billsController = new BillsController($this->security, $this->entityManager);
@@ -456,31 +460,38 @@ class StockController extends AbstractController
 
                 $this->entityManager->persist($stock);
                 $this->entityManager->flush(); //ID документа в $stock->getId();
-
+                
                 //Добавляем материалы к заявке
                 for ($i = 0; $i < sizeof($arrTitles); $i++) {
                     $material = new StockMaterials(
                         $arrTitles[$i],
                         $arrPrice[$i],
-                        $arrCount[$i],
                         $arrSum[$i],
                         $arrTax[$i],
                         $arrTotal[$i],
-                        $arrUnits[$i], //Units::class
-                        $stock
+                        $arrUnits[$i] //Units::class
                     );
 
                     $this->entityManager->persist($material);
+
+                    //Добавляем связь
+                    $ssm = new StockStockMaterials(
+                        $stock,
+                        $material,
+                        $arrCount[$i]
+                    );
+
+                    $this->entityManager->persist($ssm);
                 }
 
                 //Создаем связь прихода с материалами
                 if (is_array($materials) && sizeof($materials) > 0) {
                     for ($i=0; $i<sizeof($materials); $i++) {
-                        $objMaterial = $materialsRepository->findBy( array('id' => (int)$materials[$i]) );
+                        $objMaterial = $billsMaterialsRepository->findBy( array('id' => (int)$materials[$i]) );
                         if (is_array($objMaterial)) {$objMaterial = array_shift($objMaterial);}
 
                         $SAM = new StockApplicationsMaterials(
-                            $objMaterial, //Materials::class
+                            $objMaterial, //BillsMaterials::class
                             $stock, //Stock::class
                             $amounts[$i]
                         );
@@ -845,7 +856,8 @@ class StockController extends AbstractController
         StockRepository $stockRepository,
         StockFilesRepository $stockFilesRepository,
         StockApplicationsMaterialsRepository $stockApplicationsMaterialsRepository,
-        StockMaterialsRepository $stockMaterialsRepository
+        StockMaterialsRepository $stockMaterialsRepository,
+        StockStockMaterialsRepository $stockStockMaterialsRepository
     ): Response
     {
         $id = $request->query->get('number');
@@ -862,7 +874,14 @@ class StockController extends AbstractController
         if (is_array($objStock)) {$objStock = array_shift($objStock);}
 
         //Получаем материалы
-        $objMaterials = $stockMaterialsRepository->findBy( array('stock' => (int)$id) );
+        $objSSMaterials = $stockStockMaterialsRepository->findBy( array('stock' => (int)$id) );
+        $objMaterials = [];
+        foreach ($objSSMaterials as $objSSMaterial) {
+            $tmp = new \stdClass;
+            $tmp->obj = $objSSMaterial->getStockMaterial();
+            $tmp->count = $objSSMaterial->getCount();
+            $objMaterials[] = $tmp;
+        }
 
         //Получаем список файлов
         $files = [];
@@ -900,7 +919,7 @@ class StockController extends AbstractController
         $SAP = $stockApplicationsMaterialsRepository->findBy( array('stock' => $id) );
         $applications = [];
         foreach ($SAP as $SAP_row) {
-            $objApplication = $SAP_row->getMaterial()->getApplication();
+            $objApplication = $SAP_row->getMaterial()->getMaterial()->getApplication();
             $exist = false;
             foreach ($applications as $application) {
                 if ($objApplication->getId() == $application->getId()) {
@@ -920,9 +939,9 @@ class StockController extends AbstractController
         $breadcrumbs[0]->title = 'Склад';
         $breadcrumbs[1] = new \stdClass();
         $breadcrumbs[1]->href = '/stock/view/pm/'.$id;
-        $breadcrumbs[1]->title = 'Просмотр приходного ордера';
+        $breadcrumbs[1]->title = 'Приходный ордер №'.$id;
 
-        $params['title'] = 'Просмотр приходного ордера';
+        $params['title'] = 'Приходный ордер';
         $params['breadcrumbs'] = $breadcrumbs;
         $params['stock'] = $objStock;
         $params['materials'] = $objMaterials;
@@ -933,16 +952,18 @@ class StockController extends AbstractController
     }
 
     /**
-     * @Route("/stock/print/pm", methods={"GET"})
-     * @Security("is_granted('ROLE_STOCK') or is_granted('ROLE_BUH')")
+     * @Route("/stock/edit/pm", methods={"GET"})
+     * @Security("is_granted('ROLE_STOCK')")
      */
-    public function printPM(
+    public function editPM(
         Request $request,
         ProvidersRepository $providersRepository,
         StockRepository $stockRepository,
         StockFilesRepository $stockFilesRepository,
         StockApplicationsMaterialsRepository $stockApplicationsMaterialsRepository,
-        StockMaterialsRepository $stockMaterialsRepository
+        StockMaterialsRepository $stockMaterialsRepository,
+        StockStockMaterialsRepository $stockStockMaterialsRepository,
+        UnitsRepository $unitsRepository
     ): Response
     {
         $id = $request->query->get('number');
@@ -959,7 +980,655 @@ class StockController extends AbstractController
         if (is_array($objStock)) {$objStock = array_shift($objStock);}
 
         //Получаем материалы
-        $objMaterials = $stockMaterialsRepository->findBy( array('stock' => (int)$id) );
+        $objSSMaterials = $stockStockMaterialsRepository->findBy( array('stock' => (int)$id) );
+        $objMaterials = [];
+        foreach ($objSSMaterials as $objSSMaterial) {
+            $tmp = new \stdClass;
+            $tmp->obj = $objSSMaterial->getStockMaterial();
+            $tmp->count = $objSSMaterial->getCount();
+            $tmp->id = $objSSMaterial->getId();
+            $objMaterials[] = $tmp;
+        }
+
+        //Получаем список файлов
+        $files = [];
+        $rawFiles = $stockFilesRepository->findBy( array('stock' => (int)$id), array('id' => 'ASC') );
+        foreach ($rawFiles as $file) {
+            $objFile = new \stdClass;
+            $objFile->name = basename($file->getPath());
+            $objFile->path = $file->getPath();
+            $objFile->size = filesize($this->getParameter('stock_directory').'/'.$file->getPath());
+            $objFile->type = $file->getFileType();
+            $objFile->key = $file->getId();
+            $files[] = $objFile;
+            unset($objFile);
+        }
+
+        //Получаем поставщика
+        $objProvider = $providersRepository->findBy( array('inn' => (int)$objStock->getProvider()) );
+        if (sizeof($objProvider) > 0) {
+            if (is_array($objProvider)) {$objProvider = array_shift($objProvider);}
+            $params['provider'] = $objProvider;
+        }
+
+        //Получаем привязанные материалы
+        $SAP = $stockApplicationsMaterialsRepository->findBy( array('stock' => $id) );
+        $applications = [];
+        foreach ($SAP as $SAP_row) {
+            $objApplication = $SAP_row->getMaterial()->getMaterial()->getApplication();
+            $exist = false;
+            foreach ($applications as $application) {
+                if ($objApplication->getId() == $application->getId()) {
+                    $exist = true; break;
+                }
+            }
+
+            if (!$exist) {
+                $applications[] = $objApplication;
+            }
+        }
+        
+        //Хлебные крошки
+        $breadcrumbs = [];
+        $breadcrumbs[0] = new \stdClass();
+        $breadcrumbs[0]->href = '/';
+        $breadcrumbs[0]->title = 'Склад';
+        $breadcrumbs[1] = new \stdClass();
+        $breadcrumbs[1]->href = '/stock/edit/pm/'.$id;
+        $breadcrumbs[1]->title = 'Редактирование приходного ордера';
+
+        $params['title'] = 'Редактирование приходного ордера';
+        $params['breadcrumbs'] = $breadcrumbs;
+        $params['stock'] = $objStock;
+        $params['materials'] = $objMaterials;
+        $params['files'] = $files;
+        $params['applications'] = $applications;
+        $params['units'] = $unitsRepository->findAll();
+
+        return $this->render('stock/edit-pm.html.twig', $params);
+    }
+
+    /**
+     * Удаление материала из прихода
+     * @Route("/stock/delete-material", methods={"POST"})
+     * @IsGranted("ROLE_CREATOR")
+     */
+    public function delMaterialStatus(
+        Request $request, 
+        StockMaterialsRepository $stockMaterialsRepository
+    ): JsonResponse
+    {
+        try {
+            $material = $stockMaterialsRepository->findBy( array('id' => $request->request->get('id')) );
+            if (sizeof($material) > 0) {$material = array_shift($material);} else {
+                return new JsonResponse(false);
+            }
+
+            $this->entityManager->remove($material);
+            $this->entityManager->flush();
+
+            return new JsonResponse(true);
+        } catch (FileException $e) {
+            return new JsonResponse(false);
+        }
+    }
+
+    /**
+     * Редактирование прихода (получает данные из формы)
+     * @Route("/stock/edit/pm", methods={"POST"})
+     * @IsGranted("ROLE_STOCK")
+     */
+    public function savePM(
+        Request $request,
+        BillsMaterialsRepository $billsMaterialsRepository,
+        StockRepository $stockRepository,
+        StockMaterialsRepository $stockMaterialsRepository,
+        StockStockMaterialsRepository $stockStockMaterialsRepository,
+        StockFilesRepository $stockFilesRepository,
+        UnitsRepository $unitsRepository,
+        UsersRepository $usersRepository
+    ): JsonResponse
+    {
+        $result = [];
+
+        $submittedToken = $request->request->get('token');
+
+        if ($this->isCsrfTokenValid('edit-pm', $submittedToken)) {
+            //Готовим данные
+            $this->entityManager->getConnection()->beginTransaction(); //Начинаем транзакцию
+
+            try {
+                $stock = $stockRepository->findBy( array('id' => $request->request->get('id')) );
+                if (sizeof($stock) > 0) {$stock = array_shift($stock);}
+
+                //Получаем массив ID
+                $arrId = $request->request->get('idContent');
+
+                //Получаем массив наименований
+                $arrTitles = $request->request->get('edit-pm-materials');
+                $rowsCount = sizeof($arrTitles); //Определяем полезное количество строк
+                while ($rowsCount > 0) {if (empty($arrTitles[$rowsCount - 1])) {$rowsCount--;} else {break;}}
+                $arrTitles = array_slice($arrTitles, 0, $rowsCount);
+
+                $arrTitlesToSave = array_slice($arrTitles, 0, sizeof($arrId)); //Массив для сохраннения изменений
+                $arrTitles = array_slice($arrTitles, sizeof($arrId), $rowsCount); //Массив для добавления новых строк
+
+                $arrCountToSave = array_slice($request->request->get('edit-pm-count'), 0, sizeof($arrId)); //Массив для сохраннения изменений
+                $arrCount = array_slice($request->request->get('edit-pm-count'), sizeof($arrId), $rowsCount); //Получаем массив количества
+                
+                $arrPriceToSave = array_slice($request->request->get('edit-pm-price'), 0, sizeof($arrId)); //Массив для сохраннения изменений
+                $arrPrice = array_slice($request->request->get('edit-pm-price'), sizeof($arrId), $rowsCount); //Получаем массив цен
+
+                $arrSumToSave = array_slice($request->request->get('edit-pm-sum'), 0, sizeof($arrId)); //Массив для сохраннения изменений
+                $arrSum = array_slice($request->request->get('edit-pm-sum'), sizeof($arrId), $rowsCount); //Получаем массив сумм
+
+                $arrTaxToSave = array_slice($request->request->get('edit-pm-tax'), 0, sizeof($arrId)); //Массив для сохраннения изменений
+                $arrTax = array_slice($request->request->get('edit-pm-tax'), sizeof($arrId), $rowsCount); //Получаем массив НДС
+
+                $arrTotalToSave = array_slice($request->request->get('edit-pm-total'), 0, sizeof($arrId)); //Массив для сохраннения изменений
+                $arrTotal = array_slice($request->request->get('edit-pm-total'), sizeof($arrId), $rowsCount); //Получаем массив итого
+
+                //Получаем массив единиц измерения
+                $unitsRaw = array_slice($request->request->get('edit-pm-units'), 0, $rowsCount);
+
+                //Обрабатываем массив единиц измерения
+                $arrUnits = [];
+                foreach ($unitsRaw as $unit) {
+                    //Смотрим, есть ли такая единица измерения в базе
+                    $tmp = $unitsRepository->findBy(array('id' => $unit));
+                    if (sizeof($tmp) > 0) {
+                        //Используем единицу измерения из базы
+                        $arrUnits[] = $tmp[0];
+                    } else {
+                        $arrUnits[] = null;
+                    }
+                }
+
+                $arrUnitsToSave = array_slice($arrUnits, 0, sizeof($arrId)); //Массив для сохраннения изменений
+                $arrUnits = array_slice($arrUnits, sizeof($arrId), $rowsCount); //Массив для добавления новых строк
+
+                //Начинаем запись, пишем данные в таблицу stock
+                $stock->setProvider( ( empty($request->request->get('edit-pm-provider')) ? 0 : $request->request->get('edit-pm-provider') ) ); //Поставщик
+                $stock->setComment( $request->request->get('edit-pm-comment') ); //Комментарий
+                $stock->setDate( new \DateTime($request->request->get('edit-pm-date').' 00:00:00') ); //Дата документа
+                $stock->setDatetime( new \DateTime() ); //Реальная дата документа
+                $stock->setInvoice( $request->request->get('edit-pm-sf') ); //Номер документа
+                if ($request->request->get('edit-pm-note')) {$stock->setNote( $request->request->get('edit-pm-note') );} //Дополнительный комментарий
+                $stock->setTax( ( $request->request->get('edit-pm-tax_') == -1 ? 0 : $request->request->get('edit-pm-tax_') ) ); //Налоговая ставка
+                if ( $request->request->get('edit-pm-provider') == '0' ) {$stock->setTax(0);}
+                $stock->setType( $request->request->get('edit-pm-type') ); //Тип поступления
+
+                $parameters = 0; //Дополнительные параметры
+                if ( $request->request->get('edit-pm-transit') !== null ) {$parameters += 1;}
+                if ( $request->request->get('edit-pm-direct') !== null ) {$parameters += 2;}
+                $stock->setParams( $parameters ); //Дополнительные параметры
+
+                //Определяем авторство
+                $author = $usersRepository->findBy( array('id' => $this->security->getUser()->getId()) );
+                if (is_array($author)) {$author = array_shift($author);}
+                $stock->setUser($author);
+
+                //Сумма всех материалов
+                $sumTotal = 0;
+                for ($i = 0; $i < sizeof($arrTitles); $i++) {
+                    $sumTotal += $arrTotal[$i];
+                }
+
+                $materials = $request->request->get('material');
+                $amounts = $request->request->get('amount');
+
+                if (is_array($materials) && sizeof($materials) > 0) {
+                    //Привязываем логистику к позициям в заявках
+                    $params['docinfo'] = $request->request->get('edit-pm-sf'); //Дополнительная информация
+                    $params['sum'] = $sumTotal; //Сумма
+                    $params['dateReciept'] = $request->request->get('edit-pm-date'); //Дата операции
+                    $params['photos'] = $request->request->get('files'); //Фотографии
+                    $params['files'] = '[]';
+                    
+                    $type = 0; //Получение
+
+                    $billsIds = $request->request->get('bill');
+                    $resultArray = [];
+                    if ($billsIds !== null) {
+                        foreach ($billsIds as $billId) {
+                            $exist = false;
+                            foreach ($resultArray as $row) {if ($row['billId'] == $billId) {$exist = true; break;}}
+
+                            if (!$exist) {
+                                //Добавляем
+                                $tmp = [];
+                                $tmp['billId'] = $billId;
+                                $tmp['materials'] = [];
+                                $tmp['amounts'] = [];
+
+                                for ($i=0; $i < sizeof($billsIds); $i++) {
+                                    if ($billsIds[$i] == $billId) {
+                                        $tmp['materials'][] = $materials[$i];
+                                        $tmp['amounts'][] = $amounts[$i];
+                                    }
+                                }
+
+                                $resultArray[] = $tmp; unset($tmp);
+                            }
+                        }
+                    }
+
+                    $logistics = []; //Возвращаемое значение при успешном выполнении
+                    foreach ($resultArray as $bill) {
+                        $billsController = new BillsController($this->security, $this->entityManager);
+                        $logistics[] = $billsController->recieveMaterials($type, $bill['billId'], $bill['materials'], $bill['amounts'], $params);
+                    }
+                    $logistics = json_encode($logistics);
+                    $stock->setLogistic($logistics);
+                }
+
+                $this->entityManager->persist($stock);
+                $this->entityManager->flush(); //ID документа в $stock->getId();
+
+                //Сохраняем материалы в заявке               
+                for ($i = 0; $i < sizeof($arrId); $i++) {
+                    $ssMaterial = $stockStockMaterialsRepository->findBy( array('id' => $arrId[$i]) );
+                    if (is_array($ssMaterial)) {$ssMaterial = array_shift($ssMaterial);}
+                    $material = $ssMaterial->getStockMaterial();
+                    
+                    $ssMaterial->setCount($arrCountToSave[$i]);
+                    $material->setTitle($arrTitlesToSave[$i]);
+                    $material->setPrice($arrPriceToSave[$i]);
+                    $material->setSum($arrSumToSave[$i]);
+                    $material->setTax($arrTaxToSave[$i]);
+                    $material->setTotal($arrTotalToSave[$i]);
+                    $material->setUnit($arrUnitsToSave[$i]);
+                    
+                    $this->entityManager->persist($material);
+                    $this->entityManager->persist($ssMaterial);
+                    $this->entityManager->flush();
+                    unset($material);
+                }
+
+                //Добавляем материалы к заявке
+                for ($i = 0; $i < sizeof($arrTitles); $i++) {
+                    $material = new StockMaterials(
+                        $arrTitles[$i],
+                        $arrPrice[$i],
+                        $arrSum[$i],
+                        $arrTax[$i],
+                        $arrTotal[$i],
+                        $arrUnits[$i], //Units::class
+                        $stock
+                    );
+
+                    $this->entityManager->persist($material);
+
+                    //Добавляем связь
+                    $ssm = new StockStockMaterials(
+                        $stock,
+                        $material,
+                        $arrCount[$i]
+                    );
+
+                    $this->entityManager->persist($ssm);
+                }
+
+                //Создаем связь прихода с материалами
+                if (is_array($materials) && sizeof($materials) > 0) {
+                    for ($i=0; $i<sizeof($materials); $i++) {
+                        $objMaterial = $billsMaterialsRepository->findBy( array('id' => (int)$materials[$i]) );
+                        if (is_array($objMaterial)) {$objMaterial = array_shift($objMaterial);}
+
+                        $SAM = new StockApplicationsMaterials(
+                            $objMaterial, //BillsMaterials::class
+                            $stock, //Stock::class
+                            $amounts[$i]
+                        );
+
+                        $this->entityManager->persist($SAM);
+                    }
+                }
+
+                //Добавляем файлы
+                $arrFiles = json_decode($request->request->get('files'));
+                if ($arrFiles !== null ) {
+                    foreach ($arrFiles as $file) {
+                        $objFile = $stockFilesRepository->findBy( array('id' => $file) );
+                        if (is_array($objFile)) {$objFile = array_shift($objFile);}
+                        $objFile->setStock($stock);
+                        $this->entityManager->persist($objFile);
+                    }
+                }
+
+                $this->entityManager->flush();
+                $this->entityManager->getConnection()->commit();
+
+                $result[] = 1;
+                $result[] = $stock->getId();
+            } catch (Exception $e) {
+                $this->entityManager->getConnection()->rollBack();
+
+                $result[] = 0;
+                $result[] = $e;
+                //throw $e;
+            }
+
+            $this->entityManager->clear();
+
+            return new JsonResponse($result);
+        } else {
+            $result[] = 0;
+            $result[] = 'Недействительный токен CSRF.';
+            return new JsonResponse($result);
+        }
+    }
+
+    /**
+     * Создание перемещения материалов на основе прихода
+     * @Route("/stock/add/tn", methods={"GET"})
+     * @IsGranted("ROLE_STOCK")
+     */
+    public function addTNForm(
+        Request $request,
+        OfficesRepository $officesRepository,
+        StockRepository $stockRepository,
+        StockApplicationsMaterialsRepository $stockApplicationsMaterialsRepository,
+        StockMaterialsRepository $stockMaterialsRepository,
+        StockStockMaterialsRepository $stockStockMaterialsRepository
+    ): Response
+    {
+        $stock = $stockRepository->findBy( array('id' => $request->query->get('number'), 'doctype' => 0) );
+        if ($stock === null || empty($stock)) {
+            return new RedirectResponse('/applications');
+        }
+        if (sizeof($stock) > 0) {$stock = array_shift($stock);}
+
+        //Получаем материалы
+        $objSSMaterials = $stockStockMaterialsRepository->findBy( array('stock' => (int)$stock->getId()) );
+        $objMaterials = [];
+        foreach ($objSSMaterials as $objSSMaterial) {
+            $tmp = new \stdClass;
+            $tmp->obj = $objSSMaterial->getStockMaterial();
+            $tmp->count = $objSSMaterial->getCount();
+            $tmp->id = $objSSMaterial->getId();
+            $objMaterials[] = $tmp;
+        }
+
+        //Ищем подчиненные документы
+        $childMaterials = [];
+        $objChildStock = $stockRepository->findBy( array('parent' => $stock->getId()) );
+        foreach ($objChildStock as $child) {
+            $objChildMaterials = $stockStockMaterialsRepository->findBy( array('stock' => $child->getId()) );
+            foreach ($objChildMaterials as $material_) {
+                $exist = false;
+                foreach ($childMaterials as $childMaterial) {
+                    if ($childMaterial[0] == $material_->getStockMaterial()->getId()) {
+                        $exist = true;
+                        $childMaterial[1] += $material_->getCount();
+                        break;
+                    }
+                }
+                if (!$exist) {
+                    $childMaterials[] = array($material_->getStockMaterial()->getId(), $material_->getCount());
+                }
+            }
+        }
+
+        $materials = [];
+        //Определяем количество каждого материала
+        foreach ($objMaterials as $material) {
+            $tmp = new \stdClass();
+            $tmp->obj = $material->obj;
+            $tmp->count = $material->count;
+
+            foreach ($childMaterials as $childMaterial) {
+                if ($childMaterial[0] == $material->obj->getId()) {
+                    $tmp->count = (float)$tmp->count - (float)$childMaterial[1];
+                    if ($tmp->count < 0) {$tmp->count = 0;}
+                    break;
+                }
+            }
+
+            $materials[] = $tmp;
+        }
+
+        //Хлебные крошки
+        $breadcrumbs = [];
+        $breadcrumbs[0] = new \stdClass();
+        $breadcrumbs[0]->href = '/';
+        $breadcrumbs[0]->title = 'Склад';
+        $breadcrumbs[1] = new \stdClass();
+        $breadcrumbs[1]->href = '/stock/view/pm?number='.$request->query->get('number');
+        $breadcrumbs[1]->title = 'Приходный ордер №'.$request->query->get('number');
+        $breadcrumbs[2] = new \stdClass();
+        $breadcrumbs[2]->href = '/stock/add/tn?number='.$request->query->get('number');
+        $breadcrumbs[2]->title = 'Создание перемещения материалов';
+
+        $params['title'] = 'Создание перемещения материалов';
+        $params['breadcrumbs'] = $breadcrumbs;
+        $params['materials'] = $materials;
+        $params['stock'] = $stock;
+        $params['offices'] = $officesRepository->findAll();
+        $params['appmaterials'] = $stockApplicationsMaterialsRepository->findBy( array( 'stock' => (int)$stock->getId() ) );
+
+        return $this->render('stock/add-tn.html.twig', $params);
+    }
+
+    /**
+     * Создание перемещения материалов на основе прихода (принимает данные из формы)
+     * @Route("/stock/add/tn", methods={"POST"})
+     * @IsGranted("ROLE_STOCK")
+     */
+    public function addTN(
+        Request $request,
+        BillsMaterialsRepository $billsMaterialsRepository,
+        OfficesRepository $officesRepository,
+        StockMaterialsRepository $stockMaterialsRepository,
+        StockFilesRepository $stockFilesRepository,
+        UsersRepository $usersRepository
+    ): JsonResponse
+    {
+        $result = [];
+
+        $submittedToken = $request->request->get('token');
+
+        if ($this->isCsrfTokenValid('add-tn', $submittedToken)) {
+            //Готовим данные
+            $this->entityManager->getConnection()->beginTransaction(); //Начинаем транзакцию
+
+            try {
+                //Получаем склад приемник
+                $officeTo = $officesRepository->findBy( array( 'id' => (int)$request->request->get('add-tn-office') ) );
+                if (is_array($officeTo)) {$officeTo = array_shift($officeTo);}
+
+                //Получаем массив наименований
+                $arrMaterialsIDs = $request->request->get('add-tn-material-id');
+                $rowsCount = sizeof($arrMaterialsIDs); //Определяем полезное количество строк
+                while ($rowsCount > 0) {if (empty($arrMaterialsIDs[$rowsCount - 1])) {$rowsCount--;} else {break;}}
+                $arrMaterialsIDs = array_slice($arrMaterialsIDs, 0, $rowsCount);
+
+                //Получаем массив единиц измерения
+                $arrCount = array_slice($request->request->get('add-tn-count'), 0, $rowsCount);
+
+                $arrMaterials = [];
+                foreach ($arrMaterialsIDs as $materialId) {
+                    $objStockMaterial = $stockMaterialsRepository->findBy( array( 'id' => $materialId ) );
+                    if (is_array($objStockMaterial) && sizeof($objStockMaterial) == 0) {throw $e;}
+                    if (is_array($objStockMaterial)) {$objStockMaterial = array_shift($objStockMaterial);}
+                    $arrMaterials[] = $objStockMaterial;
+                }
+
+                //Начинаем запись, пишем данные в таблицу stock
+                $stock = new Stock;
+                $stock->setDoctype(1); //Перемещение
+                $stock->setOffice( $officeTo ); //Склад в адрес которого идет отправка
+                $stock->setDate( new \DateTime($request->request->get('add-tn-date').' 00:00:00') ); //Дата документа
+                $stock->setDatetime( new \DateTime() ); //Реальная дата документа
+                $stock->setWay( $request->request->get('add-tn-way') ); //Способ отправки
+                $stock->setParent( $request->request->get('add-tn-parnet') ); //Определяем родителя
+
+                //Определяем авторство
+                $author = $usersRepository->findBy( array('id' => $this->security->getUser()->getId()) );
+                if (is_array($author)) {$author = array_shift($author);}
+                $stock->setUser($author);
+                
+                $type = 1; //Перемещение
+
+                //Добавляем логистику
+                $materials = $request->request->get('material');
+                $amounts = $request->request->get('amount');
+
+                if (is_array($materials) && sizeof($materials) > 0) {
+                    //Привязываем логистику к позициям в заявках
+                    $params['dateShip'] = $request->request->get('add-tn-date'); //Дата операции
+                    $params['userOfficeShip'] = $officeTo->getId();
+                    $params['way'] = $request->request->get('add-tn-way');
+                    $params['track'] = '';
+                    $params['photos'] = $request->request->get('files'); //Фотографии
+                    $params['files'] = '[]';
+
+                    $billsIds = $request->request->get('bill');
+                    $resultArray = [];
+                    if ($billsIds !== null) {
+                        foreach ($billsIds as $billId) {
+                            $exist = false;
+                            foreach ($resultArray as $row) {if ($row['billId'] == $billId) {$exist = true; break;}}
+
+                            if (!$exist) {
+                                //Добавляем
+                                $tmp = [];
+                                $tmp['billId'] = $billId;
+                                $tmp['materials'] = [];
+                                $tmp['amounts'] = [];
+
+                                for ($i=0; $i < sizeof($billsIds); $i++) {
+                                    if ($billsIds[$i] == $billId) {
+                                        $tmp['materials'][] = $materials[$i];
+                                        $tmp['amounts'][] = $amounts[$i];
+                                    }
+                                }
+
+                                $resultArray[] = $tmp; unset($tmp);
+                            }
+                        }
+                    }
+
+                    $logistics = []; //Возвращаемое значение при успешном выполнении
+                    foreach ($resultArray as $bill) {
+                        $billsController = new BillsController($this->security, $this->entityManager);
+                        $logistics[] = $billsController->recieveMaterials($type, $bill['billId'], $bill['materials'], $bill['amounts'], $params);
+                    }
+                    $logistics = json_encode($logistics);
+                    $stock->setLogistic($logistics);
+                }
+
+                $this->entityManager->persist($stock);
+                $this->entityManager->flush(); //ID документа в $stock->getId();
+
+                //Добавляем материалы к заявке
+                for ($i = 0; $i < sizeof($arrMaterialsIDs); $i++) {
+                    if ($arrCount[$i] > 0) {
+                        //Добавляем связь
+                        $ssm = new StockStockMaterials(
+                            $stock,
+                            $arrMaterials[$i],
+                            $arrCount[$i]
+                        );
+
+                        $this->entityManager->persist($ssm);
+                    }
+                }
+
+                $this->entityManager->flush();
+
+                if (is_array($materials) && sizeof($materials) > 0) {
+                    //Создаем связь прихода с материалами
+                    if (is_array($materials) && sizeof($materials) > 0) {
+                        for ($i=0; $i<sizeof($materials); $i++) {
+                            $objMaterial = $billsMaterialsRepository->findBy( array('id' => (int)$materials[$i]) );
+                            if (is_array($objMaterial)) {$objMaterial = array_shift($objMaterial);}
+
+                            $SAM = new StockApplicationsMaterials(
+                                $objMaterial, //BillsMaterials::class
+                                $stock, //Stock::class
+                                $amounts[$i]
+                            );
+
+                            $this->entityManager->persist($SAM);
+                        }
+                    }
+
+                    $this->entityManager->flush();
+                }
+
+                //Добавляем файлы
+                $arrFiles = json_decode($request->request->get('files'));
+                if ($arrFiles !== null ) {
+                    foreach ($arrFiles as $file) {
+                        $objFile = $stockFilesRepository->findBy( array('id' => $file) );
+                        if (is_array($objFile)) {$objFile = array_shift($objFile);}
+                        $objFile->setStock($stock);
+                        $this->entityManager->persist($objFile);
+                    }
+                }
+            
+                $this->entityManager->flush();    
+
+                $this->entityManager->getConnection()->commit();
+
+                $result[] = 1;
+                $result[] = $stock->getId();
+            } catch (Exception $e) {
+                $this->entityManager->getConnection()->rollBack();
+
+                $result[] = 0;
+                $result[] = $e;
+                //throw $e;
+            }
+
+            $this->entityManager->clear();
+
+            return new JsonResponse($result);
+        } else {
+            $result[] = 0;
+            $result[] = 'Недействительный токен CSRF.';
+            return new JsonResponse($result);
+        }
+    }
+
+    /**
+     * @Route("/stock/view/tn", methods={"GET"})
+     * @Security("is_granted('ROLE_STOCK') or is_granted('ROLE_BUH')")
+     */
+    public function viewTN(
+        Request $request,
+        ProvidersRepository $providersRepository,
+        StockRepository $stockRepository,
+        StockFilesRepository $stockFilesRepository,
+        StockApplicationsMaterialsRepository $stockApplicationsMaterialsRepository,
+        StockMaterialsRepository $stockMaterialsRepository,
+        StockStockMaterialsRepository $stockStockMaterialsRepository
+    ): Response
+    {
+        $id = $request->query->get('number');
+        if ($id === null || empty($id) || !is_numeric($id)) {
+            return new RedirectResponse('/applications');
+        }
+
+        //Проверяем наличие документа
+        $objStock = $stockRepository->findBy( array('id' => (int)$id, 'doctype' => 1) );
+        if (sizeof($objStock) == 0) {
+            dd(2);
+            return new RedirectResponse('/applications');
+        }
+        if (is_array($objStock)) {$objStock = array_shift($objStock);}
+
+        //Получаем материалы
+        $objSSMaterials = $stockStockMaterialsRepository->findBy( array('stock' => (int)$id) );
+        $objMaterials = [];
+        foreach ($objSSMaterials as $objSSMaterial) {
+            $tmp = new \stdClass;
+            $tmp->obj = $objSSMaterial->getStockMaterial();
+            $tmp->count = $objSSMaterial->getCount();
+            $tmp->id = $objSSMaterial->getId();
+            $objMaterials[] = $tmp;
+        }
 
         //Получаем список файлов
         $files = [];
@@ -986,8 +1655,12 @@ class StockController extends AbstractController
             $files[] = $params; unset($params);
         }
 
+        //Проверяем наличие документа
+        $objStockParent = $stockRepository->findBy( array('id' => (int)$objStock->getParent()) );
+        if (is_array($objStockParent)) {$objStockParent = array_shift($objStockParent);}
+
         //Получаем поставщика
-        $objProvider = $providersRepository->findBy( array('inn' => (int)$objStock->getProvider()) );
+        $objProvider = $providersRepository->findBy( array('inn' => (int)$objStockParent->getProvider()) );
         if (sizeof($objProvider) > 0) {
             if (is_array($objProvider)) {$objProvider = array_shift($objProvider);}
             $params['provider'] = $objProvider;
@@ -997,7 +1670,7 @@ class StockController extends AbstractController
         $SAP = $stockApplicationsMaterialsRepository->findBy( array('stock' => $id) );
         $applications = [];
         foreach ($SAP as $SAP_row) {
-            $objApplication = $SAP_row->getMaterial()->getApplication();
+            $objApplication = $SAP_row->getMaterial()->getMaterial()->getApplication();
             $exist = false;
             foreach ($applications as $application) {
                 if ($objApplication->getId() == $application->getId()) {
@@ -1009,251 +1682,26 @@ class StockController extends AbstractController
                 $applications[] = $objApplication;
             }
         }
-
-        //Печатаем
-        ob_start();
-
-        if (!empty($objStock->getNote())) {
-            echo '<div class="block" style="text-align: left; color: #777;">'.$objStock->getNote().'</div>'."\n";
-        }
         
-        echo <<<HERE
-    <div class="block" style="text-align: right;">Типовая межотраслевая форма № М-4<br />Утверждена постановление Госкомстата России от 30.10.97 № 71а</div>
-HERE;
-        echo "<div class=\"block\" style=\"text-align: center;\"><h1>ПРИХОДНЫЙ ОРДЕР № ".$objStock->getId()."</h1></div>\n";
-        echo <<<HERE
-    <div class="block">
-        <table>
-            <tr>
-                <td colspan="3">&nbsp;</td>
-                <td class="bordered">Коды</td>
-            </tr>
-            <tr>
-                <td colspan="2">&nbsp;</td>
-                <td style="text-align: right;">Форма по ОКУД</td>
-                <td class="bordered" style="border-left-width: 2px; border-right-width: 2px; border-top-width: 2px;">0315003</td>
-            </tr>
-            <tr>
-                <td style="text-align: left; width: 160px;">Организация:</td>
-                <td style="border-bottom: 1px solid #000; text-align: left;">ЗАО «Артель старателей «Витим»</td>
-                <td style="text-align: right; width: 100px;">по ОКПО</td>
-                <td class="bordered" style="border-left-width: 2px; border-bottom-width: 2px; border-right-width: 2px; width: 150px;">33288542</td>
-            </tr>
-            <tr>
-                <td style="text-align: left;">Структурное подразделение:</td>
-                <td colspan="3" style="border-bottom: 1px solid #000; text-align: left;">База Иркутск</td>
-            </tr>
-        </table>
-    </div>
-    <div class="block" style="margin-top: 20px;">
-        <table>
-            <tr>
-                <td rowspan="2" class="bordered">Дата составления</td>
-                <td rowspan="2" class="bordered">Код вида операции</td>
-                <td rowspan="2" class="bordered">Склад</td>
-                <td colspan="2" class="bordered">Поставщик</td>
-                <td rowspan="2" class="bordered">Страховая компания</td>
-                <td colspan="2" class="bordered">Корреспондирующий счет</td>
-                <td colspan="2" class="bordered">Номер документа</td>
-            </tr>
-            <tr>
-                <td class="bordered">наименование</td>
-                <td class="bordered">код</td>
-                <td class="bordered">счет, субсчет</td>
-                <td class="bordered">код аналитического учета</td>
-                <td class="bordered">сопроводительного</td>
-                <td class="bordered">платежного</td>
-            </tr>
-            <tr style="border: 2px solid #000;">
-HERE;
-    
-        echo "            <td class=\"bordered\">".$objStock->getDate()->format('d.m.Y')."</td>\n";
-        echo "            <td class=\"bordered\"></td>\n";
-        echo "            <td class=\"bordered\">База Иркутск</td>\n";
-    
-        if ($objStock->getProvider() == 0) {
-            echo "            <td class=\"bordered\" colspan=\"2\">Наличный расчет</td>\n";
-        } else {        
-            echo "            <td class=\"bordered\">".$objProvider->getTitle()."</td>\n";
-            echo "            <td class=\"bordered\">".$objProvider->getInn()."</td>\n";
-        }
-    
-        echo <<<HERE
-                <td class="bordered"></td>
-                <td class="bordered">60.1</td>
-                <td class="bordered"></td>
-                <td class="bordered"></td>
-                <td class="bordered"></td>
-            </tr>
-        </table>
-    </div>
-    <div class="block" style="margin-top: 20px;">
-        <table>
-            <tr>
-                <td colspan="2" class="bordered">Материальные ценности</td>
-                <td colspan="2" class="bordered">Единица измерения</td>
-                <td colspan="2" class="bordered">Количество</td>
-                <td rowspan="2" class="bordered">Цена, руб. коп.</td>
-                <td rowspan="2" class="bordered">Сумма без учета НДС, руб. коп.</td>
-                <td rowspan="2" class="bordered">Сумма НДС, руб. коп.</td>
-                <td rowspan="2" class="bordered">Всего с учетом НДС, руб. коп.</td>
-                <td rowspan="2" class="bordered">Номер паспорта</td>
-                <td rowspan="2" class="bordered">Порядковый номер по складской картотеке</td>
-            </tr>
-            <tr>
-                <td class="bordered">наименование, сорт, марка, размер</td>
-                <td class="bordered">номенклатурный номер</td>
-                <td class="bordered">код</td>
-                <td class="bordered">наименование</td>
-                <td class="bordered">по документу</td>
-                <td class="bordered">принято</td>
-            </tr>
-            <tr>
-                <td class="bordered">1</td>
-                <td class="bordered" style="border-bottom-width: 2px;">2</td>
-                <td class="bordered" style="border-bottom-width: 2px;">3</td>
-                <td class="bordered">4</td>
-                <td class="bordered">5</td>
-                <td class="bordered" style="border-bottom-width: 2px;">6</td>
-                <td class="bordered" style="border-bottom-width: 2px;">7</td>
-                <td class="bordered" style="border-bottom-width: 2px;">8</td>
-                <td class="bordered" style="border-bottom-width: 2px;">9</td>
-                <td class="bordered" style="border-bottom-width: 2px;">10</td>
-                <td class="bordered">11</td>
-                <td class="bordered">12</td>
-            </tr>
-HERE;
-    
-        $sCount = 0; $sSum = 0; $sTax = 0; $sTotal = 0;
-        foreach ($objMaterials as $material) {
-            echo "        <tr>\n";
-            echo "            <td class=\"bordered\" style=\"text-align: left;\">".$material->getTitle()."</td>\n";
-    
-            $mid = $material->getId(); while (strlen($mid) < 6) {$mid = '0'.$mid;}
-    
-            echo "            <td class=\"bordered\" style=\"border-left-width: 2px;\">".$mid."</td>\n";
-    
-            $uid = $material->getUnit()->getId(); while (strlen($uid) < 6) {$uid = '0'.$uid;}
-    
-            echo "            <td class=\"bordered\" style=\"border-right-width: 2px;\">".$uid."</td>\n";
-            echo "            <td class=\"bordered\">".$material->getUnit()->getTitle()."</td>\n";
-            echo "            <td class=\"bordered\"></td>\n";
-            echo "            <td class=\"bordered\" style=\"border-left-width: 2px;\">".number_format($material->getCount(), 2, ".", "")."</td>\n";
-            echo "            <td class=\"bordered\">".number_format($material->getPrice(), 2, ".", " ")."</td>\n";
-            echo "            <td class=\"bordered\">".number_format($material->getSum(), 2, ".", " ")."</td>\n";
-            echo "            <td class=\"bordered\">".number_format($material->getTax(), 2, ".", " ")."</td>\n";
-            echo "            <td class=\"bordered\" style=\"border-right-width: 2px;\">".number_format($material->getTotal(), 2, ".", " ")."</td>\n";
-            echo "            <td class=\"bordered\"></td>\n";
-            echo "            <td class=\"bordered\"></td>\n";
-            echo "        </tr>\n";
+        //Хлебные крошки
+        $breadcrumbs = [];
+        $breadcrumbs[0] = new \stdClass();
+        $breadcrumbs[0]->href = '/';
+        $breadcrumbs[0]->title = 'Склад';
+        $breadcrumbs[1] = new \stdClass();
+        $breadcrumbs[1]->href = '/stock/view/pm?number='.$objStockParent->getId();
+        $breadcrumbs[1]->title = 'Приходный ордер №'.$objStockParent->getId();
+        $breadcrumbs[2] = new \stdClass();
+        $breadcrumbs[2]->href = '/stock/view/tn?number='.$request->query->get('number');
+        $breadcrumbs[2]->title = 'Требование-накладная №'.$request->query->get('number');
 
-            $sCount += $material->getCount(); 
-            $sSum += $material->getSum(); 
-            $sTax += $material->getTax(); 
-            $sTotal += $material->getTotal();
-        }
-    
-        echo <<<HERE
-            <tr>
-                <td></td>
-                <td colspan="2" style="border-top: 2px solid #000;">&nbsp;</td>
-                <td></td>
-                <td style="text-align: right;">Итого</td>
-HERE;
-        
-        echo "            <td class=\"bordered\" style=\"border-left-width: 2px;\">".number_format($sCount, 2, ".", "")."</td>\n";
-        echo "            <td class=\"bordered\">Х</td>\n";
-        echo "            <td class=\"bordered\">".number_format($sSum, 2, ".", " ")."</td>\n";
-        echo "            <td class=\"bordered\">".number_format($sTax, 2, ".", " ")."</td>\n";
-        echo "            <td class=\"bordered\" style=\"border-right-width: 2px;\">".number_format($sTotal, 2, ".", " ")."</td>\n";
-    
-        echo <<<HERE
-                <td colspan="2"></td>
-            </tr>
-        </table>
-    </div>
+        $params['title'] = 'Требование-накладная';
+        $params['breadcrumbs'] = $breadcrumbs;
+        $params['stock'] = $objStock;
+        $params['materials'] = $objMaterials;
+        $params['files'] = $files;
+        $params['applications'] = $applications;
 
-    <div class="block">
-HERE;
-        echo '        <img src="'.getcwd().'/img/signatures/signature_0.png" alt="" style="height: 75px; position: absolute; margin-left: 210px; margin-bottom: -40px; width: 180px;" />'."\n";
-        echo <<<HERE
-        <table>
-            <tr>
-                <td style="width: 70px; text-align: right;">Принял</td>
-                <td style="border-bottom: 1px solid #000; width: 13%;">зав. базой</td>
-                <td style="width: 5px;"></td>
-                <td style="border-bottom: 1px solid #000; width: 13%;"></td>
-                <td style="width: 5px;"></td>
-                <td style="border-bottom: 1px solid #000; width: 13%;">Ю.Н. Жарков</td>
-                <td></td>
-                <td style="width: 70px; text-align: right;">Сдал</td>
-                <td style="border-bottom: 1px solid #000; width: 13%;"></td>
-                <td style="width: 5px;"></td>
-                <td style="border-bottom: 1px solid #000; width: 13%;"></td>
-                <td style="width: 5px;"></td>
-                <td style="border-bottom: 1px solid #000; width: 13%;"></td>
-            </tr>
-            <tr>
-                <td></td>
-                <td style="font-size: 0.9em;">должность</td>
-                <td></td>
-                <td style="font-size: 0.9em;">подпись</td>
-                <td></td>
-                <td style="font-size: 0.9em;">расшифровка подписи</td>
-                <td></td>
-                <td></td>
-                <td style="font-size: 0.9em;">должность</td>
-                <td></td>
-                <td style="font-size: 0.9em;">подпись</td>
-                <td></td>
-                <td style="font-size: 0.9em;">расшифровка подписи</td>
-            </tr>
-        </table>
-    </div>
-HERE;
-
-        $content = ob_get_contents();
-        ob_end_clean();
-
-        $css = file_get_contents('css/pdf.css');
-
-        require_once $this->getParameter('kernel.project_dir').'/../vendor/autoload.php';
-
-        $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
-        $fontDirs = $defaultConfig['fontDir'];
-        
-        $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
-        $fontData = $defaultFontConfig['fontdata'];
-
-        $mpdf = new \Mpdf\Mpdf([
-            'mode' => 'utf-8',
-            'format' => 'A4-L',
-            'orientation' => 'L',
-            'margin_left' => 10,
-            'margin_right' => 10,
-            'margin_top' => 7,
-            'margin_bottom' => 7,
-            'margin_header' => 10,
-            'margin_footer' => 10,
-            'default_font_size' => 8,
-
-            'fontDir' => array_merge($fontDirs, ['fonts']),
-            'fontdata' => $fontData + [
-                'tahoma' => [
-                    'R' => 'tahoma.ttf',
-                    'B' => 'tahoma-bold.ttf',
-                ],
-            ],
-            'default_font' => 'tahoma'
-        ]);
-        $mpdf->debug = true;
-
-        $mpdf->keep_table_proportions = TRUE;
-        $mpdf->shrink_tables_to_fit=1;
-        $mpdf->SetTitle('Просмотр приходного ордера'.$objStock->getId());
-        $mpdf->WriteHTML($css, \Mpdf\HTMLParserMode::HEADER_CSS);
-        $mpdf->WriteHTML($content, \Mpdf\HTMLParserMode::HTML_BODY);
-        
-        $mpdf->Output('Приходный ордер'.$objStock->getId().'.pdf', 'I');
+        return $this->render('stock/view-tn.html.twig', $params);
     }
 }

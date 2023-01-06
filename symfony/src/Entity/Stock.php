@@ -46,14 +46,14 @@ class Stock
     /**
      * @var string
      *
-     * @ORM\Column(name="invoice", type="string", length=255, nullable=false)
+     * @ORM\Column(name="invoice", type="string", length=255, nullable=true)
      */
     private $invoice;
 
     /**
      * @var string
      *
-     * @ORM\Column(name="comment", type="string", length=255, nullable=false)
+     * @ORM\Column(name="comment", type="string", length=255, nullable=true)
      */
     private $comment;
 
@@ -74,7 +74,7 @@ class Stock
     /**
      * @var int
      *
-     * @ORM\Column(name="type", type="integer", nullable=false, options={"default"="0"})
+     * @ORM\Column(name="type", type="integer", nullable=true)
      */
     private $type;
 
@@ -115,6 +115,23 @@ class Stock
      * @ORM\Column(name="logistic", type="string", length=255, nullable=true)
      */
     private $logistic;
+
+    /**
+     * @var string|null
+     *
+     * @ORM\Column(name="way", type="string", length=255, nullable=true)
+     */
+    private $way;
+
+    /**
+     * @var \Offices
+     *
+     * @ORM\ManyToOne(targetEntity="Offices")
+     * @ORM\JoinColumns({
+     *   @ORM\JoinColumn(name="office", referencedColumnName="id")
+     * })
+     */
+    private $office;
 
     public function __construct()
     {
@@ -278,6 +295,30 @@ class Stock
     public function setLogistic(string $logistic): self
     {
         $this->logistic = $logistic;
+
+        return $this;
+    }
+
+    public function getWay(): ?string
+    {
+        return $this->way;
+    }
+
+    public function setWay(string $way): self
+    {
+        $this->way = $way;
+
+        return $this;
+    }
+
+    public function getOffice(): ?Offices
+    {
+        return $this->office;
+    }
+
+    public function setOffice(?Offices $office): self
+    {
+        $this->office = $office;
 
         return $this;
     }

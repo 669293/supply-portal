@@ -1,4 +1,4 @@
-{# templates/stock/view-pm.html.twig #}
+{# templates/stock/view-tn.html.twig #}
 {% extends 'default.html.twig' %}
 
 {# Заголовки #}
@@ -21,18 +21,8 @@
                         <td>{{ stock.getDate|date('d.m.Y') }}</td>
                     </tr>
                     <tr>
-                        <td style="width: 200px!important;"><i class="bi bi-hash text-muted me-1"></i> <strong>Номер документа</strong></td>
-                        <td>{{ stock.getInvoice }}</td>
-                    </tr>
-                    <tr>
-                        <td style="width: 200px!important;"><i class="bi bi-tags text-muted me-1"></i> <strong>Тип поступления</strong></td>
-                        <td>
-                            {% if stock.getType == 0 %}Материалы{% endif %}
-                            {% if stock.getType == 1 %}Запчасти{% endif %}
-                            {% if stock.getType == 2 %}ГСМ{% endif %}
-                            {% if stock.getType == 3 %}Продукты{% endif %}
-                            {% if stock.getType == 4 %}Услуги{% endif %}
-                        </td>
+                        <td style="width: 200px!important;"><i class="bi bi-box-seam text-muted me-1"></i> <strong>Склад-приемник</strong></td>
+                        <td>{{ stock.getOffice.getTitle }}</td>
                     </tr>
                     <tr>
                         <td style="width: 200px!important;"><i class="bi bi-people-fill text-muted me-1"></i> <strong>Поставщик</strong></td>
@@ -49,43 +39,9 @@
                         </td>
                     </tr>
                     <tr>
-                        <td style="width: 200px!important;"><i class="bi bi-percent text-muted me-1"></i> <strong>Налоговая ставка</strong></td>
-                        <td>{{ stock.getTax * 100 }}%</td>
+                        <td style="width: 200px!important;"><i class="bi bi-truck text-muted me-1"></i> <strong>Способ отправки</strong></td>
+                        <td>{{ stock.getWay }}</td>
                     </tr>
-                    {% if stock.getComment != '' %}
-                        <tr>
-                            <td style="width: 200px!important;"><i class="bi bi-chat-right-text text-muted me-1"></i> <strong>Комментарий</strong></td>
-                            <td>{{ stock.getComment }}</td>
-                        </tr>
-                    {% endif %}
-                    {% if stock.getNote != '' %}
-                        <tr>
-                            <td style="width: 200px!important;"><i class="bi bi-chat-right-text text-muted me-1"></i> <strong>Доп. информация</strong></td>
-                            <td>{{ stock.getNote }}</td>
-                        </tr>
-                    {% endif %}
-                    {# Получаем бинарную запись параметров #}
-                    {% set n = stock.getParams %}
-                    {% set binary = '' %}
-                    {% set power = 2 %}
-                    {% for i in range(0, 1) %}
-                    {%    if n >= power %}
-                    {%        set binary = binary ~ '1' %}
-                    {%        set n = n - power %}
-                    {%    else %}
-                    {%        set binary = binary ~ '0' %}
-                    {%    endif %}
-                    {%    set power = power // 2 %}
-                    {% endfor %}
-                    {% if binary|slice(0,1) == '1' or binary|slice(1,1) == '1' %}
-                        <tr>
-                            <td style="width: 200px!important;"><i class="bi bi-gear text-muted me-1"></i> <strong>Доп. параметры</strong></td>
-                            <td>
-                                {% if binary|slice(1,1) == '1' %}<span class="badge bg-primary">Транзитный груз</span>{% endif %}
-                                {% if binary|slice(0,1) == '1' %}<span class="badge bg-warning">Прямая отправка</span>{% endif %}
-                            </td>
-                        </tr>
-                    {% endif %}
                     {% if applications|length > 0 %}
                         <tr>
                             <td style="width: 200px!important;"><i class="bi bi-diagram-3 text-muted me-1"></i> <strong>Заявки</strong></td>
@@ -169,19 +125,8 @@
         </div>
 
         <div class="mb-3 mt-4">
-            {% if is_granted('ROLE_STOCK') %}
-                <a type="button" class="btn btn-outline-secondary mb-2 me-2" href="/stock/edit/pm?number={{ stock.id }}"><i class="bi bi-pencil-square"></i> Редактировать</a>
-            {% endif %}
             <a type="button" class="btn btn-outline-secondary mb-2 me-2" href="/" target="_blank">Закрыть</a>
-            <a type="button" class="btn btn-outline-secondary mb-2 me-2" href="/stock/print/pm?number={{ stock.id }}" target="_blank"><i class="bi bi-printer"></i> Распечатать</a>
-            <div class="dropdown" style="float: right;">
-                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="createBy" data-bs-toggle="dropdown" aria-expanded="false">Создать на основании документа</button>
-                <ul class="dropdown-menu" aria-labelledby="createBy">
-                <li><a class="dropdown-item" href="/stock/add/tn?number={{ stock.getId }}">Перемещение материалов</a></li>
-                <li><a class="dropdown-item" href="#">Списание материалов</a></li>
-                <li><a class="dropdown-item" href="#">Лимитно-заборная карта</a></li>
-                </ul>
-            </div>
+            <a type="button" class="btn btn-outline-secondary mb-2 me-2" href="/stock/print/tn?number={{ stock.id }}" target="_blank"><i class="bi bi-printer"></i> Распечатать</a>
         </div>
     </fieldset>
 

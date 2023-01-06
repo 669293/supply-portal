@@ -1,170 +1,11 @@
 $(document).ready(function() {
-  //Скрытие выбора поставщика при наличном расчете
-  $('input[name="add-pm-tax_"]').change(function() {
-    if ($(this).val() == -1) {
-      $('#provider-row').hide('fast');
-      $('#add-pm-provider option:selected').removeAttr('selected');
-      $('#add-pm-provider').append('<option value="0" selected></option>');
-    } else {
-      $('#provider-row').show('fast');
-      if ($('#add-pm-provider').val() == '0') {
-        $('#add-pm-provider option:selected').removeAttr('selected');
-      }
-      $('#add-pm-provider').selectpicker('render');
-    }
-  });
-
-  //Инициализация поля для поиска поставщика
-  $('#add-pm-provider').selectpicker().ajaxSelectPicker({
-      ajax: {
-          url: '/autocomplete/provider', 
-          type: 'GET',
-          dataType: 'json',
-          data: {
-          q: '{{{q}}}'
-          }
-      },
-      locale: {
-          emptyTitle: 'Введите название или ИНН'
-      },
-      preserveSelected: false,
-      preprocessData: function (data) {
-          var i, l = data.length, array = [];
-          if (l) {
-              for (i = 0; i < l; i++) {
-                  array.push($.extend(true, data[i], {
-                      text : data[i].Title,
-                      value: data[i].Inn,
-                      data : {
-                          subtext: data[i].Inn
-                      }
-                  }));
-              }
-          }
-
-          return array;
-      }
-  });
-
-  //Автозаполнение поля "Наименование"
-  function materialAutocomplete() {
-    $('.material-autocomplete').autocomplete({
-        serviceUrl: '/autocomplete/material'
+  //Автозаполнение поля "Перевозка"
+  function wayAutocomplete() {
+    $('.way-autocomplete').autocomplete({
+        serviceUrl: '/autocomplete/way'
     });
   }
-  materialAutocomplete();
-
-  //Добавление позиции в заявку
-  $('#addRowBtn').click(function() {
-    var row = $('#materialsTable tbody tr:visible:last').clone();
-    row.find('input[type="text"]').val('').removeClass('freeze-ignore');
-    row.find('input[type="number"]').val('').removeClass('freeze-ignore');
-    row.find('select').removeClass('freeze-ignore').val(row.find('select option').filter(function() {return $(this).text() === 'шт';}).first().attr('value'));
-    row.find('.delete-row').removeClass('delete-database');
-    row.attr('style', 'none');
-    row.css('display', 'none');
-    row.appendTo('#materialsTable tbody').show('fast');
-    enumerate();
-    materialAutocomplete();
-  });
-
-  //Удаление позиций из заявки
-  $('body').on('click', '.delete-row', function() {
-    if (!$(this).prop('disabled')) {
-      if ($(this).hasClass('delete-database')) {
-        var row = $(this).closest('tr');
-        var btn = $(this);
-        var id = $(this).data('id');
-        var positionTitle = row.find('input[name="add-pm-materials[]"]').val();
-
-        //Вызываем подтверждение
-        modalConfirm(function(confirm) {
-          if (confirm) {
-            //Делаем запрос на удаление из базы
-            
-          }
-        }, 
-        'Вы уверены что хотите удалить &laquo;' + positionTitle + '&raquo; из приходного ордера?',
-        'Удаление позиции из приходного ордера'
-        );
-      } else {
-        var row = $(this).closest('tr');
-
-        //Проверяем, вдруг осталась одна строка
-        if ($('#materialsTable tbody tr:visible').length == 1) {
-          //Просто очищаем ее
-          row.find('input[type="text"]').val('');
-          row.find('input[type="number"]').val('');
-          row.find('select').val(row.find('select option').filter(function() {return $(this).text() === 'шт';}).first().attr('value'));
-        } else {
-          row.hide('fast', function() {row.remove(); enumerate();});
-        }
-      }
-    }
-  });
-
-  //Функция восстановления нумерации в позициях в заявке
-  function enumerate() {
-    $('#materialsTable tbody tr:visible').each(function(index, element) {
-      $(this).find('td:first').text(index + 1);
-      $(this).find('input[name="urgentContentApp[]"]').attr('id', 'urgent' + (index + 1)).val(index + 1);
-      $(this).find('input[name="numContentApp[]"]').val(index + 1);
-      $(this).find('label').attr('for', 'urgent' + (index + 1));
-    });
-  }
-
-  //Загрузка данных по счетам в модальное окно
-  var appModal = document.getElementById('applicationsModal')
-  appModal.addEventListener('shown.bs.modal', function (event) {
-    var inn = $('#add-pm-provider').val();
-    var request = $.ajax({
-        type: 'GET',
-        url: '/stock/getbills',
-        data: {inn: inn}
-    });
-
-    request.done(function(data) {
-      $('#applicationsModal .modal-body').html(data);
-    });
-  });
-
-  appModal.addEventListener('hidden.bs.modal', function (event) {
-    $('#applicationsModal .modal-body .accordion').addClass('d-none');
-    $('#applicationsModal .modal-body').append('<div class="spinner-border spinner-border-sm text-primary" role="status"></div><span class="text-muted ms-2">Загрузка...</span>');
-    $('#pickConfirmBtn').prop('disabled', true);
-  });
-
-  //Добавление поставщика
-  //Получаем instance модального окна
-  const providerModal = new bootstrap.Modal(document.getElementById('providerModal'));
-
-  $('#addProviderBtn').click(function() {
-    var form = $('#providerForm');
-    
-    formData = form.serialize();
-    freezeForm(form);
-
-    $.ajax({
-      type: form.attr('method'),
-      url: form.attr('action'),
-      data: formData
-    }).done(function(data) {
-      if ($.isArray(data) && data[0] == 1) {
-        //Все хорошо
-        freezeForm(form, false);
-
-        $('#add-pm-provider').html('<option value="' + $('#providerForm input[name="inn"]').val() + '" selected>' + $('#providerForm input[name="title"]').val() + '</option>');
-        $('#add-pm-provider').closest('div').find('.filter-option-inner-inner').html( $('#providerForm input[name="title"]').val() );
-        $('#add-pm-provider').closest('div').find('button').removeClass('bs-placeholder');
-        $('#providerForm').trigger("reset");
-
-        providerModal.hide();
-      } else {
-        showFormAlert(form, data[1]);
-        freezeForm(form, false);
-      }
-    });
-  });
+  wayAutocomplete();
 
   //Выделение всех позиций в заявке
   $('body').on('change', '.material-select-all', function() {
@@ -193,19 +34,6 @@ $(document).ready(function() {
       lastChecked = this;
   });
 
-  $('body').on('change', 'input[name="material[]"]', function() {
-      checkButtonState();
-  });
-
-  //Проверка состояния кнопки "Далее"
-  function checkButtonState() {
-      if ($('input[name="material[]"]:checked').length > 0) {
-          $('#pickConfirmBtn').prop('disabled', false); 
-      } else {
-          $('#pickConfirmBtn').prop('disabled', true);
-      }
-  }
-
   //Получаем instance модального окна
   const applicationsModal = new bootstrap.Modal(document.getElementById('applicationsModal'));
 
@@ -223,88 +51,25 @@ $(document).ready(function() {
     });
 
     $('#pickBtn').removeClass('btn-outline-primary').addClass('btn-outline-success').text('Выбрано: ' + $('input[name="material[]"]:checked').length);
-    checkIsCountWarning();
   });
 
   $('#pickBtn').click(function() {
     $(this).removeClass('btn-outline-success').addClass('btn-outline-primary').text('Выбрать');
-    checkIsCountWarning();
   });
 
-  //Проверка соответствия выбранных элементов количетсву записей в документе
-  function checkIsCountWarning() {
-    if ($('#pickBtn').text() == 'Выбрать') {$('#countWarning').hide('fast'); return true;}
+  //Удаление позиций из заявки
+  $('body').on('click', '.delete-row', function() {
+    if (!$(this).prop('disabled')) {
+      var row = $(this).closest('tr');
 
-    //Проверяем количество заполненных строк
-    var cnt = 0;
-    $('#materialsTable tbody tr').each(function() {
-      if ($(this).find('input[name="add-pm-materials[]"]').val() != '') {cnt++;}
-    });
-
-    if (cnt != $('input[name="material[]"]:checked').length) {
-      $('#countWarning').show('fast'); return true;
-    } else {
-      $('#countWarning').hide('fast'); return true;
-    }
-  }
-
-  //Действие при изменении содержательной части документа
-  $('body').on('change', 'input[name="add-pm-materials[]"]', function() {
-    checkIsCountWarning();
-  });
-
-  //Активация кнопки загрузки файла из шаблона
-  $('#templateUpload').change(function() {
-    if ($(this).val() == '') {
-      $('#uploadBtn').prop('disabled', true);
-    } else {
-      $('#uploadBtn').prop('disabled', false);
+      //Проверяем, вдруг осталась одна строка
+      if ($('#materialsTable tbody tr:visible').length == 1) {
+        showFormAlert(addTnForm, 'Нельзя удалить последнюю строку');
+      } else {
+        row.hide('fast', function() {row.remove(); enumerate();});
+      }
     }
   });
-
-  //Загрузка заявки из шаблона
-
-  //Получаем instance модального окна
-  const templateModal = new bootstrap.Modal(document.getElementById('templateModal'));
-
-  var templateForm = $('#templateForm');
-
-  $('#templateForm').ajaxForm({
-    success: function(data) {
-      freezeForm(templateForm, false);
-      $('#materialsTable tbody').html(data);
-      $('#uploadBtn').prop('disabled', true);
-      $('#templateForm').trigger("reset");
-      templateModal.hide();
-    },
-    error: function(data) {
-      freezeForm(templateForm, false);
-      alert(data);
-    }
-  });
-
-  $('#uploadBtn').click(function() {
-    freezeForm(templateForm);
-    $('#templateForm').submit();
-  });
-
-  //Проверка состояния кнопки добавить
-  function checkDoneButtonState() {
-
-  }
-
-  //Проверка формы
-  function checkIsCorrect(element, expectFor) {
-    if (! expectFor.test(element.val()) ) {
-      element.closest('td').find('input').removeClass('is-valid').addClass('is-invalid');
-      element.closest('td').find('div').removeClass('text-success').addClass('text-danger');
-      return false;
-    } else {
-      element.closest('td').find('input').removeClass('is-invalid').addClass('is-valid');
-      element.closest('td').find('div').removeClass('text-danger').addClass('text-success');
-      return true;
-    }
-  }
 
   function checkElement(el, quiet = false) {
     if ( el.attr('name') === undefined ) {return true;}
@@ -440,12 +205,12 @@ $(document).ready(function() {
 
   //Отправка формы
   $('#sendBtn').click(function() {
-    addPmForm = $(this).closest('form');
+    addTnForm = $(this).closest('form');
 
-    if (addPmForm.find('.form-message').length == 0) {
+    if (addTnForm.find('.form-message').length == 0) {
       prepareForm();
     } else {
-      addPmForm.find('.form-message').hide('fast', function() {
+      addTnForm.find('.form-message').hide('fast', function() {
         $(this).remove();
         prepareForm();
       });
@@ -453,20 +218,20 @@ $(document).ready(function() {
   });
 
   function prepareForm() {
-    if (checkForm(addPmForm)) {
+    if (checkForm(addTnForm)) {
       //Вызываем загрузку всех файлов
       if ($('.file-preview-thumbnails .kv-preview-thumb').not('.file-preview-success').not('.file-preview-initial').length > 0) {
         fileUploadError = false;
         $('#attach').fileinput('upload');
       } else {
         //Загружать нечего/все загружено, отправляем форму
-        formData = addPmForm.serialize();
-        freezeForm(addPmForm);
+        formData = addTnForm.serialize();
+        freezeForm(addTnForm);
         $('#attach').fileinput('disable');
         sendForm();
       }
     } else {
-      showFormAlert(addPmForm, 'Не заполнены необходимые поля');
+      showFormAlert(addTnForm, 'Не заполнены необходимые поля');
       return false;
     }
   }
@@ -508,8 +273,8 @@ $(document).ready(function() {
         $('input[name="files"]').val('');
       }
 
-      formData = addPmForm.serialize();
-      freezeForm(addPmForm);
+      formData = addTnForm.serialize();
+      freezeForm(addTnForm);
       $('#attach').fileinput('disable');
       sendForm();
     }
@@ -519,21 +284,21 @@ $(document).ready(function() {
 
   function sendForm() {
     $.ajax({
-      type: addPmForm.attr('method'),
-      url: addPmForm.attr('action'),
+      type: addTnForm.attr('method'),
+      url: addTnForm.attr('action'),
       data: formData
     }).done(function(data) {
       if ($.isArray(data) && data[0] == 1) {
         //Все хорошо
-        if (addPmForm.attr('id') == 'add-pm-form') {
+        if (addTnForm.attr('id') == 'add-pm-form') {
           alert('All good!');
           // $.redirectPost('/applications', {'msg': 'Заявка №' + data[1] + ' успешно добавлена', 'bg-color': 'bg-success', 'text-color': 'text-white'});
         } else {
           location.reload();
         }
       } else {
-        showFormAlert(addPmForm, data[1]);
-        freezeForm(addPmForm, false);
+        showFormAlert(addTnForm, data[1]);
+        freezeForm(addTnForm, false);
         $('#attach').fileinput('enable');
       }
     });

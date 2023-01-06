@@ -5,7 +5,7 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Stock
+ * StockMaterials
  *
  * @ORM\Table(name="stock_materials")
  * @ORM\Entity(repositoryClass="App\Repository\StockMaterialsRepository")
@@ -18,7 +18,7 @@ class StockMaterials
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="SEQUENCE")
-     * @ORM\SequenceGenerator(sequenceName="stock_id_seq", allocationSize=1, initialValue=1)
+     * @ORM\SequenceGenerator(sequenceName="stock_materials_id_seq", allocationSize=1, initialValue=1)
      */
     private $id;
 
@@ -35,13 +35,6 @@ class StockMaterials
      * @ORM\Column(name="price", type="decimal", precision=10, scale=0, nullable=false, options={"default"="0.0"})
      */
     private $price = '0.0';
-
-    /**
-     * @var string
-     *
-     * @ORM\Column(name="count", type="decimal", precision=10, scale=0, nullable=false, options={"default"="0.0"})
-     */
-    private $count = '0.0';
 
     /**
      * @var string
@@ -74,35 +67,21 @@ class StockMaterials
      */
     private $unit;
 
-    /**
-     * @var \Stock
-     *
-     * @ORM\ManyToOne(targetEntity="Stock")
-     * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="stock", referencedColumnName="id")
-     * })
-     */
-    private $stock;
-
     public function __construct(
         $title = null,
         $price = null,
-        $count = null,
         $sum = null,
         $tax = null,
         $total = null,
         $unit = null, //Units::class
-        $stock = null //Stock::class
         )
     {
         if ($title !== null) {$this->title = $title;}
         if ($price !== null) {$this->price = $price;}
-        if ($count !== null) {$this->count = $count;}
         if ($sum !== null) {$this->sum = $sum;}
         if ($tax !== null) {$this->tax = $tax;}
         if ($total !== null) {$this->total = $total;}
         if ($unit !== null) {$this->unit = $unit;}
-        if ($stock !== null) {$this->stock = $stock;}
     }
 
     public function getId(): ?int
@@ -130,18 +109,6 @@ class StockMaterials
     public function setPrice(string $price): self
     {
         $this->price = $price;
-
-        return $this;
-    }
-
-    public function getCount(): ?string
-    {
-        return $this->count;
-    }
-
-    public function setCount(string $count): self
-    {
-        $this->count = $count;
 
         return $this;
     }
@@ -190,18 +157,6 @@ class StockMaterials
     public function setUnit(?Units $unit): self
     {
         $this->unit = $unit;
-
-        return $this;
-    }
-
-    public function getStock(): ?Stock
-    {
-        return $this->stock;
-    }
-
-    public function setStock(?Stock $stock): self
-    {
-        $this->stock = $stock;
 
         return $this;
     }

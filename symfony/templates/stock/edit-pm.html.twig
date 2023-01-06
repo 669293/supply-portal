@@ -1,0 +1,330 @@
+{# templates/stock/edit-pm.html.twig #}
+{% extends 'default.html.twig' %}
+
+{# Заголовки #}
+{% block title %}{{ title }}{% endblock %}
+{% block caption %}{{ title }}{% endblock %}
+
+{# Контент #}
+{% block content %}
+    <form class="mb-2" action="/stock/edit/pm" method="POST" id="edit-pm-form" data-id="{{ stock.getId }}">
+        <fieldset>
+            <input type="hidden" name="token" value="{{ csrf_token('edit-pm') }}"/>
+            <input type="hidden" name="id" value="{{ stock.getId }}"/>
+            <input type="hidden" name="files" value=""/>
+            <div class="container-fluid w-100 overflow-scroll px-0 mb-2">
+                <table class="table table-borderless">
+                    <tbody>
+                        <tr>
+                            <td class="ps-0" style="width: 280px;"><label for="edit-pm-sf">Счет фактура/товарная накладная</label></td>
+                            <td class="w-auto">
+                                <input id="edit-pm-sf" type="text" name="edit-pm-sf" class="form-control form-control-sm should-be-validated" data-sbv-expression="^.{2,}$" data-sbv-notification-target="sbv-sf" data-sbv-notification="Обязательное поле" value="{{ stock.getInvoice }}" />
+                                <div class="form-text mt-0" id="sbv-sf">Номер и дата документа</div>
+                            </td>
+                        </tr>
+                        <tr id="provider-row"{% if stock.getProvider == 0 %} style="display: none;"{% endif %}>
+                            <td class="ps-0"><label for="edit-pm-provider">Поставщик</label></td>
+                            <td class="w-auto">
+                                <div class="input-group flex-nowrap">
+                                    <select id="edit-pm-provider" name="edit-pm-provider" class="selectpicker with-ajax form-control form-control-sm w-auto should-be-validated" data-live-search="true" data-sbv-expression="(^\d{10,}$)|(^[0]{1}$)" data-sbv-notification-target="sbv-provider" data-sbv-notification="Обязательное поле">
+                                        {% if provider is defined %}
+                                            <option value="{{ provider.getInn }}" selected>{{ provider.getTitle }}</option>
+                                        {% endif %}
+                                    </select>
+                                    <button type="button" class="btn btn-sm btn-outline-success" data-bs-target="#providerModal" data-bs-toggle="modal" data-bs-dismiss="modal"><i class="bi bi-plus"></i></button>
+                                </div>
+                                <div class="form-text mt-0" id="sbv-provider">Выберите из списка или добавьте нового контрагента</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ps-0">Налоговая ставка</td>
+                            <td class="w-auto">
+                                <div class="input-group">
+                                    <input type="radio" class="btn-check" name="edit-pm-tax_" id="tax" autocomplete="off" value="-1"{% if stock.getProvider == 0 and stock.getTax == 0 %} checked{% endif %} />
+                                    <label class="btn btn-sm btn-outline-secondary" for="tax" style="border-bottom-left-radius: 4px; border-top-left-radius: 4px;">Наличный расчет</label>
+                                    <input type="radio" class="btn-check" name="edit-pm-tax_" id="tax0" autocomplete="off" value="0"{% if stock.getProvider != 0 and stock.getTax == 0 %} checked{% endif %} />
+                                    <label class="btn btn-sm btn-outline-secondary" for="tax0">0%</label>
+                                    <input type="radio" class="btn-check" name="edit-pm-tax_" id="tax10" autocomplete="off" value="0.1"{% if stock.getTax == 0.1 %} checked{% endif %} />
+                                    <label class="btn btn-sm btn-outline-secondary" for="tax10">10%</label>
+                                    <input type="radio" class="btn-check" name="edit-pm-tax_" id="tax20" autocomplete="off" value="0.2"{% if stock.getTax == 0.2 %} checked{% endif %} />
+                                    <label class="btn btn-sm btn-outline-secondary" for="tax20">20%</label>
+                                </div>
+                                <div class="form-text mt-0">Выберите наличный расчет, либо ставку НДС для юр. лиц</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ps-0">Тип поступления</td>
+                            <td class="w-auto">
+                                <select class="form-select form-select-sm" name="edit-pm-type">
+                                    <option value="0"{% if stock.getType == 0 %} selected{% endif %}>Материалы</option>
+                                    <option value="1"{% if stock.getType == 1 %} selected{% endif %}>Запчасти</option>
+                                    <option value="2"{% if stock.getType == 2 %} selected{% endif %}>ГСМ</option>
+                                    <option value="3"{% if stock.getType == 3 %} selected{% endif %}>Продукты</option>
+                                    <option value="4"{% if stock.getType == 4 %} selected{% endif %}>Услуги</option>
+                                </select>
+                                <div class="form-text mt-0">Выберите тип поступления</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ps-0"><label for="edit-pm-comment">Комментарий</label></td>
+                            <td class="w-auto">
+                                <input id="edit-pm-comment" type="text" name="edit-pm-comment" class="form-control form-control-sm" value="{{ stock.getComment }}" />
+                                <div class="form-text mt-0">Краткое описание содержимого приходного ордера</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ps-0"><label for="edit-pm-note">Доп. информация</label></td>
+                            <td class="w-auto">
+                                <input id="edit-pm-note" type="text" name="edit-pm-note" class="form-control form-control-sm" value="{{ stock.getNote }}">
+                                <div class="form-text mt-0">Дополнительная информация каксательно документа</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ps-0"><label for="edit-pm-date">Дата документа</label></td>
+                            <td class="w-auto">
+                                <input id="edit-pm-date" name="edit-pm-date" type="date" class="form-control form-control-sm should-be-validated" data-sbv-expression="^(\d{4})-(\d{1,2})-(\d{1,2})$" data-sbv-notification-target="sbv-date" data-sbv-notification="Неверный формат даты" value="{{ 'now'|date('Y-m-d') }}" />
+                                <div class="form-text mt-0" id="sbv-date">Дата прихода</div>
+                            </td>
+                        </tr>
+                        {# Получаем бинарную запись параметров #}
+                        {% set n = stock.getParams %}
+                        {% set binary = '' %}
+                        {% set power = 2 %}
+                        {% for i in range(0, 1) %}
+                        {%    if n >= power %}
+                        {%        set binary = binary ~ '1' %}
+                        {%        set n = n - power %}
+                        {%    else %}
+                        {%        set binary = binary ~ '0' %}
+                        {%    endif %}
+                        {%    set power = power // 2 %}
+                        {% endfor %}
+                        <tr>
+                            <td class="ps-0">Дополнительные параметры</td>
+                            <td class="w-auto">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="1" id="edit-pm-transit" name="edit-pm-transit"{% if binary|slice(1,1) == '1' %} checked{% endif %} />
+                                    <label class="form-check-label" for="edit-pm-transit">Транзитный груз</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="1" id="edit-pm-direct" name="edit-pm-direct"{% if binary|slice(0,1) == '1' %} checked{% endif %} />
+                                    <label class="form-check-label" for="edit-pm-direct">Прямая отгрузка</label>
+                                </div>
+                            </td>
+                        </tr>
+                        {% if applications|length > 0 %}
+                            <tr>
+                                <td class="ps-0">Привязка к заявкам</td>
+                                <td class="w-auto">
+                                    {% for application in applications %}
+                                        <a href="/applications/view?number={{ application.getId }}&stock={{ stock.getId }}" target="_blank"><span class="badge bg-primary">Завяка №{{ application.getId }} ({{ application.getAuthor.getShortUserName }})</span></a>
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td class="ps-0">Привязка к заявкам</td>
+                                <td class="w-auto">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-target="#applicationsModal" data-bs-toggle="modal" data-bs-dismiss="modal" id="pickBtn">Выбрать</button>
+                                    <span id="countWarning" class="text-warning ms-2 text-xsmall" style="display: none;"><i class="bi bi-exclamation-triangle"></i> Количество в приходном ордере не совпадает с количеством выбранных элементов</span>
+                                </td>
+                            </tr>
+                        {% endif %}
+                </table>
+            </div>
+
+            <div class="container-fluid w-100 px-0 overflow-scroll mt-0 mb-1 pb-3">
+                <table class="table table-sm table-bordered table-striped mb-0 us-none" style="min-width: 900px;" id="materialsTable">
+                    <thead>
+                        <tr>
+                            <th class="py-2 align-middle text-center text-xsmall" scope="col" style="width: 50px;">№</th>
+                            <th class="py-2 align-middle text-xsmall" scope="col">Наименование</th>
+                            <th class="py-2 align-middle text-nowrap text-xsmall" scope="col" style="width: 120px;">Ед.изм.</th>
+                            <th class="py-2 align-middle text-xsmall" scope="col" style="width: 100px;">Кол-во</th>
+                            <th class="py-2 align-middle text-nowrap text-xsmall" style="width: 100px;" scope="col">Цена</th>
+                            <th class="py-2 align-middle text-nowrap text-xsmall" style="width: 100px;" scope="col">Сумма</th>
+                            <th class="py-2 align-middle text-nowrap text-xsmall" style="width: 100px;" scope="col">НДС</th>
+                            <th class="py-2 align-middle text-nowrap text-xsmall" style="width: 100px;" scope="col">Всего</th>
+                            <th class="text-center align-middle" style="width: 50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for material in materials %}
+                            <tr class='sbv-parent'>
+                                <td class="align-middle text-center text-xsmall">{{ loop.index }}</td>
+                                <td class="align-middle">
+                                    <input class="form-control form-control-sm should-be-validated" data-sbv-depence="true" data-sbv-expression="^.{2,}$" type="text" name="edit-pm-materials[]" value="{{ material.obj.getTitle }}" />
+                                    <input type="hidden" name="idContent[]" value="{{ material.id }}" />
+                                </td>
+                                <td class="align-middle text-center">
+                                    <select class="form-select form-select-sm" name="edit-pm-units[]">
+                                    {% for unit in units %}
+                                        {% if unit.getId == material.obj.getUnit.getId %}
+                                            <option value="{{ unit.getId }}" selected="selected">{{ unit.getTitle }}</option>
+                                        {% else %}
+                                            <option value="{{ unit.getId }}">{{ unit.getTitle }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                    </select>
+                                </td>
+                                <td class="align-middle"><input class="form-control form-control-sm should-be-validated" type="number" value="{{ material.count }}" name="edit-pm-count[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" /></td>
+                                <td class="align-middle"><input class="form-control form-control-sm should-be-validated numbersOnly" type="text" value="{{ material.obj.getPrice }}" name="edit-pm-price[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" /></td>
+                                <td class="align-middle"><input class="form-control form-control-sm should-be-validated numbersOnly" type="text" value="{{ material.obj.getSum }}" name="edit-pm-sum[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" /></td>
+                                <td class="align-middle"><input class="form-control form-control-sm should-be-validated numbersOnly" type="text" value="{{ material.obj.getTax }}" name="edit-pm-tax[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" /></td>
+                                <td class="align-middle"><input class="form-control form-control-sm should-be-validated numbersOnly" type="text" value="{{ material.obj.getTotal }}" name="edit-pm-total[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" /></td>
+                                <td class="text-center align-middle"><i class="bi bi-trash text-danger fs-6 delete-row delete-database" data-id="{{ material.obj.getId }}"></i><div class="spinner-border spinner-border-sm text-primary d-none" role="status"><span class="visually-hidden">Загрузка...</span></div></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm mb-4 me-2" id="addRowBtn"><i class="bi bi-plus-lg"></i> Добавить строку</button>
+
+            <h5 class="mb-3">Дополнительные файлы</h5>
+
+            <div class="mb-4">
+                <div class="file-loading">
+                    <input id="attach" type="file" name="filesApp[]" multiple="multiple" />
+                </div>
+                <div class="clearfix"></div>
+            </div>
+        </fieldset>
+
+        <div class="clearfix"></div>
+
+        <button type="button" class="btn btn-outline-primary mb-5 me-2 sbv-submit" id="sendBtn">Сохранить</button>
+        <button type="button" class="btn btn-outline-secondary mb-5 me-2" onclick="location.href='/stock/';">Отмена</button>
+        <div class="spinner-border text-primary d-none" role="status" style="margin-bottom: 0.8rem!important;"><span class="visually-hidden">Обработка...</span></div>
+    </form>
+{% endblock %}
+
+{# Модальные окна #}
+{% block modal %}
+    {# Добавление поставщика #}
+    <div class="modal fade" id="providerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="/applications/bills/provider" method="POST" id="providerForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Добавление поставщика</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="title" placeholder=" " value="" name="title" />
+                            <label for="title">Наименование поставщика</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="inn" placeholder=" " value="" name="inn" />
+                            <label for="inn">ИНН</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="address" placeholder=" " value="" name="address" />
+                            <label for="address">Почтовый адрес</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="phone" placeholder=" " value="" name="phone" />
+                            <label for="phone">Телефон</label>
+                        </div>
+                        <div class="form-floating">
+                            <textarea class="form-control" placeholder="Комментарий" id="commentTextarea" style="height: 100px" name="comment"></textarea>
+                            <label for="commentTextarea">Комментарий</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                      <button type="button" class="btn btn-primary" id="addProviderBtn">Добавить</button>
+                      <div class="spinner-border text-primary d-none" role="status"><span class="visually-hidden">Обработка...</span></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {# Привязка к заявкам #}
+    <div class="modal fade" id="applicationsModal" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">Выбор материалов</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div><span class="text-muted ms-2">Загрузка...</span>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-target="#finishForm" data-bs-toggle="modal" data-bs-dismiss="modal" id="pickConfirmBtn" disabled>Готово</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{# Скрипты #}
+{% block scripts %}
+    <script src="{{ asset('js/jquery.autocomplete.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/bootstrap-select.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/ajax-bootstrap-select.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/ajax-bootstrap-select.ru-RU.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/fileinput.min.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/fileinput.ru.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/jquery.form.js') }}" type="text/javascript"></script>
+    <script type="text/javascript">
+        {% if files is defined and files|length > 0 %}
+            var params = {
+                initialPreview: [
+                {% for file in files %}
+                    {% if file.type == 'image' %}
+                        '<img src="{{ url('index') }}upload/stock/{{ file.path }}" class="file-preview-image" alt="" />',
+                    {% else %}
+                        '{{ url('index') }}upload/stock/{{ file.path }}',
+                    {% endif %}
+                {% endfor %}
+                ],
+                initialPreviewAsData: true,
+                initialPreviewConfig: [
+                {% for file in files %}
+                    {% if file.type == 'image' %}
+                        {type: '{{ file.type }}', caption: '{{ file.name }}', downloadUrl: '{{ url('index') }}upload/stock/{{ file.path }}', size: {{ file.size }}, key: {{ file.key }}, previewAsData: false },
+                    {% else %}
+                        {type: '{{ file.type }}', caption: '{{ file.name }}', downloadUrl: '{{ url('index') }}upload/stock/{{ file.path }}', size: {{ file.size }}, key: {{ file.key }} },
+                    {% endif %}
+                {% endfor %}
+                ],
+                browseClass: 'btn btn-outline-secondary',
+                overwriteInitial: false,
+                language: 'ru',
+                uploadUrl: '/stock/upload-file',
+                deleteUrl: '/stock/delete-file',
+                maxFileSize: 10240,
+                fileActionSettings: {
+                    showRemove: true,
+                    showUpload: false,
+                    showZoom: true,
+                    showDrag: false,
+                }
+            };
+        {% else %}
+            var params = {
+                browseClass: 'btn btn-outline-secondary',
+                language: 'ru',
+                uploadUrl: '/stock/upload-file',
+                maxFileSize: 10240,
+                fileActionSettings: {
+                    showRemove: true,
+                    showUpload: false,
+                    showZoom: true,
+                    showDrag: false,
+                }
+            };
+        {% endif %}
+    </script>
+    <script src="{{ asset('js/stock/edit-pm.js') }}" type="text/javascript"></script>
+{% endblock %}
+
+{# Стили #}
+{% block css %}
+    <link href="{{ asset('css/bootstrap-select.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/ajax-bootstrap-select.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/fileinput.css') }}" rel="stylesheet">
+{% endblock %}

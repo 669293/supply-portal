@@ -1617,12 +1617,14 @@ class BillsController extends AbstractController
                 $billMaterial = $billsMaterialsRepository->findBy(array('id' => $materials[$i]));
                 if (is_array($billMaterial)) {$billMaterial = array_shift($billMaterial);}
 
-                $objMaterials[] = $billMaterial->getMaterial();
+                if ($billMaterial !== null) {
+                    $objMaterials[] = $billMaterial->getMaterial();
 
-                $billMaterial->setRecieved((float)$billMaterial->getRecieved() + (float)$amounts[$i]);
+                    $billMaterial->setRecieved((float)$billMaterial->getRecieved() + (float)$amounts[$i]);
 
-                $this->entityManager->persist($billMaterial);
-                $this->entityManager->flush();
+                    $this->entityManager->persist($billMaterial);
+                    $this->entityManager->flush();
+                }
 
                 unset($billMaterial);
             }
@@ -1799,8 +1801,10 @@ class BillsController extends AbstractController
                     foreach ($arrPhotos as $photo) {
                         $objPhoto = $photosRepository->findBy( array('id' => $photo) );
                         if (is_array($objPhoto)) {$objPhoto = array_shift($objPhoto);}
-                        $objPhoto->setLogistics($objLogistics);
-                        $this->entityManager->persist($objPhoto);
+                        if ($objPhoto !== null) {
+                            $objPhoto->setLogistics($objLogistics);
+                            $this->entityManager->persist($objPhoto);
+                        }
                     }
                 }
                 $this->entityManager->flush();

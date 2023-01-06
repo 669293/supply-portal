@@ -1,21 +1,28 @@
 $(document).ready(function() {
   //Скрытие выбора поставщика при наличном расчете
-  $('input[name="add-pm-tax_"]').change(function() {
+  $('input[name="edit-pm-tax_"]').change(function() {
     if ($(this).val() == -1) {
       $('#provider-row').hide('fast');
-      $('#add-pm-provider option:selected').removeAttr('selected');
-      $('#add-pm-provider').append('<option value="0" selected></option>');
+      $('#edit-pm-provider option:selected').removeAttr('selected');
+      $('#edit-pm-provider').append('<option value="0" selected></option>');
     } else {
       $('#provider-row').show('fast');
-      if ($('#add-pm-provider').val() == '0') {
-        $('#add-pm-provider option:selected').removeAttr('selected');
+      if ($('#edit-pm-provider').val() == '0') {
+        $('#edit-pm-provider option:selected').removeAttr('selected');
       }
-      $('#add-pm-provider').selectpicker('render');
+      $('#edit-pm-provider').selectpicker('render');
     }
+
+    checkForm( $('#edit-pm-form') );
   });
 
+  //Проверка формы при взаимодействии с формой
+  $('#edit-pm-transit').change(function() { checkForm( $('#edit-pm-form') ); });
+  $('#edit-pm-direct').change(function() { checkForm( $('#edit-pm-form') ); });
+  $('select[name="edit-pm-units[]"]').change(function() { checkForm( $('#edit-pm-form') ); });
+
   //Инициализация поля для поиска поставщика
-  $('#add-pm-provider').selectpicker().ajaxSelectPicker({
+  $('#edit-pm-provider').selectpicker().ajaxSelectPicker({
       ajax: {
           url: '/autocomplete/provider', 
           type: 'GET',
@@ -61,6 +68,7 @@ $(document).ready(function() {
     row.find('input[type="number"]').val('').removeClass('freeze-ignore');
     row.find('select').removeClass('freeze-ignore').val(row.find('select option').filter(function() {return $(this).text() === 'шт';}).first().attr('value'));
     row.find('.delete-row').removeClass('delete-database');
+    row.find('input[name="idContent[]"]').remove();
     row.attr('style', 'none');
     row.css('display', 'none');
     row.appendTo('#materialsTable tbody').show('fast');
@@ -75,13 +83,31 @@ $(document).ready(function() {
         var row = $(this).closest('tr');
         var btn = $(this);
         var id = $(this).data('id');
-        var positionTitle = row.find('input[name="add-pm-materials[]"]').val();
+        var positionTitle = row.find('input[name="edit-pm-materials[]"]').val();
 
         //Вызываем подтверждение
         modalConfirm(function(confirm) {
           if (confirm) {
             //Делаем запрос на удаление из базы
-            
+            var row = btn.closest('tr');
+            var id = btn.data('id');
+
+            btn.fadeOut('fast', function() {
+              row.find('td:last .spinner-border').css('display', 'none').removeClass('d-none').fadeIn('fast', function() {
+                $.post('/stock/delete-material', {id: id})
+                .done(function(data) {
+                  row.hide('fast', function() { row.remove(); });
+                }).fail(function() {
+                  addToast('Произошла ошибка.<br />Попробуйте обновить страницу.', 'bg-danger', 'text-white');
+                  showToasts();
+        
+                  row.find('td:last .spinner-border').fadeOut('fast', function() {
+                    row.find('td:last .spinner-border').css('display', '').addClass('d-none');
+                    btn.fadeIn('fast');
+                  });
+                });
+              });
+            });
           }
         }, 
         'Вы уверены что хотите удалить &laquo;' + positionTitle + '&raquo; из приходного ордера?',
@@ -116,7 +142,7 @@ $(document).ready(function() {
   //Загрузка данных по счетам в модальное окно
   var appModal = document.getElementById('applicationsModal')
   appModal.addEventListener('shown.bs.modal', function (event) {
-    var inn = $('#add-pm-provider').val();
+    var inn = $('#edit-pm-provider').val();
     var request = $.ajax({
         type: 'GET',
         url: '/stock/getbills',
@@ -153,9 +179,9 @@ $(document).ready(function() {
         //Все хорошо
         freezeForm(form, false);
 
-        $('#add-pm-provider').html('<option value="' + $('#providerForm input[name="inn"]').val() + '" selected>' + $('#providerForm input[name="title"]').val() + '</option>');
-        $('#add-pm-provider').closest('div').find('.filter-option-inner-inner').html( $('#providerForm input[name="title"]').val() );
-        $('#add-pm-provider').closest('div').find('button').removeClass('bs-placeholder');
+        $('#edit-pm-provider').html('<option value="' + $('#providerForm input[name="inn"]').val() + '" selected>' + $('#providerForm input[name="title"]').val() + '</option>');
+        $('#edit-pm-provider').closest('div').find('.filter-option-inner-inner').html( $('#providerForm input[name="title"]').val() );
+        $('#edit-pm-provider').closest('div').find('button').removeClass('bs-placeholder');
         $('#providerForm').trigger("reset");
 
         providerModal.hide();
@@ -217,9 +243,9 @@ $(document).ready(function() {
     $('#applicationsModal input[name="material[]"]:checked').each(function() {
       var tr = $(this).closest('tr');
 
-      $('#add-pm-form').append('<input type="hidden" class="log-input" name="material[]" value="' + tr.find('input[name="material[]"]').val() + '" />');
-      $('#add-pm-form').append('<input type="hidden" class="log-input" name="amount[]" value="' + tr.find('input[name="amount[]"]').val() + '" />');
-      $('#add-pm-form').append('<input type="hidden" class="log-input" name="bill[]" value="' + tr.find('input[name="bill[]"]').val() + '" />');
+      $('#edit-pm-form').append('<input type="hidden" class="log-input" name="material[]" value="' + tr.find('input[name="material[]"]').val() + '" />');
+      $('#edit-pm-form').append('<input type="hidden" class="log-input" name="amount[]" value="' + tr.find('input[name="amount[]"]').val() + '" />');
+      $('#edit-pm-form').append('<input type="hidden" class="log-input" name="bill[]" value="' + tr.find('input[name="bill[]"]').val() + '" />');
     });
 
     $('#pickBtn').removeClass('btn-outline-primary').addClass('btn-outline-success').text('Выбрано: ' + $('input[name="material[]"]:checked').length);
@@ -238,7 +264,7 @@ $(document).ready(function() {
     //Проверяем количество заполненных строк
     var cnt = 0;
     $('#materialsTable tbody tr').each(function() {
-      if ($(this).find('input[name="add-pm-materials[]"]').val() != '') {cnt++;}
+      if ($(this).find('input[name="edit-pm-materials[]"]').val() != '') {cnt++;}
     });
 
     if (cnt != $('input[name="material[]"]:checked').length) {
@@ -249,7 +275,7 @@ $(document).ready(function() {
   }
 
   //Действие при изменении содержательной части документа
-  $('body').on('change', 'input[name="add-pm-materials[]"]', function() {
+  $('body').on('change', 'input[name="edit-pm-materials[]"]', function() {
     checkIsCountWarning();
   });
 
@@ -260,32 +286,6 @@ $(document).ready(function() {
     } else {
       $('#uploadBtn').prop('disabled', false);
     }
-  });
-
-  //Загрузка заявки из шаблона
-
-  //Получаем instance модального окна
-  const templateModal = new bootstrap.Modal(document.getElementById('templateModal'));
-
-  var templateForm = $('#templateForm');
-
-  $('#templateForm').ajaxForm({
-    success: function(data) {
-      freezeForm(templateForm, false);
-      $('#materialsTable tbody').html(data);
-      $('#uploadBtn').prop('disabled', true);
-      $('#templateForm').trigger("reset");
-      templateModal.hide();
-    },
-    error: function(data) {
-      freezeForm(templateForm, false);
-      alert(data);
-    }
-  });
-
-  $('#uploadBtn').click(function() {
-    freezeForm(templateForm);
-    $('#templateForm').submit();
   });
 
   //Проверка состояния кнопки добавить
@@ -405,12 +405,11 @@ $(document).ready(function() {
   function checkForm(form) {
     var valid = true;
     var quiet = true;
-    form.find('.should-be-validated').each(function() {
+    form.find('.should-be-validated:visible').each(function() {
       var el = $(this);
       if ( el.data('sbv-depence-of') === undefined ) {
         if ( (el.data('sbv-depence') !== undefined && el.val() != '') || el.data('sbv-depence') === undefined ) {
           var tmp = checkElement(el, quiet);
-          if (!tmp) {console.log(el.attr('name'));}
           valid = valid && tmp;  
         }
       } else {
@@ -419,6 +418,7 @@ $(document).ready(function() {
             //Главный элемент
             if ( $(this).val() != '' ) {
               var tmp = checkElement(el, quiet);
+              if (!tmp) {console.log(el.attr('name'));}
               valid = valid && tmp;  
             }
           }
@@ -440,12 +440,12 @@ $(document).ready(function() {
 
   //Отправка формы
   $('#sendBtn').click(function() {
-    addPmForm = $(this).closest('form');
+    savePmForm = $(this).closest('form');
 
-    if (addPmForm.find('.form-message').length == 0) {
+    if (savePmForm.find('.form-message').length == 0) {
       prepareForm();
     } else {
-      addPmForm.find('.form-message').hide('fast', function() {
+      savePmForm.find('.form-message').hide('fast', function() {
         $(this).remove();
         prepareForm();
       });
@@ -453,38 +453,27 @@ $(document).ready(function() {
   });
 
   function prepareForm() {
-    if (checkForm(addPmForm)) {
+    if (checkForm(savePmForm)) {
       //Вызываем загрузку всех файлов
       if ($('.file-preview-thumbnails .kv-preview-thumb').not('.file-preview-success').not('.file-preview-initial').length > 0) {
         fileUploadError = false;
         $('#attach').fileinput('upload');
       } else {
         //Загружать нечего/все загружено, отправляем форму
-        formData = addPmForm.serialize();
-        freezeForm(addPmForm);
+        formData = savePmForm.serialize();
+        freezeForm(savePmForm);
         $('#attach').fileinput('disable');
         sendForm();
       }
     } else {
-      showFormAlert(addPmForm, 'Не заполнены необходимые поля');
+      showFormAlert(savePmForm, 'Не заполнены необходимые поля');
       return false;
     }
   }
 
   //Плагин загрузки файлов
   var fileUploadError = false;
-  $('#attach').fileinput({
-      browseClass: 'btn btn-outline-secondary',
-      language: 'ru',
-      uploadUrl: '/stock/upload-file',
-      maxFileSize: 10240,
-      fileActionSettings: {
-          showRemove: true,
-          showUpload: false,
-          showZoom: true,
-          showDrag: false,
-      }
-  })
+  $('#attach').fileinput(params)
   .on('fileuploaded', function(event, data, index, fileId) {
     //Файл успешно загружен
     document.getElementById(index).setAttribute('data-id', data.response.id);
@@ -508,8 +497,8 @@ $(document).ready(function() {
         $('input[name="files"]').val('');
       }
 
-      formData = addPmForm.serialize();
-      freezeForm(addPmForm);
+      formData = savePmForm.serialize();
+      freezeForm(savePmForm);
       $('#attach').fileinput('disable');
       sendForm();
     }
@@ -519,21 +508,21 @@ $(document).ready(function() {
 
   function sendForm() {
     $.ajax({
-      type: addPmForm.attr('method'),
-      url: addPmForm.attr('action'),
+      type: savePmForm.attr('method'),
+      url: savePmForm.attr('action'),
       data: formData
     }).done(function(data) {
       if ($.isArray(data) && data[0] == 1) {
         //Все хорошо
-        if (addPmForm.attr('id') == 'add-pm-form') {
-          alert('All good!');
-          // $.redirectPost('/applications', {'msg': 'Заявка №' + data[1] + ' успешно добавлена', 'bg-color': 'bg-success', 'text-color': 'text-white'});
+        if (savePmForm.attr('id') == 'edit-pm-form') {
+          var stockId = savePmForm.data('id');
+          location.href = '/stock/view/pm?number=' + stockId;
         } else {
           location.reload();
         }
       } else {
-        showFormAlert(addPmForm, data[1]);
-        freezeForm(addPmForm, false);
+        showFormAlert(savePmForm, data[1]);
+        freezeForm(savePmForm, false);
         $('#attach').fileinput('enable');
       }
     });
