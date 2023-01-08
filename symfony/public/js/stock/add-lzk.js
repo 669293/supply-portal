@@ -232,7 +232,7 @@ $(document).ready(function() {
     }).done(function(data) {
       if ($.isArray(data) && data[0] == 1) {
         //Все хорошо
-        if (addSmForm.attr('id') == 'add-sm-form') {
+        if (addSmForm.attr('id') == 'add-lzk-form') {
           location.href = '/stock';
           // $.redirectPost('/applications', {'msg': 'Заявка №' + data[1] + ' успешно добавлена', 'bg-color': 'bg-success', 'text-color': 'text-white'});
         } else {

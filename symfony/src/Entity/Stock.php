@@ -133,6 +133,16 @@ class Stock
      */
     private $office;
 
+    /**
+     * @var \StockTransport
+     *
+     * @ORM\ManyToOne(targetEntity="StockTransport")
+     * @ORM\JoinColumns({
+     *   @ORM\JoinColumn(name="transport", referencedColumnName="id")
+     * })
+     */
+    private $transport;
+
     public function __construct()
     {
         $this->datetime = new \DateTime();
@@ -319,6 +329,18 @@ class Stock
     public function setOffice(?Offices $office): self
     {
         $this->office = $office;
+
+        return $this;
+    }
+
+    public function getTransport(): ?StockTransport
+    {
+        return $this->transport;
+    }
+
+    public function setTransport(?StockTransport $transport): self
+    {
+        $this->transport = $transport;
 
         return $this;
     }

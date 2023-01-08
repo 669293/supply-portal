@@ -49,16 +49,43 @@ class StockStockMaterials
      */
     private $count = '0.0';
 
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="sum", type="decimal", precision=10, scale=0, nullable=false, options={"default"="0.0"})
+     */
+    private $sum = '0.0';
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="tax", type="decimal", precision=10, scale=0, nullable=false, options={"default"="0.0"})
+     */
+    private $tax = '0.0';
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="total", type="decimal", precision=10, scale=0, nullable=false, options={"default"="0.0"})
+     */
+    private $total = '0.0';
 
     public function __construct(
         $stock = null, //Stock::class
         $stockMaterial = null, //StockMaterials::class
-        $count = null
+        $count = null,
+        $sum = null,
+        $tax = null,
+        $total = null
         )
     {
         if ($stock !== null) {$this->stock = $stock;}
         if ($stockMaterial !== null) {$this->stockMaterial = $stockMaterial;}
         if ($count !== null) {$this->count = $count;}
+        if ($sum !== null) {$this->sum = $sum;}
+        if ($tax !== null) {$this->tax = $tax;}
+        if ($total !== null) {$this->total = $total;}
+
     }
 
     public function getId(): ?int
@@ -98,6 +125,42 @@ class StockStockMaterials
     public function setCount(string $count): self
     {
         $this->count = $count;
+
+        return $this;
+    }
+
+    public function getSum(): ?string
+    {
+        return $this->sum;
+    }
+
+    public function setSum(string $sum): self
+    {
+        $this->sum = $sum;
+
+        return $this;
+    }
+
+    public function getTax(): ?string
+    {
+        return $this->tax;
+    }
+
+    public function setTax(string $tax): self
+    {
+        $this->tax = $tax;
+
+        return $this;
+    }
+
+    public function getTotal(): ?string
+    {
+        return $this->total;
+    }
+
+    public function setTotal(string $total): self
+    {
+        $this->total = $total;
 
         return $this;
     }

@@ -1,4 +1,4 @@
-{# templates/stock/add-sm.html.twig #}
+{# templates/stock/add-lzk.html.twig #}
 {% extends 'default.html.twig' %}
 
 {# Заголовки #}
@@ -17,25 +17,23 @@
     {% if materialsCount == 0 %}
         <p class="text-small text-warning"><i class="bi bi-exclamation-triangle"></i> На складе нет материалов, доступных к списанию на основании данного поступления</p>
     {% else %}
-        <form class="mb-2" action="/stock/add/sm" method="POST" id="add-sm-form">
+        <form class="mb-2" action="/stock/add/lzk" method="POST" id="add-lzk-form">
             <fieldset>
-                <input type="hidden" name="token" value="{{ csrf_token('add-sm') }}"/>
+                <input type="hidden" name="token" value="{{ csrf_token('add-lzk') }}"/>
                 <input type="hidden" name="files" value=""/>
-                <input type="hidden" name="add-sm-parnet" value="{{ stock.getId }}"/>
+                <input type="hidden" name="add-lzk-parnet" value="{{ stock.getId }}"/>
                 <div class="container-fluid w-100 overflow-scroll px-0 mb-2">
                     <table class="table table-borderless">
                         <tbody>
                             <tr>
-                                <td class="ps-0" style="width: 180px;">Склад списания</td>
+                                <td class="ps-0" style="width: 180px;">Автомобиль</td>
                                 <td class="w-auto">
-                                    <select class="form-select form-select-sm" name="add-sm-office">
-                                        {% for office in offices %}
-                                            {% if office.getId in [3, 5] %}
-                                                <option value="{{ office.getId }}"{% if office.getId == 3 %} selected{% endif %}>{{ office.getTitle }}</option>
-                                            {% endif %}
+                                    <select class="form-select form-select-sm" name="add-lzk-transport">
+                                        {% for car in transport %}
+                                            <option value="{{ car.getId }}">{{ car.getTitle }}</option>
                                         {% endfor %}
                                     </select>
-                                    <div class="form-text mt-0">Выберите склад в который производится списание</div>
+                                    <div class="form-text mt-0">Выберите автомобиль в который производится списание</div>
                                 </td>
                             </tr>
                         </tbody>
@@ -65,8 +63,8 @@
                                         <td class="align-middle text-xsmall">{{ material.obj.getTitle }}</td>
                                         <td class="align-middle text-center text-xsmall">{{ material.obj.getUnit.getTitle }}</td>
                                         <td class="align-middle">
-                                            <input type="hidden" name="add-sm-material-id[]" value="{{ material.obj.getId }}" />
-                                            <input class="form-control form-control-sm should-be-validated" type="number" max="{{ material.count }}" value="{{ material.count }}" name="add-sm-count[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" />
+                                            <input type="hidden" name="add-lzk-material-id[]" value="{{ material.obj.getId }}" />
+                                            <input class="form-control form-control-sm should-be-validated" type="number" max="{{ material.count }}" value="{{ material.count }}" name="add-lzk-count[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" />
                                         </td>
                                         <td class="align-middle text-xsmall">{{ material.obj.getPrice|number_format(2, '.', ' ') }}</td>
                                         <td class="align-middle text-xsmall">{{ material.sum|number_format(2, '.', ' ') }}</td>
@@ -108,7 +106,7 @@
     <script src="{{ asset('js/fileinput.min.js') }}" type="text/javascript"></script>
     <script src="{{ asset('js/fileinput.ru.js') }}" type="text/javascript"></script>
     <script src="{{ asset('js/jquery.form.js') }}" type="text/javascript"></script>
-    <script src="{{ asset('js/stock/add-sm.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/stock/add-lzk.js') }}" type="text/javascript"></script>
 {% endblock %}
 
 {# Стили #}

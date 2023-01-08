@@ -169,9 +169,9 @@
                                 </td>
                                 <td class="align-middle"><input class="form-control form-control-sm should-be-validated" type="number" value="{{ material.count }}" name="edit-pm-count[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" /></td>
                                 <td class="align-middle"><input class="form-control form-control-sm should-be-validated numbersOnly" type="text" value="{{ material.obj.getPrice }}" name="edit-pm-price[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" /></td>
-                                <td class="align-middle"><input class="form-control form-control-sm should-be-validated numbersOnly" type="text" value="{{ material.obj.getSum }}" name="edit-pm-sum[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" /></td>
-                                <td class="align-middle"><input class="form-control form-control-sm should-be-validated numbersOnly" type="text" value="{{ material.obj.getTax }}" name="edit-pm-tax[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" /></td>
-                                <td class="align-middle"><input class="form-control form-control-sm should-be-validated numbersOnly" type="text" value="{{ material.obj.getTotal }}" name="edit-pm-total[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" /></td>
+                                <td class="align-middle"><input class="form-control form-control-sm should-be-validated numbersOnly" type="text" value="{{ material.sum }}" name="edit-pm-sum[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" /></td>
+                                <td class="align-middle"><input class="form-control form-control-sm should-be-validated numbersOnly" type="text" value="{{ material.tax }}" name="edit-pm-tax[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" /></td>
+                                <td class="align-middle"><input class="form-control form-control-sm should-be-validated numbersOnly" type="text" value="{{ material.total }}" name="edit-pm-total[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" /></td>
                                 <td class="text-center align-middle"><i class="bi bi-trash text-danger fs-6 delete-row delete-database" data-id="{{ material.obj.getId }}"></i><div class="spinner-border spinner-border-sm text-primary d-none" role="status"><span class="visually-hidden">Загрузка...</span></div></td>
                             </tr>
                         {% endfor %}

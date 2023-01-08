@@ -1,0 +1,59 @@
+{# templates/stock/search.html.twig #}
+{% extends 'default.html.twig' %}
+
+{# Заголовки #}
+{% block title %}{{ title }}{% endblock %}
+{% block caption %}{{ title }}{% endblock %}
+
+{# Контент #}
+{% block content %}
+  <form method="GET" action="/stock/search">
+    <div class="input-group input-group-sm mt-2">
+      <input type="text" class="form-control" placeholder="Поиск по содержимому заявок" aria-label="Поиск по содержимому заявок" name="q" value="{{ q }}" />
+      <button class="btn btn-outline-secondary button-search" type="button" onClick="$(this).closest('form').submit();"><i class="bi bi-search"></i></button>
+    </div>
+  </form>
+
+  {% if q|length > 2 %}
+    {% if results|length > 0 %}
+      {% for result in results %}
+        <div class="card mt-2">
+          <div class="card-body">
+            <blockquote class="blockquote mb-0 text-small">
+              <p class="mb-0">
+                {% set doctypetitle = 'pm' %}{% set doctitle = 'Поступление материалов' %}
+                {% if result.stock.getDoctype == 1 %}{% set doctypetitle = 'tn' %}{% set doctitle = 'Перемещение материалов' %}{% endif %}
+                {% if result.stock.getDoctype == 2 %}{% set doctypetitle = 'sm' %}{% set doctitle = 'Списание материалов' %}{% endif %}
+                {% if result.stock.getDoctype == 3 %}{% set doctypetitle = 'lzk' %}{% set doctitle = 'Лимитно-заборная карта' %}{% endif %}
+                <a href="/stock/view/{{ doctypetitle }}?number={{ result.stock.getId }}" target="_blank">{{ doctitle }} №{{ result.stock.getId }}</a>
+                <span class="text-muted text-xsmall">от {{ result.stock.getDate|date('d.m.Y') }}</span>
+                {# <span class="badge rounded-pill">{{ result.stock.getComment|highlight(q)|raw }}</span> #}
+              </p>
+              {% if result.comment != '' %}
+                <p class="mt-1 mb-1 text-small text-muted">Комментарий: {{ result.comment|highlight(q)|raw }}</p>
+              {% endif %}
+              {% if result.materials|length > 0 %}<div class="clearfix mb-4"></div>{% endif %}
+              {% for material in result.materials %}
+                <footer class="blockquote-footer" style="margin-top: -0.5rem!important;">
+                  <span class="text-body">{{ material.getTitle|highlight(q)|raw }}</span>
+                </footer>
+              {% endfor %}
+            </blockquote>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="text-muted mt-3">Ничего не найдено</p>
+    {% endif %}
+  {% else %}
+    <p class="text-muted mt-3">Запрос должен быть длиннее двух символов</p>
+  {% endif %}
+{% endblock %}
+
+{# Скрипты #}
+{% block scripts %}
+{% endblock %}
+
+{# Стили #}
+{% block css %}
+{% endblock %}

@@ -96,18 +96,18 @@
                         {% set sTotal = 0 %}
                         {% for material in materials %}
                             {% set sPrice = sPrice + material.obj.getPrice %}
-                            {% set sSum = sSum + material.obj.getSum %}
-                            {% set sTax = sTax + material.obj.getTax %}
-                            {% set sTotal = sTotal + material.obj.getTotal %}
+                            {% set sSum = sSum + material.sum %}
+                            {% set sTax = sTax + material.tax %}
+                            {% set sTotal = sTotal + material.total %}
                             <tr>
                                 <td class="align-middle text-center text-xsmall">{{ loop.index }}</td>
                                 <td class="align-middle text-xsmall">{{ material.obj.getTitle }}</td>
                                 <td class="align-middle text-center text-xsmall">{{ material.obj.getUnit.getTitle }}</td>
                                 <td class="align-middle text-center text-xsmall">{{ material.count }}</td>
                                 <td class="align-middle text-xsmall">{{ material.obj.getPrice|number_format(2, '.', ' ') }}</td>
-                                <td class="align-middle text-xsmall">{{ material.obj.getSum|number_format(2, '.', ' ') }}</td>
-                                <td class="align-middle text-xsmall">{{ material.obj.getTax|number_format(2, '.', ' ') }}</td>
-                                <td class="align-middle text-xsmall">{{ material.obj.getTotal|number_format(2, '.', ' ') }}</td>
+                                <td class="align-middle text-xsmall">{{ material.sum|number_format(2, '.', ' ') }}</td>
+                                <td class="align-middle text-xsmall">{{ material.tax|number_format(2, '.', ' ') }}</td>
+                                <td class="align-middle text-xsmall">{{ material.total|number_format(2, '.', ' ') }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
@@ -125,7 +125,7 @@
         </div>
 
         <div class="mb-3 mt-4">
-            <a type="button" class="btn btn-outline-secondary mb-2 me-2" href="/" target="_blank">Закрыть</a>
+            <a type="button" class="btn btn-outline-secondary mb-2 me-2" href="/stock">Закрыть</a>
             <a type="button" class="btn btn-outline-secondary mb-2 me-2" href="/stock/print/tn?number={{ stock.id }}" target="_blank"><i class="bi bi-printer"></i> Распечатать</a>
         </div>
     </fieldset>

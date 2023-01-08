@@ -90,9 +90,9 @@
                                             <input class="form-control form-control-sm should-be-validated" type="number" max="{{ material.count }}" value="{{ material.count }}" name="add-tn-count[]" data-sbv-expression="^\d+.*\d*$" data-sbv-depence-of="true" />
                                         </td>
                                         <td class="align-middle text-xsmall">{{ material.obj.getPrice|number_format(2, '.', ' ') }}</td>
-                                        <td class="align-middle text-xsmall">{{ material.obj.getSum|number_format(2, '.', ' ') }}</td>
-                                        <td class="align-middle text-xsmall">{{ material.obj.getTax|number_format(2, '.', ' ') }}</td>
-                                        <td class="align-middle text-xsmall">{{ material.obj.getTotal|number_format(2, '.', ' ') }}</td>
+                                        <td class="align-middle text-xsmall">{{ material.sum|number_format(2, '.', ' ') }}</td>
+                                        <td class="align-middle text-xsmall">{{ material.tax|number_format(2, '.', ' ') }}</td>
+                                        <td class="align-middle text-xsmall">{{ material.total|number_format(2, '.', ' ') }}</td>
                                         <td class="text-center align-middle"><i class="bi bi-trash text-danger fs-6 delete-row"></i></td>
                                     </tr>
                                 {% endif %}

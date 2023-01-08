@@ -526,7 +526,7 @@ $(document).ready(function() {
       if ($.isArray(data) && data[0] == 1) {
         //Все хорошо
         if (addPmForm.attr('id') == 'add-pm-form') {
-          alert('All good!');
+          location.href = '/stock';
           // $.redirectPost('/applications', {'msg': 'Заявка №' + data[1] + ' успешно добавлена', 'bg-color': 'bg-success', 'text-color': 'text-white'});
         } else {
           location.reload();

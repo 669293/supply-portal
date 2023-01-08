@@ -21,22 +21,8 @@
                         <td>{{ stock.getDate|date('d.m.Y') }}</td>
                     </tr>
                     <tr>
-                        <td style="width: 200px!important;"><i class="bi bi-box-seam text-muted me-1"></i> <strong>Склад списания</strong></td>
-                        <td>{{ stock.getOffice.getTitle }}</td>
-                    </tr>
-                    <tr>
-                        <td style="width: 200px!important;"><i class="bi bi-people-fill text-muted me-1"></i> <strong>Поставщик</strong></td>
-                        <td>
-                            {% if provider is same as 0 %}
-                                <span class="text-muted">Наличный расчет</span>
-                            {% else %}
-                                {% if provider is defined %}
-                                    {{ provider.getTitle }} (ИНН: {{ provider.getInn }})
-                                {% else %}
-                                    <span class="text-muted">ИНН: {{ provider.getInn }}</span>
-                                {% endif %}
-                            {% endif %}
-                        </td>
+                        <td style="width: 200px!important;"><i class="bi bi-box-seam text-muted me-1"></i> <strong>Автомобиль</strong></td>
+                        <td>{{ stock.getTransport.getTitle }}</td>
                     </tr>
                     <tr>
                         <td><i class="bi bi-file-earmark text-muted me-1"></i> <strong>Файлы</strong></td>
@@ -112,7 +98,7 @@
 
         <div class="mb-3 mt-4">
             <a type="button" class="btn btn-outline-secondary mb-2 me-2" href="/stock">Закрыть</a>
-            <a type="button" class="btn btn-outline-secondary mb-2 me-2" href="/stock/print/sm?number={{ stock.id }}" target="_blank"><i class="bi bi-printer"></i> Распечатать</a>
+            <a type="button" class="btn btn-outline-secondary mb-2 me-2" href="/stock/print/lzk?number={{ stock.id }}" target="_blank"><i class="bi bi-printer"></i> Распечатать</a>
         </div>
     </fieldset>
 
