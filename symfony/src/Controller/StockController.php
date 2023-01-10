@@ -15,6 +15,7 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Stock;
+use App\Entity\StockBalance;
 use App\Entity\StockFiles;
 use App\Entity\StockMaterials;
 use App\Entity\StockStockMaterials;
@@ -28,6 +29,7 @@ use App\Repository\LogisticsMaterialsRepository;
 use App\Repository\MaterialsRepository;
 use App\Repository\OfficesRepository;
 use App\Repository\ProvidersRepository;
+use App\Repository\StockBalanceRepository;
 use App\Repository\StockRepository;
 use App\Repository\StockTransportRepository;
 use App\Repository\StockFilesRepository;
@@ -483,6 +485,10 @@ class StockController extends AbstractController
                     );
 
                     $this->entityManager->persist($ssm);
+
+                    //Добавляем запись на склад
+                    $stockBalance = new StockBalance($ssm);
+                    $this->entityManager->persist($stockBalance);
                 }
 
                 //Создаем связь прихода с материалами
@@ -2595,6 +2601,111 @@ class StockController extends AbstractController
             'q' => $q,
             'results' => $results
         ]);
+    }
+
+    /**
+     * Складские остатки
+     * @Route("/stock/balance", methods={"GET"})
+     * @Security("is_granted('ROLE_STOCK')")
+     */
+    public function stockBalance(
+        Request $request,
+        ProvidersRepository $providersRepository,
+        StockRepository $stockRepository,
+        StockFilesRepository $stockFilesRepository,
+        StockBalanceRepository $stockBalanceRepository,
+        StockStockMaterialsRepository $stockStockMaterialsRepository
+    ): Response
+    {
+        $objStockBalance = $stockBalanceRepository->findAll();
+        $results = [];
+        foreach ($objStockBalance as $balance) {
+            $exists = false;
+            foreach ($results as $result) {
+                if ($result->stock->getId() == $balance->getStockStockMaterial()->getStock()->getId()) {
+                    $exists = true;
+
+                    //Добавляем материалы
+                    $result->materials[] = [$balance->getStockStockMaterial()->getStockMaterial(), $balance->getStockStockMaterial()->getCount(), $balance->getStockStockMaterial()->getCount()];
+
+                    break;
+                }
+            }
+
+            if (!$exists) {
+                $tmp = new \stdClass;
+                $tmp->stock = $balance->getStockStockMaterial()->getStock();
+                $tmp->materials = [[$balance->getStockStockMaterial()->getStockMaterial(), $balance->getStockStockMaterial()->getCount(), $balance->getStockStockMaterial()->getCount()]];
+                $tmp->files = $stockFilesRepository->findBy( array('stock' => $balance->getStockStockMaterial()->getStock()->getId()) );
+
+                //Получаем поставщика
+                $provider = $providersRepository->findBy( array('inn' => $balance->getStockStockMaterial()->getStock()->getProvider()) );
+                if (is_array($provider)) {$provider = array_shift($provider);}
+
+                $tmp->provider = $provider;
+                $results[] = $tmp; unset($tmp);
+            }
+        }
+
+        //Смотрим подчиненные докумнеты по каждой записи
+        foreach ($results as $result) {
+            $childStocks = $stockRepository->findBy( array('parent' => $result->stock) );
+            
+            //Получаем материалы по каждому документу
+            foreach ($childStocks as $childStock) {
+                $objStockStockMaterials = $stockStockMaterialsRepository->findBy( array('stock' => $childStock->getId()) );
+                foreach ($objStockStockMaterials as $objStockStockMaterial) {
+                    for ($i=sizeof($result->materials)-1; $i>=0; $i--) {
+                        if ($result->materials[$i] !== null) {
+                            if ($objStockStockMaterial->getStockMaterial()->getId() == $result->materials[$i][0]->getId()) {
+                                (float)$result->materials[$i][1] -= (float)$objStockStockMaterial->getCount();
+                                if ((float)$result->materials[$i][1] <= 0) {
+                                    //Удаляем ненужный материал
+                                    array_splice($result->materials, $i, 1);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        //Удаляем из выборки документы с пустыми наименованиями
+        for ($i=sizeof($results)-1; $i>=0; $i--) {
+            if (sizeof($results[$i]->materials) == 0) {
+                array_splice($result->materials, $i, 1);
+
+                $this->entityManager->getConnection()->beginTransaction(); //Начинаем транзакцию
+
+                //Удаляем из базы
+                $objStockStockMaterials = $stockStockMaterialsRepository->findBy( array('stock' => $result->stock->getId()) );
+                foreach ($objStockStockMaterials as $objStockStockMaterial) {
+                    $stockBalances = $stockBalanceRepository->findBy( array('ssm' => $objStockStockMaterial->getId()) );
+                    foreach ($stockBalances as $stockBalance) {
+                        $this->entityManager->remove($stockBalance);
+                        $this->entityManager->flush();
+                    }
+                }
+
+                $this->entityManager->getConnection()->commit();
+            }
+        }
+
+        //Хлебные крошки
+        $breadcrumbs = [];
+        $breadcrumbs[0] = new \stdClass();
+        $breadcrumbs[0]->href = '/stock';
+        $breadcrumbs[0]->title = 'Склад';
+        $breadcrumbs[1] = new \stdClass();
+        $breadcrumbs[1]->href = '/stock/balance';
+        $breadcrumbs[1]->title = 'Складские остатки';
+
+        $params['title'] = 'Складские остатки';
+        $params['breadcrumbs'] = $breadcrumbs;
+        $params['results'] = $results;
+ 
+        return $this->render('stock/balance.html.twig', $params);
     }
 }
 
