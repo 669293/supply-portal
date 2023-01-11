@@ -277,8 +277,10 @@ class Users implements UserInterface, PasswordAuthenticatedUserInterface
 
     // Замена ФИО для скрытых пользователей
     private const REPLACEMENTS = [
-        ['Стрежнев Иван Викторович', 'Лаптев Денис Олегович'],
-        ['Стрежнев И.В.', 'Лаптев Д.О.']
+        ['Стрежнев Иван Викторович', 'Михеев Дмитрий Александрович'],
+        ['Стрежнев И.В.', 'Михеев Д.А.'],
+        ['Лаптев Д.О.', 'Жарков Ю.Н.'],
+        ['Лаптев Денис Олегович', 'Жарков Юрий Николаевич']
     ];
 
     private const LOGIN_WHITELIST = ['gehuc', 'yvitim', 'dim113', 'dev', 'freealex'];
