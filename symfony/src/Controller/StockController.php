@@ -2636,7 +2636,33 @@ class StockController extends AbstractController
                 $tmp = new \stdClass;
                 $tmp->stock = $balance->getStockStockMaterial()->getStock();
                 $tmp->materials = [[$balance->getStockStockMaterial()->getStockMaterial(), $balance->getStockStockMaterial()->getCount(), $balance->getStockStockMaterial()->getCount()]];
-                $tmp->files = $stockFilesRepository->findBy( array('stock' => $balance->getStockStockMaterial()->getStock()->getId()) );
+
+                //Получаем список файлов
+                $files = [];
+                $arrFiles = $stockFilesRepository->findBy( array('stock' => $balance->getStockStockMaterial()->getStock()->getId()) );
+                foreach ($arrFiles as $file) {                
+                    $tmp_ = explode('.', basename($file->getPath())); $ext = end($tmp_); unset($tmp_);
+
+                    $params = [
+                        'path' => $file->getPath(),
+                        'name' => basename($file->getPath()),
+                        'title' => pathinfo($file->getPath())['filename'],
+                        'ext' => $ext,
+                        'type' => $file->getFileType()
+                    ];
+
+                    //Определяем класс кнопки и иконку
+                    $params['class'] = 'btn-outline-secondary'; $params['icon'] = 'bi-file-image';
+                    if (in_array($ext, ['doc', 'docx'])) {$params['class'] = 'btn-outline-primary'; $params['bi-file-richtext'] = '';}
+                    if (in_array($ext, ['xls', 'xlsx'])) {$params['class'] = 'btn-outline-success'; $params['icon'] = 'bi-file-bar-graph';}
+                    if (in_array($ext, ['pdf'])) {$params['class'] = 'btn-outline-danger'; $params['icon'] = 'bi-file-pdf';}
+                    if (in_array($ext, ['txt'])) {$params['class'] = 'btn-outline-secondary'; $params['icon'] = 'bi-file-text';}
+                    if (in_array($ext, ['htm', 'html'])) {$params['class'] = 'btn-outline-secondary'; $params['icon'] = 'bi-file-code';}
+
+                    $files[] = $params; unset($params);
+                }
+
+                $tmp->files = $files;
 
                 //Получаем поставщика
                 $provider = $providersRepository->findBy( array('inn' => $balance->getStockStockMaterial()->getStock()->getProvider()) );

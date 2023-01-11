@@ -28,37 +28,52 @@
 
 {# Контент #}
 {% block content %}
-  <div class="table-responsive w-100">
-    <table class="table table-hover table-bordered table-striped text-xsmall mb-2">
-      <thead>
-        <tr>
-          <th class="align-middle text-nowrap">Документ поступления / Номенклатура</th>
-          <th class="align-middle text-nowrap">Ед. изм</th>
-          <th class="align-middle text-nowrap">Поступило</th>
-          <th class="align-middle text-nowrap">Списано</th>
-          <th class="align-middle">Остаток</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for result in results %}
-          <tr class="table-primary">
-            <td colspan="5">
-              <a href="/stock/view/pm?number={{ result.stock.getId }}">Поступление материалов №{{ result.stock.getId }}</a> от {{ result.stock.getDate|date('d.m.Y') }} ({{ result.provider.getTitle }})
-            </td>
+  {% if results|length > 0 %}
+    <div class="table-responsive w-100">
+      <table class="table table-hover table-bordered table-striped text-xsmall mb-2">
+        <thead>
+          <tr>
+            <th class="align-middle text-nowrap">Документ поступления / Номенклатура</th>
+            <th class="align-middle text-nowrap">Ед. изм</th>
+            <th class="align-middle text-nowrap">Поступило</th>
+            <th class="align-middle text-nowrap">Списано</th>
+            <th class="align-middle">Остаток</th>
           </tr>
-          {% for material in result.materials %}
-            <tr>
-              <td>{{ material[0].getTitle }}</td>
-              <td>{{ material[0].getUnit.getTitle }}</td>
-              <td>{{ material[2] }}</td>
-              <td>{{ material[2] - material[1] }}</td>
-              <td>{{ material[1] }}</td>
+        </thead>
+        <tbody>
+          {% for result in results %}
+            <tr class="table-primary">
+              <td colspan="5">
+                <a href="/stock/view/pm?number={{ result.stock.getId }}">Поступление материалов №{{ result.stock.getId }}</a> от {{ result.stock.getDate|date('d.m.Y') }} ({{ result.provider.getTitle }})
+                {% for file in result.files  %}
+                  {% if file.type == 'image' %}
+                    <a class="filePreview ms-2" data-id="thumb-attachments-init-{{ fileId }}" href="#?"><span class="badge bg-light text-dark">Фотография</span></a>
+                    {% set fileId = fileId + 1 %}
+                  {% endif %}
+                {% endfor %}
+              </td>
             </tr>
-          {% endfor %}  
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+            {% for material in result.materials %}
+              <tr>
+                <td>{{ material[0].getTitle }}</td>
+                <td>{{ material[0].getUnit.getTitle }}</td>
+                <td>{{ material[2] }}</td>
+                <td>{{ material[2] - material[1] }}</td>
+                <td>{{ material[1] }}</td>
+              </tr>
+            {% endfor %}  
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {# Скрытый fileinput для инициализации предпросмотра #}
+    <div class="d-none">
+      <input id="attachments" type="file" name="" multiple="multiple" />
+    </div>
+  {% else %}
+    <p class="text-muted text-small">На складе нет материалов</p>
+  {% endif %}
 {% endblock %}
 
 {# Скрипты #}
@@ -68,37 +83,29 @@
     <script type="text/javascript">
         var params = {
             initialPreview: [
-{# {% for document in documents %}
-    {% if not document.files is empty %}
-        {% for file in document.files %}
-          {% if file.type == 'image' %}
-            '<img src="{{ url('index') }}upload/stock/{{ file.path }}" class="file-preview-image" alt="" />',
-          {% else %}
-            '{{ url('index') }}upload/stock/{{ file.path }}',
-          {% endif %}
-        {% endfor %}
-    {% endif %}
-{% endfor %} #}
+              {% for result in results %}
+                {% for file in result.files  %}
+                  {% if file.type == 'image' %}
+                    '<img src="{{ url('index') }}upload/stock/{{ file.path }}" class="file-preview-image" alt="" />',
+                  {% endif %}
+                {% endfor %}
+              {% endfor %}
             ],
             initialPreviewAsData: true,
             hideThumbnailContent: true,
             initialPreviewConfig: [
-{# {% for document in documents %}
-    {% if not document.files is empty %}
-        {% for file in document.files %}
-          {% if file.type == 'image' %}
-            {type: '{{ file.type }}', caption: '{{ file.name }}', downloadUrl: '{{ url('index') }}upload/stock/{{ file.path }}', previewAsData: false},
-          {% else %}
-            {type: '{{ file.type }}', caption: '{{ file.name }}', downloadUrl: '{{ url('index') }}upload/stock/{{ file.path }}'},
-          {% endif %}
-        {% endfor %}
-    {% endif %}
-{% endfor %} #}
+              {% for result in results %}
+                {% for file in result.files  %}
+                  {% if file.type == 'image' %}
+                    {type: '{{ file.type }}', caption: '{{ file.name }}', downloadUrl: '{{ url('index') }}upload/applications/{{ file.path }}', previewAsData: false},
+                  {% endif %}
+                {% endfor %}
+              {% endfor %}
             ],
             language: 'ru'
         };
     </script>
-    <script src="{{ asset('js/stock/stock.js') }}" type="text/javascript"></script>
+    <script src="{{ asset('js/stock/balance.js') }}" type="text/javascript"></script>
   
   {% if scripts is defined %}
     {{ scripts|raw }}
