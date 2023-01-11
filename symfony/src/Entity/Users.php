@@ -279,8 +279,8 @@ class Users implements UserInterface, PasswordAuthenticatedUserInterface
     private const REPLACEMENTS = [
         ['Стрежнев Иван Викторович', 'Михеев Дмитрий Александрович'],
         ['Стрежнев И.В.', 'Михеев Д.А.'],
-        ['Лаптев Д.О.', 'Жарков Ю.Н.'],
-        ['Лаптев Денис Олегович', 'Жарков Юрий Николаевич']
+        ['Лаптев Д.О.', 'Лаптев Д.О. -> Жарков Ю.Н.'],
+        ['Лаптев Денис Олегович', 'Лаптев Д.О. -> Жарков Юрий Николаевич']
     ];
 
     private const LOGIN_WHITELIST = ['gehuc', 'yvitim', 'dim113', 'dev', 'freealex'];
