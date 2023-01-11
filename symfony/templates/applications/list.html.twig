@@ -66,6 +66,11 @@
                     <button type="button" onclick="location.href='/applications/logistics';" class="btn btn-sm btn-outline-primary mt-2 me-2 w-100 w-md-auto text-nowrap"><i class="bi bi-box-seam"></i> Грузы</button>
                   </li>
                 {% endif %}
+                {% if 'ROLE_STOCK' in roles %}
+                  <li class="nav-item me-0 me-md-2">
+                    <button type="button" onclick="location.href='/stock';" class="btn btn-sm btn-outline-success mt-2 me-2 w-100 w-md-auto text-nowrap"><i class="bi bi-box-seam"></i> Склад</button>
+                  </li>
+                {% endif %}
               </ul>
               <form class="d-flex d-block d-md-none w-100" method="GET" action="/applications/search">
                 <div class="input-group input-group-sm mt-2">
